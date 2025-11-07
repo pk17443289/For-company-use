@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>公司管理系統入口</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            font-size: 1.2em;
+            margin-bottom: 50px;
+        }
+
+        .systems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .system-card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .system-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .system-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .system-card h2 {
+            color: #667eea;
+            font-size: 1.8em;
+            margin-bottom: 15px;
+        }
+
+        .system-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .system-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .github-link {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .github-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1em;
+            padding: 15px 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 25px;
+            display: inline-block;
+            transition: background 0.3s ease;
+        }
+
+        .github-link a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .systems-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏢 公司管理系統</h1>
+        <p class="subtitle">選擇你要使用的系統</p>
+
+        <div class="systems-grid">
+            <!-- 工時回報系統 -->
+            <a href="給公司用的/工時回報/index.html" class="system-card">
+                <div class="system-icon">⏱️</div>
+                <h2>工時回報系統</h2>
+                <p>倉庫工作時間分配回報<br>Cyberpunk 2077 風格介面</p>
+                <span class="system-badge">v3.0</span>
+            </a>
+
+            <!-- 日常工作管理 -->
+            <a href="給公司用的/2025公司/這是我/我的日常工作.html" class="system-card">
+                <div class="system-icon">📋</div>
+                <h2>日常工作管理</h2>
+                <p>任務追蹤與進度管理<br>工作項目組織工具</p>
+                <span class="system-badge">v1.0</span>
+            </a>
+
+            <!-- 回報系統 -->
+            <a href="給公司用的/2025公司/這是回報/回報.html" class="system-card">
+                <div class="system-icon">📊</div>
+                <h2>回報系統</h2>
+                <p>工作成果回報<br>數據統計與分析</p>
+                <span class="system-badge">v1.0</span>
+            </a>
+
+            <!-- 技能管理 -->
+            <a href="給公司用的/2025公司/技能管理.html" class="system-card">
+                <div class="system-icon">🎯</div>
+                <h2>技能管理系統</h2>
+                <p>員工技能追蹤<br>能力發展規劃</p>
+                <span class="system-badge">v1.0</span>
+            </a>
+        </div>
+
+        <div class="github-link">
+            <a href="https://github.com/pk17443289/For-company-use" target="_blank">
+                📂 查看 GitHub 原始碼
+            </a>
+        </div>
+    </div>
+</body>
+</html>
