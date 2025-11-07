@@ -6,11 +6,13 @@
     <title>倉庫管理系統</title>
     <style>
         :root {
-            --cyber-yellow: #FFD700;
-            --cyber-red: #FF0000;
-            --cyber-orange: #FF6B00;
-            --neon-glow-yellow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 30px #FFD700;
-            --neon-glow-red: 0 0 10px #FF0000, 0 0 20px #FF0000, 0 0 30px #FF0000;
+            --primary-yellow: #FFD700;
+            --dark-yellow: #CCA000;
+            --light-yellow: #FFF4CC;
+            --accent-red: #FF0000;
+            --accent-orange: #FF6B00;
+            --text-dark: #2a2a2a;
+            --text-darker: #1a1a1a;
         }
 
         * {
@@ -21,8 +23,7 @@
 
         body {
             font-family: 'Courier New', 'Microsoft JhengHei', monospace;
-            background: #0a0a0a;
-            color: var(--cyber-yellow);
+            background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -41,8 +42,8 @@
             width: 100%;
             height: 100%;
             background-image:
-                linear-gradient(rgba(255, 215, 0, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
+                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
             background-size: 50px 50px;
             pointer-events: none;
             z-index: 0;
@@ -64,45 +65,42 @@
         h1 {
             font-size: 4em;
             font-weight: bold;
-            color: var(--cyber-yellow);
-            text-shadow: var(--neon-glow-yellow);
+            color: var(--text-darker);
+            text-shadow:
+                2px 2px 0px rgba(255, 255, 255, 0.5),
+                4px 4px 0px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
             letter-spacing: 5px;
-            animation: glitch 3s infinite;
+            animation: titlePulse 3s ease-in-out infinite;
         }
 
-        @keyframes glitch {
-            0%, 90%, 100% {
-                transform: translate(0);
+        @keyframes titlePulse {
+            0%, 100% {
+                transform: scale(1);
             }
-            92% {
-                transform: translate(-2px, 2px);
-            }
-            94% {
-                transform: translate(2px, -2px);
-            }
-            96% {
-                transform: translate(-2px, -2px);
+            50% {
+                transform: scale(1.02);
             }
         }
 
         .subtitle {
             font-size: 1.2em;
-            color: var(--cyber-orange);
-            text-shadow: 0 0 10px var(--cyber-orange);
+            color: var(--accent-red);
+            font-weight: bold;
             letter-spacing: 3px;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
         }
 
         /* 系統卡片 */
         .system-card {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
-            border: 2px solid var(--cyber-red);
-            border-radius: 15px;
+            background: linear-gradient(135deg, #FFF 0%, #FFF8DC 100%);
+            border: 4px solid var(--accent-red);
+            border-radius: 20px;
             padding: 60px 40px;
             text-align: center;
             box-shadow:
-                0 0 20px rgba(255, 0, 0, 0.3),
-                inset 0 0 20px rgba(255, 215, 0, 0.05);
+                0 10px 40px rgba(0, 0, 0, 0.2),
+                inset 0 0 30px rgba(255, 215, 0, 0.1);
             transition: all 0.3s ease;
             text-decoration: none;
             display: block;
@@ -120,19 +118,19 @@
             background: linear-gradient(
                 45deg,
                 transparent,
-                rgba(255, 215, 0, 0.1),
+                rgba(255, 215, 0, 0.2),
                 transparent
             );
             transform: rotate(45deg);
-            transition: all 0.5s ease;
+            transition: all 0.6s ease;
         }
 
         .system-card:hover {
-            transform: translateY(-10px);
-            border-color: var(--cyber-yellow);
+            transform: translateY(-10px) scale(1.02);
+            border-color: var(--dark-yellow);
             box-shadow:
-                0 0 40px rgba(255, 215, 0, 0.5),
-                inset 0 0 30px rgba(255, 215, 0, 0.1);
+                0 15px 50px rgba(0, 0, 0, 0.3),
+                inset 0 0 40px rgba(255, 215, 0, 0.2);
         }
 
         .system-card:hover::before {
@@ -142,31 +140,29 @@
         .system-icon {
             font-size: 6em;
             margin-bottom: 30px;
-            filter: drop-shadow(0 0 20px var(--cyber-yellow));
-            animation: pulse 2s infinite;
+            filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
+            animation: iconFloat 3s ease-in-out infinite;
         }
 
-        @keyframes pulse {
+        @keyframes iconFloat {
             0%, 100% {
-                transform: scale(1);
-                filter: drop-shadow(0 0 20px var(--cyber-yellow));
+                transform: translateY(0);
             }
             50% {
-                transform: scale(1.05);
-                filter: drop-shadow(0 0 30px var(--cyber-yellow));
+                transform: translateY(-10px);
             }
         }
 
         .system-card h2 {
-            color: var(--cyber-yellow);
+            color: var(--text-darker);
             font-size: 2.5em;
             margin-bottom: 20px;
-            text-shadow: var(--neon-glow-yellow);
             letter-spacing: 3px;
+            font-weight: bold;
         }
 
         .system-card p {
-            color: #ccc;
+            color: var(--text-dark);
             line-height: 1.8;
             font-size: 1.1em;
             margin-bottom: 30px;
@@ -174,40 +170,15 @@
 
         .system-badge {
             display: inline-block;
-            background: linear-gradient(135deg, var(--cyber-red) 0%, var(--cyber-orange) 100%);
+            background: linear-gradient(135deg, var(--accent-red) 0%, var(--accent-orange) 100%);
             color: #fff;
-            padding: 10px 30px;
-            border-radius: 25px;
-            font-size: 1em;
+            padding: 12px 35px;
+            border-radius: 30px;
+            font-size: 1.1em;
             font-weight: bold;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
-            box-shadow: 0 0 15px rgba(255, 107, 0, 0.5);
-        }
-
-        /* 掃描線效果 */
-        .scan-line {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg,
-                transparent,
-                var(--cyber-yellow),
-                transparent
-            );
-            animation: scan 4s linear infinite;
-            pointer-events: none;
-            z-index: 1000;
-        }
-
-        @keyframes scan {
-            0% {
-                top: 0;
-            }
-            100% {
-                top: 100%;
-            }
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 5px 20px rgba(255, 107, 0, 0.4);
+            letter-spacing: 2px;
         }
 
         /* 響應式設計 */
@@ -241,11 +212,12 @@
         /* 邊角裝飾 */
         .corner {
             position: fixed;
-            width: 50px;
-            height: 50px;
-            border: 2px solid var(--cyber-red);
+            width: 60px;
+            height: 60px;
+            border: 4px solid var(--accent-red);
             pointer-events: none;
             z-index: 100;
+            opacity: 0.8;
         }
 
         .corner.top-left {
@@ -275,11 +247,42 @@
             border-left: none;
             border-top: none;
         }
+
+        /* 裝飾性圓點 */
+        .decorative-dots {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+        }
+
+        .dot:nth-child(1) { top: 10%; left: 15%; }
+        .dot:nth-child(2) { top: 25%; right: 20%; }
+        .dot:nth-child(3) { bottom: 15%; left: 25%; }
+        .dot:nth-child(4) { bottom: 30%; right: 15%; }
+        .dot:nth-child(5) { top: 50%; left: 10%; }
+        .dot:nth-child(6) { top: 60%; right: 12%; }
     </style>
 </head>
 <body>
-    <!-- 掃描線效果 -->
-    <div class="scan-line"></div>
+    <!-- 裝飾性圓點 -->
+    <div class="decorative-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+    </div>
 
     <!-- 邊角裝飾 -->
     <div class="corner top-left"></div>
