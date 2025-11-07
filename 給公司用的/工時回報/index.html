@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>倉庫工時回報系統 | CYBERPUNK 2077</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="cyber-bg"></div>
+    <div class="container">
+        <header class="cyber-header">
+            <h1 class="glitch" data-text="WAREHOUSE TIME TRACKER">WAREHOUSE TIME TRACKER</h1>
+            <div class="subtitle">倉庫工時回報系統 v2.5</div>
+        </header>
+
+        <form id="timeReportForm" class="cyber-form">
+            <!-- 員工資訊區 -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    <span class="bracket">[</span> 員工資訊 <span class="bracket">]</span>
+                </h2>
+
+                <div class="employee-info">
+                    <div class="form-group">
+                        <label for="employeeName">員工姓名 *</label>
+                        <select id="employeeName" name="employeeName" required class="cyber-input cyber-select">
+                            <option value="" disabled selected>請選擇員工</option>
+                            <option value="胡秀綾">胡秀綾</option>
+                            <option value="李恩澤">李恩澤</option>
+                            <option value="李語涵">李語涵</option>
+                            <option value="陳佳雯">陳佳雯</option>
+                            <option value="湯適">湯適</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reportDate">回報日期 *</label>
+                        <input type="date" id="reportDate" name="reportDate" required class="cyber-input">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 統計資訊 -->
+            <div class="stats-panel">
+                <div class="stat-item">
+                    <div class="stat-label">總時間</div>
+                    <div class="stat-value" id="totalTime">0</div>
+                    <div class="stat-unit">分鐘</div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-label">剩餘時間</div>
+                    <div class="stat-value" id="remainingTime">480</div>
+                    <div class="stat-unit">分鐘</div>
+                </div>
+
+                <div class="stat-item">
+                    <div class="stat-label">平均時間</div>
+                    <div class="stat-value" id="averageTime">0</div>
+                    <div class="stat-unit">分鐘/區</div>
+                </div>
+            </div>
+
+            <!-- 工作區域卡片 -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    <span class="bracket">[</span> 工作區域時間分配 <span class="bracket">]</span>
+                    <span class="time-hint">總計 480 分鐘 (8 小時)</span>
+                </h2>
+
+                <div class="work-areas-container">
+                    <!-- 左側：單項工作 -->
+                    <div class="simple-cards-container">
+                        <h3 class="area-group-title">單項工作</h3>
+                        <div class="cards-grid simple-grid">
+
+                            <!-- 1. 晨會 - 無細項 -->
+                            <div class="area-card simple-card" data-area="morning">
+                                <div class="card-header">
+                                    <span class="card-icon">📋</span>
+                                    <span class="card-title">晨會</span>
+                                </div>
+                                <div class="card-input-simple">
+                                    <input type="number" id="morning_quantity" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input">
+                                    <span class="unit">次</span>
+                                    <input type="number" id="morning" data-field="time" min="0" placeholder="0" class="cyber-input time-input">
+                                    <span class="unit">分鐘</span>
+                                </div>
+                            </div>
+
+                            <!-- 2. 進包裝機 - 無細項 -->
+                            <div class="area-card simple-card" data-area="packaging_machine">
+                                <div class="card-header">
+                                    <span class="card-icon">⚙️</span>
+                                    <span class="card-title">進包裝機</span>
+                                </div>
+                                <div class="card-input-simple">
+                                    <input type="number" id="packaging_machine_quantity" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input">
+                                    <span class="unit">個</span>
+                                    <input type="number" id="packaging_machine" data-field="time" min="0" placeholder="0" class="cyber-input time-input">
+                                    <span class="unit">分鐘</span>
+                                </div>
+                            </div>
+
+                            <!-- 3. 整理環境區 - 無細項 -->
+                            <div class="area-card simple-card" data-area="cleaning">
+                                <div class="card-header">
+                                    <span class="card-icon">🧹</span>
+                                    <span class="card-title">整理環境區</span>
+                                </div>
+                                <div class="card-input-simple">
+                                    <input type="number" id="cleaning_quantity" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input">
+                                    <span class="unit">個</span>
+                                    <input type="number" id="cleaning" data-field="time" min="0" placeholder="0" class="cyber-input time-input">
+                                    <span class="unit">分鐘</span>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- 右側：區域工作 -->
+                    <div class="expandable-cards-container">
+                        <h3 class="area-group-title">區域工作</h3>
+                        <div class="cards-grid expandable-grid">
+
+                            <!-- 1. 進貨區 - 有細項 -->
+                            <div class="area-card expandable-card" data-area="receiving" onclick="toggleCard(this, event)">
+                                <div class="card-header">
+                                    <div class="header-left">
+                                        <span class="card-icon">📦</span>
+                                        <span class="card-title">進貨區</span>
+                                    </div>
+                                    <div class="header-right">
+                                        <div class="stat-group">
+                                            <div class="stat-line">
+                                                <span class="stat-label-small">總計</span>
+                                                <span class="card-subtotal" data-subtotal="receiving">0</span>
+                                                <span class="unit-small">分</span>
+                                            </div>
+                                            <div class="stat-line">
+                                                <span class="stat-label-small">平均</span>
+                                                <span class="card-average" data-average="receiving">0</span>
+                                                <span class="unit-small">分</span>
+                                            </div>
+                                        </div>
+                                        <span class="expand-arrow">▼</span>
+                                    </div>
+                                </div>
+                                <div class="card-details">
+                                    <div class="detail-item">
+                                        <label>拆蛇皮</label>
+                                        <input type="number" data-area="receiving" data-subitem="snake" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                        <span class="unit">個</span>
+                                        <input type="number" data-area="receiving" data-subitem="snake" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                        <span class="unit">分</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>數數</label>
+                                        <input type="number" data-area="receiving" data-subitem="count" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                        <span class="unit">個</span>
+                                        <input type="number" data-area="receiving" data-subitem="count" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                        <span class="unit">分</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>簽收</label>
+                                        <input type="number" data-area="receiving" data-subitem="sign" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                        <span class="unit">個</span>
+                                        <input type="number" data-area="receiving" data-subitem="sign" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                        <span class="unit">分</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>分類樣品與大貨</label>
+                                        <input type="number" data-area="receiving" data-subitem="classify" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                        <span class="unit">個</span>
+                                        <input type="number" data-area="receiving" data-subitem="classify" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                        <span class="unit">分</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>異常</label>
+                                        <input type="number" data-area="receiving" data-subitem="abnormal" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                        <span class="unit">個</span>
+                                        <input type="number" data-area="receiving" data-subitem="abnormal" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                        <span class="unit">分</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>大貨上架</label>
+                                        <input type="number" data-area="receiving" data-subitem="shelve" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                        <span class="unit">個</span>
+                                        <input type="number" data-area="receiving" data-subitem="shelve" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                        <span class="unit">分</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>整理環境</label>
+                                        <input type="number" data-area="receiving" data-subitem="organize" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                        <span class="unit">個</span>
+                                        <input type="number" data-area="receiving" data-subitem="organize" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                        <span class="unit">分</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>打掃進貨區環境</label>
+                                        <input type="number" data-area="receiving" data-subitem="clean" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                        <span class="unit">個</span>
+                                        <input type="number" data-area="receiving" data-subitem="clean" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                        <span class="unit">分</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        <!-- 2. 檢貨區 - 有細項 -->
+                        <div class="area-card expandable-card" data-area="picking" onclick="toggleCard(this, event)">
+                            <div class="card-header">
+                                <div class="header-left">
+                                    <span class="card-icon">🔍</span>
+                                    <span class="card-title">檢貨區</span>
+                                </div>
+                                <div class="header-right">
+                                    <div class="stat-group">
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">總計</span>
+                                            <span class="card-subtotal" data-subtotal="picking">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">平均</span>
+                                            <span class="card-average" data-average="picking">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                    </div>
+                                    <span class="expand-arrow">▼</span>
+                                </div>
+                            </div>
+                            <div class="card-details">
+                                <div class="detail-item">
+                                    <label>去各個地方取貨</label>
+                                    <input type="number" data-area="picking" data-subitem="fetch" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="picking" data-subitem="fetch" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>拆破損箱子</label>
+                                    <input type="number" data-area="picking" data-subitem="unbox_damaged" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="picking" data-subitem="unbox_damaged" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>把C料號黏在一起</label>
+                                    <input type="number" data-area="picking" data-subitem="stick_c" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="picking" data-subitem="stick_c" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>分手包與包裝機包</label>
+                                    <input type="number" data-area="picking" data-subitem="separate" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="picking" data-subitem="separate" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>過包裝機</label>
+                                    <input type="number" data-area="picking" data-subitem="machine" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="picking" data-subitem="machine" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. 包貨區 - 有細項 -->
+                        <div class="area-card expandable-card" data-area="packing" onclick="toggleCard(this, event)">
+                            <div class="card-header">
+                                <div class="header-left">
+                                    <span class="card-icon">📮</span>
+                                    <span class="card-title">包貨區</span>
+                                </div>
+                                <div class="header-right">
+                                    <div class="stat-group">
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">總計</span>
+                                            <span class="card-subtotal" data-subtotal="packing">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">平均</span>
+                                            <span class="card-average" data-average="packing">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                    </div>
+                                    <span class="expand-arrow">▼</span>
+                                </div>
+                            </div>
+                            <div class="card-details">
+                                <div class="detail-item">
+                                    <label>手包（包＋貼）</label>
+                                    <input type="number" data-area="packing" data-subitem="hand_pack" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="packing" data-subitem="hand_pack" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>包裝機（貼貼紙）</label>
+                                    <input type="number" data-area="packing" data-subitem="machine_sticker" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="packing" data-subitem="machine_sticker" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>拿箱子裝貨</label>
+                                    <input type="number" data-area="packing" data-subitem="box" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="packing" data-subitem="box" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>整理環境（打掃倉儲區域）</label>
+                                    <input type="number" data-area="packing" data-subitem="clean_area" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="packing" data-subitem="clean_area" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. 退貨區 - 有細項 -->
+                        <div class="area-card expandable-card" data-area="returns" onclick="toggleCard(this, event)">
+                            <div class="card-header">
+                                <div class="header-left">
+                                    <span class="card-icon">↩️</span>
+                                    <span class="card-title">退貨區</span>
+                                </div>
+                                <div class="header-right">
+                                    <div class="stat-group">
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">總計</span>
+                                            <span class="card-subtotal" data-subtotal="returns">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">平均</span>
+                                            <span class="card-average" data-average="returns">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                    </div>
+                                    <span class="expand-arrow">▼</span>
+                                </div>
+                            </div>
+                            <div class="card-details">
+                                <div class="detail-item">
+                                    <label>退貨（3天內）</label>
+                                    <input type="number" data-area="returns" data-subitem="return_3day" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="returns" data-subitem="return_3day" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>退清</label>
+                                    <input type="number" data-area="returns" data-subitem="return_clear" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="returns" data-subitem="return_clear" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>檢測</label>
+                                    <input type="number" data-area="returns" data-subitem="inspect" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="returns" data-subitem="inspect" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>簽收</label>
+                                    <input type="number" data-area="returns" data-subitem="sign" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="returns" data-subitem="sign" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>上架</label>
+                                    <input type="number" data-area="returns" data-subitem="shelve" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="returns" data-subitem="shelve" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>異常退貨／非公司商品</label>
+                                    <input type="number" data-area="returns" data-subitem="abnormal" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="returns" data-subitem="abnormal" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 5. MO+店區 - 有細項 -->
+                        <div class="area-card expandable-card" data-area="mo_shop" onclick="toggleCard(this, event)">
+                            <div class="card-header">
+                                <div class="header-left">
+                                    <span class="card-icon">🏪</span>
+                                    <span class="card-title">MO+店區</span>
+                                </div>
+                                <div class="header-right">
+                                    <div class="stat-group">
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">總計</span>
+                                            <span class="card-subtotal" data-subtotal="mo_shop">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">平均</span>
+                                            <span class="card-average" data-average="mo_shop">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                    </div>
+                                    <span class="expand-arrow">▼</span>
+                                </div>
+                            </div>
+                            <div class="card-details">
+                                <div class="detail-item">
+                                    <label>印單</label>
+                                    <input type="number" data-area="mo_shop" data-subitem="print" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="mo_shop" data-subitem="print" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>去B棟拿商品</label>
+                                    <input type="number" data-area="mo_shop" data-subitem="fetch_b" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="mo_shop" data-subitem="fetch_b" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>撿貨</label>
+                                    <input type="number" data-area="mo_shop" data-subitem="pick" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="mo_shop" data-subitem="pick" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>出貨</label>
+                                    <input type="number" data-area="mo_shop" data-subitem="ship" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="mo_shop" data-subitem="ship" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 6. 酷澎區 - 有細項 -->
+                        <div class="area-card expandable-card" data-area="kupon" onclick="toggleCard(this, event)">
+                            <div class="card-header">
+                                <div class="header-left">
+                                    <span class="card-icon">🎁</span>
+                                    <span class="card-title">酷澎區</span>
+                                </div>
+                                <div class="header-right">
+                                    <div class="stat-group">
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">總計</span>
+                                            <span class="card-subtotal" data-subtotal="kupon">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">平均</span>
+                                            <span class="card-average" data-average="kupon">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                    </div>
+                                    <span class="expand-arrow">▼</span>
+                                </div>
+                            </div>
+                            <div class="card-details">
+                                <div class="detail-item">
+                                    <label>檢貨</label>
+                                    <input type="number" data-area="kupon" data-subitem="check" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="kupon" data-subitem="check" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>拆盒</label>
+                                    <input type="number" data-area="kupon" data-subitem="unbox" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="kupon" data-subitem="unbox" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>包貨</label>
+                                    <input type="number" data-area="kupon" data-subitem="pack" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="kupon" data-subitem="pack" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>擺貨</label>
+                                    <input type="number" data-area="kupon" data-subitem="arrange" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="kupon" data-subitem="arrange" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>盤點酷澎反殺商品</label>
+                                    <input type="number" data-area="kupon" data-subitem="inventory" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="kupon" data-subitem="inventory" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 7. 盤點區 - 有細項 -->
+                        <div class="area-card expandable-card" data-area="inventory" onclick="toggleCard(this, event)">
+                            <div class="card-header">
+                                <div class="header-left">
+                                    <span class="card-icon">📊</span>
+                                    <span class="card-title">盤點區</span>
+                                </div>
+                                <div class="header-right">
+                                    <div class="stat-group">
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">總計</span>
+                                            <span class="card-subtotal" data-subtotal="inventory">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">平均</span>
+                                            <span class="card-average" data-average="inventory">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                    </div>
+                                    <span class="expand-arrow">▼</span>
+                                </div>
+                            </div>
+                            <div class="card-details">
+                                <div class="detail-item">
+                                    <label>值日生</label>
+                                    <input type="number" data-area="inventory" data-subitem="duty" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="inventory" data-subitem="duty" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>盤點商品</label>
+                                    <input type="number" data-area="inventory" data-subitem="count_goods" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
+                                    <span class="unit">個</span>
+                                    <input type="number" data-area="inventory" data-subitem="count_goods" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
+                                    <span class="unit">分</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8. 其他 - 可自訂細項 -->
+                        <div class="area-card expandable-card customizable-card" data-area="others" onclick="toggleCard(this, event)">
+                            <div class="card-header">
+                                <div class="header-left">
+                                    <span class="card-icon">⚡</span>
+                                    <span class="card-title">其他</span>
+                                </div>
+                                <div class="header-right">
+                                    <div class="stat-group">
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">總計</span>
+                                            <span class="card-subtotal" data-subtotal="others">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                        <div class="stat-line">
+                                            <span class="stat-label-small">平均</span>
+                                            <span class="card-average" data-average="others">0</span>
+                                            <span class="unit-small">分</span>
+                                        </div>
+                                    </div>
+                                    <span class="expand-arrow">▼</span>
+                                </div>
+                            </div>
+                            <div class="card-details">
+                                <div id="othersCustomItems" class="custom-items-container">
+                                    <!-- 自訂項目會動態新增在這裡 -->
+                                </div>
+                                <button type="button" class="add-custom-item-btn" onclick="addCustomItem()">
+                                    ＋ 新增項目
+                                </button>
+                            </div>
+                        </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- 提交按鈕 -->
+            <div class="form-actions">
+                <button type="submit" class="cyber-button" id="submitBtn">
+                    <span class="btn-text">提交回報</span>
+                    <span class="btn-glitch">SUBMIT</span>
+                </button>
+            </div>
+        </form>
+
+        <!-- 狀態訊息 -->
+        <div id="statusMessage" class="status-message"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

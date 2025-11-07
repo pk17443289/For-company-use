@@ -1,0 +1,233 @@
+% 使用 ctexart 文件類別，它對中文處理有很好的支援
+\documentclass[a4paper, 11pt]{ctexart}
+
+% --- 引用巨集包 ---
+\usepackage{geometry}      % 用於設定頁面邊界
+\usepackage{amsmath}       % 數學公式支援
+\usepackage[x11names]{xcolor} % 支援更多顏色定義
+\usepackage{titlesec}      % 用於自訂章節標題樣式
+\usepackage{fancyhdr}      % 用於自訂頁首頁尾
+\usepackage{titling}       % 用於自訂標題區塊
+\usepackage{enumitem}      % 更好的列表控制
+\usepackage{tcolorbox}     % 用於彩色文字框
+
+% --- 頁面與版面設定 ---
+\geometry{
+  a4paper,
+  top=2cm,
+  bottom=2cm,
+  left=2.2cm,
+  right=2.2cm
+}
+
+% 調整段落間距
+\setlength{\parskip}{1.2ex}
+
+% --- 顏色定義 ---
+\definecolor{guildblue}{RGB}{0, 0, 0}
+\definecolor{warningred}{RGB}{200, 50, 50}
+\definecolor{successgreen}{RGB}{0, 120, 70}
+\definecolor{infoblue}{RGB}{41, 128, 185}
+
+% --- 標題樣式自訂 ---
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{guildblue}}
+  {}
+  {0em}
+  {}[\titlerule]
+
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{guildblue}}
+  {}
+  {0em}
+  {}
+
+% --- 頁首頁尾設定 ---
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyfoot[C]{\small \thepage}
+\fancyfoot[R]{\small \kaishu FROM: 杰特管理團隊}
+
+% --- 文件開始 ---
+\begin{document}
+
+% --- 抬頭資訊區 ---
+\begin{center}
+    \vspace{0.2cm}
+    {\Huge\bfseries\kaishu 【新人引導哲學與行動手冊】}
+
+    \vspace{0.2cm}
+    {\Large\bfseries\kaishu Day 1 Onboarding: 建立實質連結的藝術}
+
+    \vspace{0.3cm}
+    \color{gray!80}
+    \rule{\textwidth}{0.6pt}
+    \vspace{0.3cm}
+\end{center}
+
+% --- 收件人資訊 ---
+\begin{flushleft}
+    \begin{tabular}{@{}ll}
+        \bfseries TO: & 全體主管與新人夥伴 \\
+        \bfseries FROM: & 杰特管理團隊 \\
+        \bfseries VERSION: & 1.0 \\
+        \bfseries PURPOSE: & 建立心理安全感的新人引導系統 \\
+    \end{tabular}
+\end{flushleft}
+\vspace{0.3cm}
+
+% --- 信件正文 ---
+
+\section*{1.0 核心哲學：建立「實質連結」，而非「執行流程」}
+
+在杰特，新人到職首日（Day 1）的\textbf{唯一核心目標}，是\textbf{消除新進同仁的「孤立感」}。
+
+我們過去的失敗，源於將「Onboarding」誤解為一份SOP的執行。新人的首要需求，不是立刻變得多有生產力，而是要確認三件事：
+
+\begin{enumerate}[leftmargin=2em]
+    \item 這個環境是\textbf{安全}的嗎？
+    \item 這個環境的\textbf{規則}是清晰的嗎？
+    \item 當我遇到困難時，我\textbf{敢不敢}求助，又\textbf{知道該向誰}求助？
+\end{enumerate}
+
+因此，我們所有的引導行動，都必須服務於「建立實質性的安全連結」這一最終目的。
+
+\subsection*{1.1 必須避免的兩大「反面教材」}
+
+我們必須摒棄過去的兩個失敗極端：
+
+\begin{tcolorbox}[colback=red!5!white, colframe=warningred, title={\bfseries 反教材A：【冷漠的形式主義】（楷哥/鈺蓉模式）}]
+\textbf{行為：} 機械性地跑完流程——介紹一圈人、辦好帳號、給他看《寶典》（內部手冊），然後說：「該知道的都在裡面了，你有問題再問。」
+
+\textbf{診斷：} 這是一種\textbf{「防禦性交付」}。它看起來好像把所有資訊都給了，但實際上是把「學習的責任」和「提問的壓力」全部甩給了新人。這是一種「表皮」關懷，只是為了管理上的交差。
+\end{tcolorbox}
+
+\vspace{0.3cm}
+
+\begin{tcolorbox}[colback=red!5!white, colframe=warningred, title={\bfseries 反教材B：【焦慮的過度關懷】（泓霖模式）}]
+\textbf{行為：} 過度擔心新人無法存活，表現得比新人還緊張，時時刻刻都去「推」他一下。
+
+\textbf{診斷：} 這會傳遞錯誤的信號（「你是不是很缺人？很怕我走？」），導致新人失去主動性，變成「你推一下，我才動一下」的被動等待模式。
+\end{tcolorbox}
+
+\vspace{0.3cm}
+
+\noindent\textbf{我們的道路，是在這兩者之間，找到一條「專業、溫暖、且有邊界」的平衡道路。}
+
+\section*{2.0 杰特引導架構：【雙角色分離系統 (Dual-Role System)】}
+
+為了從根本上解決上述的矛盾，我們必須將新人引導的兩個衝突角色，進行制度性的拆分。
+
+一位主管（如鈴鈺），既要考核績效（嚴厲的），又要提供安全感（溫暖的），這會導致角色衝突。因此，我們將其拆分為：
+
+\subsection*{角色一：【直屬主管 (Supervisor)】（例如：鈴鈺）}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{定位：} 績效管理者 (Performance Manager)。
+    \item \textbf{核心職責：} 專注於\textbf{「績效連結」}。負責傳達工作目標、教授專業SOP、考核工作產出、引導技能成長。
+\end{itemize}
+
+\subsection*{角色二：【新人夥伴 (Onboarding Buddy)】（例如：紫伶或其他資深同仁）}
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{定位：} 安全感提供者 (Safety Provider)。
+    \item \textbf{核心職責：} 專注於\textbf{「社交與文化連結」}。負責回答所有「我不好意思去問主管」的「笨問題」。
+\end{itemize}
+
+\section*{3.0 新人首日：主管的「SOP」與「行動腳本」}
+
+作為主管（鈴鈺），妳在新人首日的任務，不是「讓他開始包貨」，而是「為他建立安全感」。
+
+\subsection*{3.1 【硬體環境】的破冰（必須明確「賦予許可」）}
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{廁所：} 妳必須明確地說：「在杰特，你想上廁所，\textbf{隨時都可以去}。不需要憋著，也不需要為了趕進度而犧牲自己的生理需求。」
+
+    \item \textbf{冰箱/茶水間：} 妳必須明確地說：「冰箱是公用的，妳可以帶便當來冰。這一區的零食/飲料是公司提供的，歡迎取用。」
+
+    \item \textbf{《寶典》：} 妳必須明確地說：「這是我們的《寶典》連結，裡面有所有關於請假、薪資的規定。妳今天不用背下來，但妳必須知道\textbf{『去哪裡查』}。」
+\end{itemize}
+
+\subsection*{3.2 【軟體環境】的建立（主動降低提問門檻）}
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{核心問題：} 新人不敢離開「安全區」（他的工位）主動去問妳（主管）。
+    \item \textbf{妳的行動：} 妳必須\textbf{主動地、有規律地「去到他身邊」}。
+\end{itemize}
+
+\begin{tcolorbox}[colback=green!5!white, colframe=successgreen, title={\bfseries 關鍵腳本（必須在第一小時內傳達）}]
+「[新人名字]，我需要妳非常清楚一件事：妳今天最重要的工作，不是產出，而是\textbf{『問問題』}。」
+
+「我\textbf{允許}妳，甚至\textbf{期待}妳，可以一直問、重複問，問到妳懂為止。沒有人第一天就會。妳的提問，是在幫助我們發現流程裡不清楚的地方。」
+\end{tcolorbox}
+
+\subsection*{3.3 【夥伴制度】的啟動}
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{妳的行動：} 正式介紹「新人夥伴」。
+\end{itemize}
+
+\begin{tcolorbox}[colback=blue!5!white, colframe=infoblue, title={\bfseries 關鍵腳本}]
+「這位是[夥伴名字，例如紫伶]，她是妳的『新人夥伴』。在工作上，妳主要找我；但在所有『人、環境、文化』相關的問題上，例如『中午去哪吃』、『公司網路怎麼連』、『這個笨問題我該問誰』，妳都去找她。她的任務，就是確保妳在這裡一切都順利。」
+\end{tcolorbox}
+
+\subsection*{3.4 【錯誤學習】的SOP（主管的核心技能）}
+
+\begin{itemize}[leftmargin=2em]
+    \item \textbf{情境：} 當新人犯了第一個（非毀滅性的）錯誤時。
+    \item \textbf{妳的行動：} 妳的職責，不是「糾正」，而是「引導」。
+\end{itemize}
+
+\begin{tcolorbox}[colback=blue!5!white, colframe=infoblue, title={\bfseries 關鍵腳本}]
+\begin{enumerate}
+    \item \textbf{（停止責備）：}「好的，我看到這個問題了。沒關係，這很正常，我們來一起看看。」
+
+    \item \textbf{（分析原因）：}「妳覺得，是什麼原因導致我們犯了這個錯？是SOP寫不清楚？還是標示有問題？」
+
+    \item \textbf{（賦予任務）：}「非常好，我們發現是SOP的圖片有歧義。我現在交給妳一個很重要的任務：\textbf{請妳，作為這個錯誤的發現者，去幫我把這份SOP修改得更清晰}，確保下一個人不會再犯同樣的錯。完成後，交給泓霖審核歸檔。」
+\end{enumerate}
+\end{tcolorbox}
+
+\vspace{0.3cm}
+
+\noindent\textbf{文化意義：} 我們在用這個行動，向新人證明：\textbf{在杰特，犯錯是安全的，並且，犯錯是妳對組織做出貢獻的最佳途徑。}
+
+\section*{4.0 成功的衡量：從「感覺」到「數據」}
+
+我們如何判斷一次Onboarding是否成功？
+
+\subsection*{最終指標（我們的哲學）}
+當新人下班時，他內心篤定地相信：「當我明天遇到問題時，我\textbf{知道}該找誰，而且我\textbf{敢}去找他。」
+
+\subsection*{量化指標（我們的工程）}
+我們將在新人到職的\textbf{第3天、第1週、第30天}，由主管（或HR）進行15分鐘的Check-in，並記錄以下關鍵指標：
+
+\begin{enumerate}[leftmargin=2em]
+    \item \textbf{「從1到10分，你感覺『安全地』向主管提問（關於工作）的程度有多高？」}
+    \item \textbf{「從1到10分，你感覺『安全地』向夥伴提問（關於文化）的程度有多高？」}
+    \item \textbf{「在過去一週，你是否曾經有過『想問問題，但最終沒敢問出口』的時刻？（是/否）」}
+\end{enumerate}
+
+\vspace{0.5cm}
+
+\begin{center}
+\rule{0.8\textwidth}{0.4pt}
+\end{center}
+
+\vspace{0.3cm}
+
+\section*{本章總結}
+
+\begin{tcolorbox}[colback=yellow!10!white, colframe=black, boxrule=0.5pt]
+主管的職責，是成為\textbf{「環境的搭建者」}與\textbf{「安全的賦予者」}。
+
+新人引導的成功，不在於新人第一天學會了多少，而在於我們第一天，為他注入了多少「心理安全感」。
+\end{tcolorbox}
+
+\vspace{1cm}
+
+\begin{flushright}
+    \Large\kaishu 讓每一位新人，都能感受到杰特的溫暖。
+\end{flushright}
+
+\end{document}

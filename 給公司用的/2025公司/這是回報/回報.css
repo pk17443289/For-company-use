@@ -1,0 +1,49 @@
+/* styles.css (修復完成/未完成按鈕) */
+body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f6f8; color: #333; }
+.container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); }
+h1 { color: #1a73e8; text-align: center; font-size: 1.8em; margin-bottom: 30px; }
+.form-group { margin-bottom: 20px; padding: 15px; border-radius: 8px; background-color: #ffffff; border: 1px solid #e0e0e0; }
+label { display: block; font-weight: 600; margin-bottom: 8px; color: #424242; font-size: 1.1em; }
+input[type="number"], select { width: 100%; padding: 12px; border: 2px solid #ccc; border-radius: 6px; font-size: 1.2em; box-sizing: border-box; transition: border-color 0.3s; }
+input[type="number"]:focus, select:focus { border-color: #1a73e8; outline: none; }
+.feedback { margin-top: 20px; padding: 15px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 1.1em; }
+.feedback.success { background-color: #e6ffed; color: #1a5e20; }
+.feedback.error { background-color: #fce8e6; color: #b31412; }
+button { width: 100%; padding: 15px; background-color: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 1.3em; cursor: pointer; transition: background-color 0.3s; margin-top: 20px; }
+button:hover { background-color: #155bb5; }
+button:disabled { background-color: #9e9e9e; cursor: not-allowed; }
+
+/* === KPI 數量/時間 分組樣式 === */
+.kpi-input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    gap: 10px;
+    margin-top: 5px;
+}
+.kpi-input-row input {
+    width: 100%;
+    padding: 10px;
+    font-size: 1.1em;
+}
+.kpi-input-row input:first-child { border-color: #bdbdbd; }
+.kpi-input-row input:last-child { border-color: #FF9800; }
+
+/* === 環境整理按鈕 優化區域 (修正 click 邏輯) === */
+.radio-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.radio-group input[type="radio"] { position: absolute; opacity: 0; }
+.radio-group .radio-label {
+    position: relative;
+    display: block; padding: 15px; background-color: #f0f0f0; color: #444;
+    border: 2px solid #ccc; border-radius: 8px; text-align: center; font-weight: 600;
+    cursor: pointer; transition: all 0.2s ease; font-size: 1.1em;
+}
+/* 確保點擊區域是整個 Label */
+.radio-group input[type="radio"]:checked + .radio-label {
+    background-color: #d4edda; color: #155724; border-color: #155724;
+    box-shadow: 0 0 8px rgba(21, 87, 32, 0.3);
+}
+.radio-group .radio-label:hover { 
+    background-color: #e9e9e9; border-color: #999; 
+}
+/* 其他輔助樣式 */
+.section-header { background-color: #f0f4ff; padding: 10px; border-radius: 6px; margin-top: 20px; color: #1a73e8; font-size: 1.2em; font-weight: 700;}

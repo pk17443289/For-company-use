@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工作追蹤儀錶板 - 賽博左右分區進化版</title>
+    <link rel="stylesheet" href="我的日常工作.css">
+</head>
+<body>
+    <div class="main-container">
+        <h1>⚡ 工作追蹤儀錶板</h1> 
+
+        <div class="dashboard">
+            <div class="panel left-panel">
+                <button id="reset-button" onclick="resetDailyTasks()">重新開始本日追蹤 (每日任務)</button>
+                <h2>☀️ 未完成任務</h2>
+                <div id="daily-task-sections"></div>
+                <h2>📅 每月任務</h2>
+                <ul class="task-list" id="monthly-tasks"></ul>
+            </div>
+
+            <div class="panel right-panel">
+                <h2>✅ 已完成任務</h2>
+                <ul class="task-list" id="done-tasks"></ul>
+            </div>
+        </div>
+    </div>
+
+<script src="我的日常工作.js"></script>
+</body>
+</html>
