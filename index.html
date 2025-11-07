@@ -3,8 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>公司管理系統入口</title>
+    <title>倉庫管理系統</title>
     <style>
+        :root {
+            --cyber-yellow: #FFD700;
+            --cyber-red: #FF0000;
+            --cyber-orange: #FF6B00;
+            --neon-glow-yellow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 30px #FFD700;
+            --neon-glow-red: 0 0 10px #FF0000, 0 0 20px #FF0000, 0 0 30px #FF0000;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -12,162 +20,286 @@
         }
 
         body {
-            font-family: 'Microsoft JhengHei', 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Courier New', 'Microsoft JhengHei', monospace;
+            background: #0a0a0a;
+            color: var(--cyber-yellow);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 背景網格效果 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 215, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 標題區 */
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
         }
 
         h1 {
-            text-align: center;
-            color: white;
-            font-size: 3em;
+            font-size: 4em;
+            font-weight: bold;
+            color: var(--cyber-yellow);
+            text-shadow: var(--neon-glow-yellow);
             margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            letter-spacing: 5px;
+            animation: glitch 3s infinite;
+        }
+
+        @keyframes glitch {
+            0%, 90%, 100% {
+                transform: translate(0);
+            }
+            92% {
+                transform: translate(-2px, 2px);
+            }
+            94% {
+                transform: translate(2px, -2px);
+            }
+            96% {
+                transform: translate(-2px, -2px);
+            }
         }
 
         .subtitle {
-            text-align: center;
-            color: rgba(255,255,255,0.9);
             font-size: 1.2em;
-            margin-bottom: 50px;
+            color: var(--cyber-orange);
+            text-shadow: 0 0 10px var(--cyber-orange);
+            letter-spacing: 3px;
         }
 
-        .systems-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin-bottom: 40px;
-        }
-
+        /* 系統卡片 */
         .system-card {
-            background: white;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 2px solid var(--cyber-red);
             border-radius: 15px;
-            padding: 40px 30px;
+            padding: 60px 40px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            cursor: pointer;
+            box-shadow:
+                0 0 20px rgba(255, 0, 0, 0.3),
+                inset 0 0 20px rgba(255, 215, 0, 0.05);
+            transition: all 0.3s ease;
             text-decoration: none;
-            color: inherit;
             display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .system-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 215, 0, 0.1),
+                transparent
+            );
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
         }
 
         .system-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            border-color: var(--cyber-yellow);
+            box-shadow:
+                0 0 40px rgba(255, 215, 0, 0.5),
+                inset 0 0 30px rgba(255, 215, 0, 0.1);
+        }
+
+        .system-card:hover::before {
+            left: 100%;
         }
 
         .system-icon {
-            font-size: 4em;
-            margin-bottom: 20px;
+            font-size: 6em;
+            margin-bottom: 30px;
+            filter: drop-shadow(0 0 20px var(--cyber-yellow));
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 20px var(--cyber-yellow));
+            }
+            50% {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 30px var(--cyber-yellow));
+            }
         }
 
         .system-card h2 {
-            color: #667eea;
-            font-size: 1.8em;
-            margin-bottom: 15px;
+            color: var(--cyber-yellow);
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: var(--neon-glow-yellow);
+            letter-spacing: 3px;
         }
 
         .system-card p {
-            color: #666;
-            line-height: 1.6;
-            margin-bottom: 20px;
+            color: #ccc;
+            line-height: 1.8;
+            font-size: 1.1em;
+            margin-bottom: 30px;
         }
 
         .system-badge {
             display: inline-block;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: bold;
-        }
-
-        .github-link {
-            text-align: center;
-            margin-top: 40px;
-        }
-
-        .github-link a {
-            color: white;
-            text-decoration: none;
-            font-size: 1.1em;
-            padding: 15px 30px;
-            background: rgba(255,255,255,0.2);
+            background: linear-gradient(135deg, var(--cyber-red) 0%, var(--cyber-orange) 100%);
+            color: #fff;
+            padding: 10px 30px;
             border-radius: 25px;
-            display: inline-block;
-            transition: background 0.3s ease;
+            font-size: 1em;
+            font-weight: bold;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            box-shadow: 0 0 15px rgba(255, 107, 0, 0.5);
         }
 
-        .github-link a:hover {
-            background: rgba(255,255,255,0.3);
+        /* 掃描線效果 */
+        .scan-line {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                transparent,
+                var(--cyber-yellow),
+                transparent
+            );
+            animation: scan 4s linear infinite;
+            pointer-events: none;
+            z-index: 1000;
         }
 
+        @keyframes scan {
+            0% {
+                top: 0;
+            }
+            100% {
+                top: 100%;
+            }
+        }
+
+        /* 響應式設計 */
         @media (max-width: 768px) {
             h1 {
+                font-size: 2.5em;
+                letter-spacing: 2px;
+            }
+
+            .subtitle {
+                font-size: 1em;
+            }
+
+            .system-card {
+                padding: 40px 30px;
+            }
+
+            .system-icon {
+                font-size: 4em;
+            }
+
+            .system-card h2 {
                 font-size: 2em;
             }
 
-            .systems-grid {
-                grid-template-columns: 1fr;
+            .system-card p {
+                font-size: 1em;
             }
+        }
+
+        /* 邊角裝飾 */
+        .corner {
+            position: fixed;
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--cyber-red);
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .corner.top-left {
+            top: 20px;
+            left: 20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner.top-right {
+            top: 20px;
+            right: 20px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner.bottom-left {
+            bottom: 20px;
+            left: 20px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner.bottom-right {
+            bottom: 20px;
+            right: 20px;
+            border-left: none;
+            border-top: none;
         }
     </style>
 </head>
 <body>
+    <!-- 掃描線效果 -->
+    <div class="scan-line"></div>
+
+    <!-- 邊角裝飾 -->
+    <div class="corner top-left"></div>
+    <div class="corner top-right"></div>
+    <div class="corner bottom-left"></div>
+    <div class="corner bottom-right"></div>
+
     <div class="container">
-        <h1>🏢 公司管理系統</h1>
-        <p class="subtitle">選擇你要使用的系統</p>
-
-        <div class="systems-grid">
-            <!-- 工時回報系統 -->
-            <a href="company-tools/time-report/index.html" class="system-card">
-                <div class="system-icon">⏱️</div>
-                <h2>工時回報系統</h2>
-                <p>倉庫工作時間分配回報<br>Cyberpunk 2077 風格介面</p>
-                <span class="system-badge">v3.0</span>
-            </a>
-
-            <!-- 日常工作管理 -->
-            <a href="company-tools/company-2025/my-daily/我的日常工作.html" class="system-card">
-                <div class="system-icon">📋</div>
-                <h2>日常工作管理</h2>
-                <p>任務追蹤與進度管理<br>工作項目組織工具</p>
-                <span class="system-badge">v1.0</span>
-            </a>
-
-            <!-- 回報系統 -->
-            <a href="company-tools/company-2025/reports/回報.html" class="system-card">
-                <div class="system-icon">📊</div>
-                <h2>回報系統</h2>
-                <p>工作成果回報<br>數據統計與分析</p>
-                <span class="system-badge">v1.0</span>
-            </a>
-
-            <!-- 技能管理 -->
-            <a href="company-tools/company-2025/技能管理.html" class="system-card">
-                <div class="system-icon">🎯</div>
-                <h2>技能管理系統</h2>
-                <p>員工技能追蹤<br>能力發展規劃</p>
-                <span class="system-badge">v1.0</span>
-            </a>
+        <div class="header">
+            <h1>倉庫管理系統</h1>
+            <p class="subtitle">WAREHOUSE MANAGEMENT SYSTEM</p>
         </div>
 
-        <div class="github-link">
-            <a href="https://github.com/pk17443289/For-company-use" target="_blank">
-                📂 查看 GitHub 原始碼
-            </a>
-        </div>
+        <!-- 工時回報系統 -->
+        <a href="company-tools/time-report/index.html" class="system-card">
+            <div class="system-icon">⏱️</div>
+            <h2>工時回報系統</h2>
+            <p>倉庫工作時間分配回報<br>即時統計與資料同步</p>
+            <span class="system-badge">v3.0</span>
+        </a>
     </div>
 </body>
 </html>
