@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PT 打卡系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft JhengHei", sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .time-display {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .input-section {
+            text-align: center;
+        }
+
+        .input-section h2 {
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .input-section input {
+            width: 100%;
+            max-width: 400px;
+            padding: 20px;
+            border: 3px solid #667eea;
+            border-radius: 15px;
+            font-size: 1.3rem;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .input-section input:focus {
+            outline: none;
+            border-color: #5568d3;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn {
+            padding: 15px 40px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .employee-info {
+            background: #f0f9ff;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .employee-info h2 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .employee-info p {
+            font-size: 1.3rem;
+            color: #666;
+            margin: 10px 0;
+        }
+
+        .today-records {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+        }
+
+        .today-records h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .record-item {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .check-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 600px;
+            margin: 30px auto;
+        }
+
+        .check-buttons button {
+            padding: 40px 20px;
+            font-size: 1.5rem;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+
+        .result {
+            display: none;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 20px;
+            animation: slideIn 0.5s;
+        }
+
+        .result.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .result.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .result .title {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .result .info {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+
+        .back-link a:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .check-buttons {
+                grid-template-columns: 1fr;
+            }
+
+            .input-section input {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ PT 打卡系統</h1>
+            <p>請輸入員工編號進行打卡</p>
+        </div>
+
+        <div class="time-display" id="timeDisplay">載入中...</div>
+
+        <!-- 輸入區域 -->
+        <div class="card" id="inputSection">
+            <div class="input-section">
+                <h2>請輸入您的員工編號</h2>
+                <input type="text" id="empIdInput" placeholder="例如：E001" autofocus>
+                <br>
+                <button class="btn" onclick="confirmEmployee()">確認</button>
+            </div>
+        </div>
+
+        <!-- 員工資訊與打卡按鈕 -->
+        <div class="card" id="checkSection" style="display: none;">
+            <div class="employee-info">
+                <h2 id="empName"></h2>
+                <p><strong>員工編號：</strong><span id="empId"></span></p>
+
+                <div class="today-records" id="todayRecords"></div>
+            </div>
+
+            <div class="check-buttons">
+                <button class="btn btn-success" onclick="checkIn()">
+                    ✅ 上班打卡
+                </button>
+                <button class="btn btn-danger" onclick="checkOut()">
+                    👋 下班打卡
+                </button>
+            </div>
+
+            <div style="text-align: center;">
+                <button class="btn btn-secondary" onclick="resetPage()">
+                    🔄 重新輸入
+                </button>
+            </div>
+        </div>
+
+        <!-- 結果顯示 -->
+        <div class="card result" id="resultArea"></div>
+
+        <div class="back-link">
+            <a href="index.html">← 返回管理頁面</a>
+        </div>
+    </div>
+
+    <script>
+        // 載入資料
+        let employees = JSON.parse(localStorage.getItem('employees') || '[]');
+        let records = JSON.parse(localStorage.getItem('records') || '[]');
+        let currentEmployee = null;
+
+        // 更新時間顯示
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleString('zh-TW', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                weekday: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('timeDisplay').textContent = timeStr;
+        }
+
+        // 確認員工
+        function confirmEmployee() {
+            const empId = document.getElementById('empIdInput').value.trim();
+
+            if (!empId) {
+                alert('請輸入員工編號');
+                return;
+            }
+
+            const emp = employees.find(e => e.id === empId);
+
+            if (!emp) {
+                alert('找不到此員工\n請確認編號是否正確：' + empId);
+                return;
+            }
+
+            // 儲存當前員工
+            currentEmployee = emp;
+
+            // 顯示員工資訊
+            document.getElementById('empName').textContent = emp.name;
+            document.getElementById('empId').textContent = emp.id;
+
+            // 顯示今日打卡記錄
+            loadTodayRecords(emp.id);
+
+            // 切換顯示
+            document.getElementById('inputSection').style.display = 'none';
+            document.getElementById('checkSection').style.display = 'block';
+        }
+
+        // 載入今日打卡記錄
+        function loadTodayRecords(empId) {
+            const today = new Date().toLocaleDateString('zh-TW');
+            const todayRecords = records.filter(r => r.empId === empId && r.date === today);
+
+            const container = document.getElementById('todayRecords');
+
+            if (todayRecords.length === 0) {
+                container.innerHTML = '<p style="color: #999;">今日尚未打卡</p>';
+            } else {
+                container.innerHTML = '<h3>今日打卡記錄</h3>';
+                todayRecords.forEach(record => {
+                    const type = record.type === 'in' ? '上班' : '下班';
+                    const icon = record.type === 'in' ? '✅' : '👋';
+                    container.innerHTML += `
+                        <div class="record-item">
+                            ${icon} ${type}打卡：${record.time}
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        // 上班打卡
+        function checkIn() {
+            recordAttendance('in', '上班');
+        }
+
+        // 下班打卡
+        function checkOut() {
+            recordAttendance('out', '下班');
+        }
+
+        // 記錄打卡
+        function recordAttendance(type, typeName) {
+            if (!currentEmployee) return;
+
+            const now = new Date();
+            const record = {
+                empName: currentEmployee.name,
+                empId: currentEmployee.id,
+                type: type,
+                date: now.toLocaleDateString('zh-TW'),
+                time: now.toLocaleTimeString('zh-TW', { hour12: false }),
+                timestamp: now.getTime()
+            };
+
+            records.push(record);
+            localStorage.setItem('records', JSON.stringify(records));
+
+            // 顯示結果
+            showResult(
+                `${type === 'in' ? '✅' : '👋'} ${typeName}打卡成功！`,
+                `${currentEmployee.name}<br>${record.date} ${record.time}`,
+                'success'
+            );
+        }
+
+        // 顯示結果
+        function showResult(title, message, resultType) {
+            const resultArea = document.getElementById('resultArea');
+            const checkSection = document.getElementById('checkSection');
+
+            resultArea.className = `card result ${resultType}`;
+            resultArea.innerHTML = `
+                <div class="title">${title}</div>
+                <div class="info">${message}</div>
+                <button class="btn btn-secondary" onclick="resetPage()">🔄 繼續打卡</button>
+            `;
+
+            checkSection.style.display = 'none';
+            resultArea.style.display = 'block';
+
+            // 3秒後自動重置
+            setTimeout(resetPage, 3000);
+        }
+
+        // 重置頁面
+        function resetPage() {
+            currentEmployee = null;
+            document.getElementById('empIdInput').value = '';
+            document.getElementById('inputSection').style.display = 'block';
+            document.getElementById('checkSection').style.display = 'none';
+            document.getElementById('resultArea').style.display = 'none';
+            document.getElementById('empIdInput').focus();
+        }
+
+        // 初始化
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Enter 鍵支援
+        document.getElementById('empIdInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                confirmEmployee();
+            }
+        });
+
+        // 檢查是否有員工資料
+        if (employees.length === 0) {
+            alert('尚未新增任何員工\n請先到管理頁面新增員工');
+        }
+
+        // 檢查網址參數（QR Code 掃描）
+        const urlParams = new URLSearchParams(window.location.search);
+        const empIdFromUrl = urlParams.get('id');
+        if (empIdFromUrl) {
+            // 自動填入員工編號並確認
+            document.getElementById('empIdInput').value = empIdFromUrl;
+            confirmEmployee();
+        }
+    </script>
+</body>
+</html>

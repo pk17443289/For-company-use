@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【列印優化版】倉儲工作回報 SOP</title>
+    <style>
+        /* 螢幕顯示樣式 (Screen Styles) - 保持美觀 */
+        body {
+            font-family: '微軟正黑體', 'Microsoft JhengHei', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 30px;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #1a5276;
+            border-bottom: 4px solid #5dade2;
+            padding-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+        h2 {
+            color: #1a5276;
+            background-color: #eaf2f8;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 35px;
+            font-size: 22px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #e0e0e0;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #e74c3c;
+            background-color: #fde8e5;
+            padding: 2px 4px; /* 縮小螢幕顯示的內邊距 */
+            border-radius: 4px;
+            white-space: nowrap; /* 防止關鍵字換行 */
+        }
+        .section-box {
+            border: 1px solid #dcdcdc;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            background-color: #fefefe;
+        }
+
+        /* ********************************************************* */
+        /* 列印版本專屬樣式 (Print Styles - @media print) */
+        /* ********************************************************* */
+        @media print {
+            /* 強制設定全頁無邊距和背景 */
+            @page {
+                margin: 15mm; /* 設定合理的列印邊界 */
+            }
+            body {
+                background-color: white !important;
+                padding: 0;
+                margin: 0;
+                color: black;
+                font-size: 10.5pt; /* 適合 A4 的標準字體 */
+            }
+            .container {
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 0;
+                box-shadow: none;
+                border-radius: 0;
+                margin: 0;
+            }
+            
+            /* 標題與區塊優化 */
+            h1 {
+                color: black !important;
+                border-bottom: 2px solid black;
+                font-size: 18pt;
+                padding-bottom: 5px;
+            }
+            h2 {
+                color: black !important;
+                background-color: transparent !important;
+                border-left: 4px solid black;
+                padding: 5px 10px;
+                margin-top: 15px;
+                font-size: 12pt;
+            }
+            .section-box {
+                border: none;
+                padding: 5px 0;
+                margin-bottom: 10px;
+            }
+
+            /* 表格強制排版 */
+            table {
+                width: 100%;
+                table-layout: fixed; /* 強制表格固定寬度 */
+                border-collapse: collapse;
+            }
+            th, td {
+                border: 1px solid black;
+                padding: 8px 5px; /* 縮小表格內邊距 */
+                vertical-align: top;
+                word-wrap: break-word; /* 允許長單字換行 */
+            }
+            th {
+                background-color: #eee !important;
+                color: black !important;
+                -webkit-print-color-adjust: exact;
+                font-weight: bold;
+            }
+            tr:nth-child(even) {
+                background-color: white !important;
+            }
+            .highlight {
+                color: black !important;
+                background-color: #fff8e8 !important;
+                border: 1px dashed #999;
+                -webkit-print-color-adjust: exact;
+                white-space: normal; /* 讓高亮區塊可以換行 */
+            }
+
+            /* 確保表格內的寬度分配 */
+            #table-ongoing th:nth-child(1) { width: 30%; }
+            #table-final th:nth-child(1) { width: 25%; } /* 職責人員 */
+            #table-final th:nth-child(2) { width: 30%; } /* 確認項目 */
+            #table-final th:nth-child(3) { width: 45%; } /* 回報內容 */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>倉儲工作回報 SOP (標準作業流程)</h1>
+
+    <p style="text-align: center; color: #666;">
+        本文件旨在確保所有倉儲作業人員的工作進度透明化，並在交接或下班前完成關鍵數據的檢查與記錄。
+    </p>
+
+    <h2>I. 工作進行中回報 (自主回報 - 即時性)</h2>
+    <div class="section-box">
+        <p><strong>原則：</strong> 簡潔、即時，在開始新任務或完成重要階段時，必須在指定群組或系統回報。</p>
+
+        <table id="table-ongoing">
+            <thead>
+                <tr>
+                    <th>動作階段</th>
+                    <th>回報內容 (使用格式)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>開始任務</td>
+                    <td>請自主回報正在 <span class="highlight">\[進行]</span> 什麼工作。（例：<span class="highlight">\[進行]</span> 5 號貨架盤點）</td>
+                </tr>
+                <tr>
+                    <td>完成任務</td>
+                    <td>回報已經 <span class="highlight">\[完成]</span> 的工作。（例：<span class="highlight">\[完成]</span> 5 號貨架盤點，數量已覆核）</td>
+                </tr>
+                <tr>
+                    <td>下一步</td>
+                    <td>說明下一件事情是什麼。（例：下一步將開始處理酷澎訂單）</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2>II. 下班前工作確認清單 (依職責回報 - 結算性)</h2>
+    <div class="section-box">
+        <p><strong>原則：</strong> 在下班前，各職責人員必須對應負責項目，完成確認後在指定時間統一回報。</p>
+
+        <table id="table-final">
+            <thead>
+                <tr>
+                    <th>職責人員</th>
+                    <th>確認項目</th>
+                    <th>需回報的內容及狀態</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>出貨人員</td>
+                    <td>1.0 / 2.0 / 酷澎出貨單據</td>
+                    <td><span class="highlight">\[確認]</span> 出貨日期和箱數。</td>
+                </tr>
+                <tr>
+                    <td>看樣人員</td>
+                    <td>待看樣數量</td>
+                    <td><span class="highlight">\[確認]</span> 看樣數量剩餘多少。</td>
+                </tr>
+                <tr>
+                    <td>簽收人員</td>
+                    <td>進貨異常項目</td>
+                    <td><span class="highlight">\[確認]</span> 進貨異常剩餘多少筆/件。</td>
+                </tr>
+                <tr>
+                    <td>包貨人員 (酷澎/MO+店)</td>
+                    <td>酷澎與 MO+店 訂單包裝進度</td>
+                    <td><span class="highlight">\[確認]</span> 酷澎 / MO+店 是否包貨完成，並確認<span class="highlight">總共包了多少箱</span>。</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</body>
+</html>

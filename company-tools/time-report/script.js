@@ -6,8 +6,79 @@ const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycby0Eesy88gEDVOuBDw1
 // 自訂項目計數器
 let customItemCounter = 0;
 
+// ===== 標準時間設定 (分鐘/個) =====
+// 請根據實際作業情況調整這些數值
+const STANDARD_TIME = {
+    // 簡單區域
+    morning: { quantity: 1, time: 15 },  // 晨會:每次15分鐘
+    packaging_machine: { quantity: 1, time: 2 },  // 進包裝機:每個2分鐘
+    cleaning: { quantity: 1, time: 30 },  // 整理環境區:每個30分鐘
+
+    // 進貨區
+    receiving: {
+        snake: 5,      // 拆蛇皮:5分鐘/個
+        count: 3,      // 數數:3分鐘/個
+        sign: 2,       // 簽收:2分鐘/個
+        classify: 4,   // 分類樣品與大貨:4分鐘/個
+        abnormal: 10,  // 異常:10分鐘/個
+        shelve: 3,     // 大貨上架:3分鐘/個
+        organize: 15,  // 整理環境:15分鐘/個
+        clean: 20      // 打掃進貨區環境:20分鐘/個
+    },
+
+    // 檢貨區
+    picking: {
+        fetch: 5,           // 去各個地方取貨:5分鐘/個
+        unbox_damaged: 3,   // 拆破損箱子:3分鐘/個
+        stick_c: 2,         // 把C料號黏在一起:2分鐘/個
+        separate: 4,        // 分手包與包裝機包:4分鐘/個
+        machine: 1          // 過包裝機:1分鐘/個
+    },
+
+    // 包貨區
+    packing: {
+        hand_pack: 3,        // 手包(包+貼):3分鐘/個
+        machine_sticker: 1,  // 包裝機(貼貼紙):1分鐘/個
+        box: 5,              // 拿箱子裝貨:5分鐘/個
+        clean_area: 20       // 整理環境:20分鐘/個
+    },
+
+    // 退貨區
+    returns: {
+        return_3day: 3,   // 退貨(3天內):3分鐘/個
+        return_clear: 5,  // 退清:5分鐘/個
+        inspect: 4,       // 檢測:4分鐘/個
+        sign: 2,          // 簽收:2分鐘/個
+        shelve: 3,        // 上架:3分鐘/個
+        abnormal: 10      // 異常退貨/非公司商品:10分鐘/個
+    },
+
+    // MO+店區
+    mo_shop: {
+        print: 2,    // 印單:2分鐘/個
+        fetch_b: 5,  // 去B棟拿商品:5分鐘/個
+        pick: 3,     // 撿貨:3分鐘/個
+        ship: 4      // 出貨:4分鐘/個
+    },
+
+    // 酷澎區
+    kupon: {
+        check: 3,      // 檢貨:3分鐘/個
+        unbox: 2,      // 拆盒:2分鐘/個
+        pack: 4,       // 包貨:4分鐘/個
+        arrange: 3,    // 擺貨:3分鐘/個
+        inventory: 10  // 盤點酷澎反殺商品:10分鐘/個
+    },
+
+    // 盤點區
+    inventory: {
+        duty: 30,         // 值日生:30分鐘/個
+        count_goods: 5    // 盤點商品:5分鐘/個
+    }
+};
+
 // DOM 元素
-let form, totalTimeEl, remainingTimeEl, averageTimeEl, statusMessageEl, submitBtn;
+let form, totalTimeEl, remainingTimeEl, averageTimeEl, abnormalCountEl, statusMessageEl, submitBtn;
 
 // 備份版本號（修改資料結構時需要更新這個版本號）
 const BACKUP_VERSION = '2.5';
@@ -19,6 +90,7 @@ document.addEventListener('DOMContentLoaded', function() {
     totalTimeEl = document.getElementById('totalTime');
     remainingTimeEl = document.getElementById('remainingTime');
     averageTimeEl = document.getElementById('averageTime');
+    abnormalCountEl = document.getElementById('abnormalCount');
     statusMessageEl = document.getElementById('statusMessage');
     submitBtn = document.getElementById('submitBtn');
 
@@ -118,9 +190,15 @@ function setupInputListeners() {
     const allDetailInputs = document.querySelectorAll('[data-area][data-subitem]');
     allDetailInputs.forEach(input => {
         input.addEventListener('input', function() {
+            const area = this.dataset.area;
+            const subitem = this.dataset.subitem;
+
+            // 更新該細項的平均時間
+            updateItemAverage(area, subitem);
+
             // 只有時間欄位才需要更新統計
             if (this.dataset.field === 'time') {
-                updateSubtotal(this.dataset.area);
+                updateSubtotal(area);
                 calculateAllStats();
             }
         });
@@ -135,6 +213,85 @@ function setupInputListeners() {
 
     // 自動備份（每1秒）
     setInterval(autoSave, 1000);
+}
+
+// ===== 更新單個細項的平均時間 =====
+function updateItemAverage(area, subitem) {
+    // 取得該細項的數量和時間輸入框
+    const quantityInput = document.querySelector(`[data-area="${area}"][data-subitem="${subitem}"][data-field="quantity"]`);
+    const timeInput = document.querySelector(`[data-area="${area}"][data-subitem="${subitem}"][data-field="time"]`);
+    const avgElement = document.querySelector(`[data-avg-area="${area}"][data-avg-subitem="${subitem}"]`);
+
+    if (!quantityInput || !timeInput || !avgElement) return;
+
+    const quantity = parseInt(quantityInput.value) || 0;
+    const time = parseInt(timeInput.value) || 0;
+
+    // 計算平均時間
+    if (quantity > 0 && time > 0) {
+        const average = Math.round((time / quantity) * 10) / 10; // 保留一位小數
+
+        // 取得標準時間
+        const detailItem = avgElement.closest('.detail-item');
+        const standardTime = detailItem ? parseInt(detailItem.dataset.standard) : null;
+
+        // 更新顯示
+        avgElement.textContent = average.toFixed(1) + '分/個';
+
+        // 比對標準時間,決定顏色
+        if (standardTime !== null) {
+            if (average > standardTime) {
+                // 超過標準:紅色警告
+                avgElement.classList.add('over-standard');
+                avgElement.classList.remove('normal-standard');
+                detailItem.classList.add('warning-row');
+            } else {
+                // 符合標準:正常顯示
+                avgElement.classList.remove('over-standard');
+                avgElement.classList.add('normal-standard');
+                detailItem.classList.remove('warning-row');
+            }
+        }
+    } else {
+        // 沒有數據時顯示 -
+        avgElement.textContent = '-';
+        avgElement.classList.remove('over-standard', 'normal-standard');
+        const detailItem = avgElement.closest('.detail-item');
+        if (detailItem) {
+            detailItem.classList.remove('warning-row');
+        }
+    }
+
+    // 更新異常數量統計
+    updateAbnormalCount();
+}
+
+// ===== 計算異常數量 =====
+function updateAbnormalCount() {
+    // 統計所有超標的細項(有 over-standard class 的項目)
+    const overStandardItems = document.querySelectorAll('.item-average.over-standard');
+    const count = overStandardItems.length;
+
+    // 更新顯示
+    if (abnormalCountEl) {
+        abnormalCountEl.textContent = count;
+
+        // 視覺效果
+        const statWarning = abnormalCountEl.closest('.stat-warning');
+        if (statWarning) {
+            if (count > 0) {
+                // 有異常時:紅色閃爍
+                statWarning.classList.add('has-warning');
+                abnormalCountEl.style.color = '#FF0000';
+                abnormalCountEl.style.textShadow = '0 0 20px #FF0000, 0 0 40px #FF0000';
+            } else {
+                // 無異常時:正常黃色
+                statWarning.classList.remove('has-warning');
+                abnormalCountEl.style.color = 'var(--gaming-yellow)';
+                abnormalCountEl.style.textShadow = '0 0 20px var(--gaming-yellow)';
+            }
+        }
+    }
 }
 
 // ===== 更新區域小計和平均值 =====
@@ -225,8 +382,8 @@ function calculateAllStats() {
         updateSubtotal(area);
     });
 
-    // 3. 其他區域（自訂項目）
-    const othersInputs = document.querySelectorAll('#othersCustomItems input[type="number"]');
+    // 3. 其他區域（自訂項目）- 只計算時間欄位
+    const othersInputs = document.querySelectorAll('#othersCustomItems input[data-field="time"]');
     let othersTotal = 0;
     let othersHasValue = false;
 
@@ -299,22 +456,33 @@ function addCustomItem() {
 
     customItem.innerHTML = `
         <input type="text" placeholder="項目名稱" class="cyber-input" data-custom-name="${customItemCounter}">
+        <input type="number" min="0" placeholder="0" class="cyber-input quantity-input-small"
+               data-area="others" data-custom="${customItemCounter}" data-field="quantity">
+        <span class="unit">個</span>
         <input type="number" min="0" placeholder="0" class="cyber-input time-input-small"
-               data-area="others" data-custom="${customItemCounter}">
+               data-area="others" data-custom="${customItemCounter}" data-field="time">
         <span class="unit">分</span>
         <button type="button" class="remove-custom-item-btn" onclick="removeCustomItem(${customItemCounter})">✕</button>
     `;
 
     container.appendChild(customItem);
 
-    // 監聽新增的輸入框
-    const numberInput = customItem.querySelector('input[type="number"]');
-    numberInput.addEventListener('input', function() {
+    // 監聽新增的輸入框（時間欄位）
+    const timeInput = customItem.querySelector('input[data-field="time"]');
+    timeInput.addEventListener('input', function() {
         updateSubtotal('others');
         calculateAllStats();
     });
 
-    numberInput.addEventListener('change', function() {
+    timeInput.addEventListener('change', function() {
+        if (this.value < 0) {
+            this.value = 0;
+        }
+    });
+
+    // 監聽數量輸入框
+    const quantityInput = customItem.querySelector('input[data-field="quantity"]');
+    quantityInput.addEventListener('change', function() {
         if (this.value < 0) {
             this.value = 0;
         }
@@ -343,6 +511,26 @@ function collectFormData() {
         timestamp: new Date().toLocaleString('zh-TW'),
         employeeName: employeeName,
         reportDate: reportDate,
+
+        // 每日確認事項
+        dailyChecklist: {
+            shipping: {
+                checked: document.getElementById('check_shipping_date').checked,
+                note: document.getElementById('shipping_note').value.trim()
+            },
+            sample: {
+                checked: document.getElementById('check_sample_qty').checked,
+                note: document.getElementById('sample_qty_note').value.trim()
+            },
+            abnormal: {
+                checked: document.getElementById('check_abnormal_qty').checked,
+                note: document.getElementById('abnormal_qty_note').value.trim()
+            },
+            kuponMo: {
+                checked: document.getElementById('check_kupon_mo').checked,
+                note: document.getElementById('kupon_mo_note').value.trim()
+            }
+        },
 
         // 簡單區域 - 收集數量和時間
         morning: {
@@ -416,12 +604,14 @@ function collectFormData() {
     const othersArray = [];
     customItems.forEach(item => {
         const nameInput = item.querySelector('input[type="text"]');
-        const valueInput = item.querySelector('input[type="number"]');
+        const quantityInput = item.querySelector('input[data-field="quantity"]');
+        const timeInput = item.querySelector('input[data-field="time"]');
         const name = nameInput.value.trim();
-        const value = parseInt(valueInput.value) || 0;
+        const quantity = parseInt(quantityInput.value) || 0;
+        const time = parseInt(timeInput.value) || 0;
 
-        if (name && value > 0) {
-            othersArray.push({ name, value });
+        if (name && time > 0) {
+            othersArray.push({ name, quantity, time });
         }
     });
 
@@ -566,6 +756,16 @@ function resetForm() {
     const today = new Date().toISOString().split('T')[0];
     dateInput.value = today;
 
+    // 清除每日確認事項
+    document.getElementById('check_shipping_date').checked = false;
+    document.getElementById('shipping_note').value = '';
+    document.getElementById('check_sample_qty').checked = false;
+    document.getElementById('sample_qty_note').value = '';
+    document.getElementById('check_abnormal_qty').checked = false;
+    document.getElementById('abnormal_qty_note').value = '';
+    document.getElementById('check_kupon_mo').checked = false;
+    document.getElementById('kupon_mo_note').value = '';
+
     // 清除所有展開狀態
     document.querySelectorAll('.expandable-card.expanded').forEach(card => {
         card.classList.remove('expanded');
@@ -575,8 +775,22 @@ function resetForm() {
     document.getElementById('othersCustomItems').innerHTML = '';
     customItemCounter = 0;
 
+    // 清除所有警告狀態
+    document.querySelectorAll('.warning-row').forEach(row => {
+        row.classList.remove('warning-row');
+    });
+
+    // 清除所有平均時間的狀態
+    document.querySelectorAll('.item-average').forEach(avg => {
+        avg.textContent = '-';
+        avg.classList.remove('over-standard', 'normal-standard');
+    });
+
     // 重新計算統計
     calculateAllStats();
+
+    // 重新計算異常數量（應該是 0）
+    updateAbnormalCount();
 
     // 清除訊息
     setTimeout(() => {
@@ -590,6 +804,25 @@ function autoSave() {
         version: BACKUP_VERSION,  // 備份版本號
         backupDate: new Date().toISOString().split('T')[0],  // 備份日期
         employeeName: document.getElementById('employeeName').value,
+        // 每日確認事項
+        dailyChecklist: {
+            shipping: {
+                checked: document.getElementById('check_shipping_date').checked,
+                note: document.getElementById('shipping_note').value
+            },
+            sample: {
+                checked: document.getElementById('check_sample_qty').checked,
+                note: document.getElementById('sample_qty_note').value
+            },
+            abnormal: {
+                checked: document.getElementById('check_abnormal_qty').checked,
+                note: document.getElementById('abnormal_qty_note').value
+            },
+            kuponMo: {
+                checked: document.getElementById('check_kupon_mo').checked,
+                note: document.getElementById('kupon_mo_note').value
+            }
+        },
         // 簡單區域 - 儲存數量和時間
         morning: {
             quantity: document.getElementById('morning_quantity').value,
@@ -634,10 +867,12 @@ function autoSave() {
     const customItems = document.querySelectorAll('#othersCustomItems .custom-item');
     customItems.forEach(item => {
         const nameInput = item.querySelector('input[type="text"]');
-        const valueInput = item.querySelector('input[type="number"]');
+        const quantityInput = item.querySelector('input[data-field="quantity"]');
+        const timeInput = item.querySelector('input[data-field="time"]');
         data.customItems.push({
             name: nameInput.value,
-            value: valueInput.value
+            quantity: quantityInput.value,
+            time: timeInput.value
         });
     });
 
@@ -692,7 +927,9 @@ function loadBackup() {
         // 檢查自訂項目
         if (!hasContent && data.customItems && data.customItems.length > 0) {
             for (const item of data.customItems) {
-                if (item.value && parseInt(item.value) > 0) {
+                // 支援新格式（time）和舊格式（value）
+                const timeValue = item.time !== undefined ? item.time : item.value;
+                if (timeValue && parseInt(timeValue) > 0) {
                     hasContent = true;
                     break;
                 }
@@ -714,6 +951,26 @@ function loadBackup() {
         // 載入基本資料
         if (data.employeeName) {
             document.getElementById('employeeName').value = data.employeeName;
+        }
+
+        // 載入每日確認事項
+        if (data.dailyChecklist) {
+            if (data.dailyChecklist.shipping) {
+                document.getElementById('check_shipping_date').checked = data.dailyChecklist.shipping.checked || false;
+                document.getElementById('shipping_note').value = data.dailyChecklist.shipping.note || '';
+            }
+            if (data.dailyChecklist.sample) {
+                document.getElementById('check_sample_qty').checked = data.dailyChecklist.sample.checked || false;
+                document.getElementById('sample_qty_note').value = data.dailyChecklist.sample.note || '';
+            }
+            if (data.dailyChecklist.abnormal) {
+                document.getElementById('check_abnormal_qty').checked = data.dailyChecklist.abnormal.checked || false;
+                document.getElementById('abnormal_qty_note').value = data.dailyChecklist.abnormal.note || '';
+            }
+            if (data.dailyChecklist.kuponMo) {
+                document.getElementById('check_kupon_mo').checked = data.dailyChecklist.kuponMo.checked || false;
+                document.getElementById('kupon_mo_note').value = data.dailyChecklist.kuponMo.note || '';
+            }
         }
 
         // 載入簡單區域 - 支援新舊格式
@@ -793,7 +1050,15 @@ function loadBackup() {
                 const lastItem = document.querySelector('#othersCustomItems .custom-item:last-child');
                 if (lastItem) {
                     lastItem.querySelector('input[type="text"]').value = item.name;
-                    lastItem.querySelector('input[type="number"]').value = item.value;
+                    // 支援舊格式（只有 value）和新格式（quantity + time）
+                    if (item.quantity !== undefined && item.time !== undefined) {
+                        // 新格式
+                        lastItem.querySelector('input[data-field="quantity"]').value = item.quantity;
+                        lastItem.querySelector('input[data-field="time"]').value = item.time;
+                    } else if (item.value !== undefined) {
+                        // 舊格式：假設 value 是時間
+                        lastItem.querySelector('input[data-field="time"]').value = item.value;
+                    }
                 }
             });
         }

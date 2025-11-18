@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人員排班系統 - 24小時管理</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 動態網格背景 -->
+    <div class="cyber-bg"></div>
+
+    <div class="container">
+        <!-- 標題區 -->
+        <header class="cyber-header">
+            <h1 class="glitch">人員排班系統</h1>
+            <div class="subtitle">24/7 PERSONNEL MANAGEMENT</div>
+        </header>
+
+        <!-- 主控制面板 -->
+        <div class="control-panel">
+            <!-- 日期選擇器 -->
+            <div class="date-selector-panel">
+                <div class="panel-title">
+                    <span class="bracket">[</span>
+                    日期選擇
+                    <span class="bracket">]</span>
+                </div>
+                <div class="date-quick-btns">
+                    <button class="date-btn active" data-offset="0">📅 今天</button>
+                    <button class="date-btn" data-offset="1">➡️ 明天</button>
+                    <button class="date-btn" data-mode="custom">🗓️ 選擇日期</button>
+                </div>
+                <!-- 隱藏的日期選擇器，用於觸發系統日曆 -->
+                <input type="date" id="customDate" class="cyber-date-input" style="position: absolute; opacity: 0; pointer-events: none;">
+                <div class="current-date-display">
+                    <span class="date-label">查詢日期：</span>
+                    <span id="currentDateDisplay" class="date-value">2025-01-18 (今天)</span>
+                </div>
+                <div class="schedule-overview">
+                    <div class="overview-title">📅 快速切換日期</div>
+                    <select id="scheduleOverview" class="schedule-select"></select>
+                </div>
+            </div>
+
+            <!-- 時段選擇器 -->
+            <div class="time-selector-panel">
+                <div class="panel-title">
+                    <span class="bracket">[</span>
+                    時段選擇
+                    <span class="bracket">]</span>
+                </div>
+                <div class="time-quick-btns">
+                    <button class="time-btn active" data-mode="now">🕐 現在</button>
+                    <button class="time-btn" data-mode="night">🌙 凌晨 00-06</button>
+                    <button class="time-btn" data-mode="morning">🌅 早上 06-12</button>
+                    <button class="time-btn" data-mode="afternoon">☀️ 下午 12-18</button>
+                    <button class="time-btn" data-mode="evening">🌆 晚上 18-00</button>
+                    <button class="time-btn" data-mode="custom">⚙️ 自訂</button>
+                </div>
+                <div class="time-custom-range hidden">
+                    <div class="range-inputs">
+                        <div class="range-group">
+                            <label>開始</label>
+                            <input type="number" id="startHour" min="0" max="23" value="8" class="cyber-input-small">
+                            <span class="unit">時</span>
+                        </div>
+                        <span class="separator">→</span>
+                        <div class="range-group">
+                            <label>結束</label>
+                            <input type="number" id="endHour" min="0" max="23" value="17" class="cyber-input-small">
+                            <span class="unit">時</span>
+                        </div>
+                        <button id="applyCustomTime" class="apply-btn">套用</button>
+                    </div>
+                </div>
+                <div class="current-time-display">
+                    <span class="time-label">查詢時段：</span>
+                    <span id="currentTimeDisplay" class="time-value">現在</span>
+                </div>
+            </div>
+
+            <!-- 快速篩選與搜尋 -->
+            <div class="filter-panel-simple">
+                <div class="filter-btns-simple">
+                    <button class="filter-btn active" data-filter="all">全部</button>
+                    <button class="filter-btn status-free" data-filter="free">空閒</button>
+                    <button class="filter-btn status-busy" data-filter="busy">忙碌</button>
+                </div>
+                <select id="rankFilter" class="rank-select-simple">
+                    <option value="all">所有階級</option>
+                    <option value="9-10">⭐⭐⭐ 高階 (9-10)</option>
+                    <option value="7-8">⭐⭐ 中高階 (7-8)</option>
+                    <option value="5-6">⭐ 中階 (5-6)</option>
+                    <option value="3-4">基層 (3-4)</option>
+                    <option value="1-2">新進 (1-2)</option>
+                    <option value="special">🔸 特殊人員</option>
+                </select>
+                <input type="text" id="searchInput" class="search-input-simple" placeholder="🔍 搜尋姓名...">
+            </div>
+
+            <!-- 快速操作按鈕 -->
+            <div class="action-panel">
+                <button id="addPersonBtn" class="action-btn">👤 新增人員</button>
+                <button id="importPersonListBtn" class="action-btn import-btn">📋 批量匯入人員</button>
+                <button id="addTaskBtn" class="action-btn">📋 新增任務</button>
+                <button id="exportDataBtn" class="action-btn export-btn">💾 匯出資料</button>
+                <button id="importDataBtn" class="action-btn import-btn">📥 匯入資料</button>
+                <button id="resetDataBtn" class="action-btn reset-btn">🔄 重置示範資料</button>
+            </div>
+            <input type="file" id="importFileInput" accept=".json" style="display: none;">
+        </div>
+
+        <!-- 主要工作區 -->
+        <div class="main-workspace">
+            <!-- 左側：任務池 -->
+            <aside class="task-pool">
+                <div class="pool-header">
+                    <span class="bracket">[</span>
+                    任務池
+                    <span class="bracket">]</span>
+                    <span class="task-count" id="taskCount">0</span>
+                </div>
+                <div class="task-tabs">
+                    <button class="task-tab active" data-type="all">全部</button>
+                    <button class="task-tab" data-type="daily">日常</button>
+                    <button class="task-tab" data-type="important">重要</button>
+                    <button class="task-tab" data-type="urgent">臨時</button>
+                    <button class="task-tab" data-type="understaffed">⚠️ 未達標</button>
+                </div>
+                <div id="taskList" class="task-list"></div>
+            </aside>
+
+            <!-- 中央：人員網格 -->
+            <main class="personnel-grid-area">
+                <div class="grid-header-simple">
+                    <span class="stat-simple">總計 <strong id="totalCount">0</strong> 人</span>
+                    <span class="stat-simple status-free">空閒 <strong id="freeCount">0</strong></span>
+                    <span class="stat-simple status-busy">忙碌 <strong id="busyCount">0</strong></span>
+                </div>
+                <div id="personnelGrid" class="personnel-grid"></div>
+            </main>
+
+            <!-- 右側：詳細資訊/統計 -->
+            <aside class="detail-panel hidden" id="detailPanel">
+                <div class="panel-header-right">
+                    <span class="panel-title-right">詳細資訊</span>
+                    <button class="close-panel-btn" onclick="closeDetailPanel()">✕</button>
+                </div>
+                <div id="detailContent" class="detail-content"></div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- 操作記錄與統計 Modal -->
+    <div id="statsModal" class="modal hidden">
+        <div class="modal-content-large">
+            <div class="modal-header-cyber">
+                <h2 class="modal-title-cyber">📜 操作記錄與統計</h2>
+                <button class="close-btn-cyber" onclick="closeModal('statsModal')">✕</button>
+            </div>
+            <div class="modal-body-stats">
+                <div class="history-section">
+                    <h3 class="section-title-small">📝 最近 20 筆操作記錄</h3>
+                    <div id="historyList" class="history-list-compact"></div>
+                </div>
+                <div class="stats-grid" id="statsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯人員 Modal -->
+    <div id="personModal" class="modal hidden">
+        <div class="modal-content-cyber">
+            <div class="modal-header-cyber">
+                <h2 id="personModalTitle" class="modal-title-cyber">新增人員</h2>
+                <button class="close-btn-cyber" onclick="closeModal('personModal')">✕</button>
+            </div>
+            <div class="modal-body-cyber">
+                <div class="form-group-cyber">
+                    <label>姓名</label>
+                    <input type="text" id="personName" class="cyber-input" placeholder="請輸入姓名">
+                </div>
+                <div class="form-group-cyber">
+                    <label>職位等級 (1-10)</label>
+                    <div class="rank-selector">
+                        <input type="range" id="personRank" min="1" max="10" value="3" class="rank-slider">
+                        <div class="rank-display">
+                            <span class="rank-number" id="rankNumber">3</span>
+                            <span class="rank-label" id="rankLabel">基層</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group-cyber">
+                    <label>聯絡方式</label>
+                    <input type="text" id="personContact" class="cyber-input" placeholder="分機或手機">
+                </div>
+                <div class="form-group-cyber">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="personIsSpecial" class="cyber-checkbox">
+                        <span>🔸 特殊人員（標記為特殊職務或技能人員）</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer-cyber">
+                <button class="btn-secondary-cyber" onclick="closeModal('personModal')">取消</button>
+                <button class="btn-primary-cyber" id="savePersonBtn">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯任務 Modal -->
+    <div id="taskModal" class="modal hidden">
+        <div class="modal-content-cyber">
+            <div class="modal-header-cyber">
+                <h2 id="taskModalTitle" class="modal-title-cyber">新增任務</h2>
+                <button class="close-btn-cyber" onclick="closeModal('taskModal')">✕</button>
+            </div>
+            <div class="modal-body-cyber">
+                <div class="form-group-cyber">
+                    <label>任務名稱</label>
+                    <input type="text" id="taskName" class="cyber-input" placeholder="請輸入任務名稱">
+                </div>
+                <div class="form-row-cyber">
+                    <div class="form-group-cyber">
+                        <label>任務日期</label>
+                        <input type="date" id="taskDate" class="cyber-input">
+                    </div>
+                    <div class="form-group-cyber">
+                        <label>任務類型</label>
+                        <select id="taskType" class="cyber-select">
+                            <option value="daily">日常任務</option>
+                            <option value="important">重要任務</option>
+                            <option value="urgent">臨時任務</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row-cyber">
+                    <div class="form-group-cyber">
+                        <label>開始時間</label>
+                        <input type="number" id="taskStartHour" min="0" max="23" class="cyber-input" placeholder="0-23">
+                    </div>
+                    <div class="form-group-cyber">
+                        <label>結束時間</label>
+                        <input type="number" id="taskEndHour" min="0" max="23" class="cyber-input" placeholder="0-23">
+                    </div>
+                </div>
+                <div class="form-group-cyber">
+                    <label>需求人數</label>
+                    <input type="number" id="taskRequiredPeople" min="1" max="99" class="cyber-input" placeholder="1-99" value="1">
+                    <div style="font-size: 0.85rem; color: var(--gaming-cyan); margin-top: 5px; opacity: 0.8;">
+                        💡 人員分配請使用拖拉方式：將任務卡片拖到人員卡片上
+                    </div>
+                </div>
+                <div class="form-group-cyber">
+                    <label>任務說明</label>
+                    <textarea id="taskDescription" rows="3" class="cyber-textarea" placeholder="選填"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer-cyber">
+                <button class="btn-secondary-cyber" onclick="closeModal('taskModal')">取消</button>
+                <button class="btn-primary-cyber" id="saveTaskBtn">儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量匯入人員 Modal -->
+    <div id="importPersonListModal" class="modal hidden">
+        <div class="modal-content-cyber modal-content-wide">
+            <div class="modal-header-cyber">
+                <h2 class="modal-title-cyber">批量匯入人員</h2>
+                <button class="close-btn-cyber" onclick="closeModal('importPersonListModal')">✕</button>
+            </div>
+            <div class="modal-body-cyber">
+                <div class="import-instructions">
+                    <p style="color: var(--gaming-cyan); margin-bottom: 10px;">
+                        💡 填寫人員資料後點擊「開始匯入」，可以一次新增多位人員
+                    </p>
+                </div>
+                <div class="import-table-container">
+                    <table class="import-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%;">姓名 *</th>
+                                <th style="width: 20%;">等級 *</th>
+                                <th style="width: 25%;">聯絡方式</th>
+                                <th style="width: 20%;">特殊人員</th>
+                                <th style="width: 10%;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="importTableBody">
+                            <!-- 動態生成的行會插入這裡 -->
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn-add-row" id="addPersonRowBtn">➕ 新增一行</button>
+                <div class="form-group-cyber" style="margin-top: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="clearExistingPersonnel" class="cyber-checkbox">
+                        <span>清除現有人員（勾選後會刪除所有現有人員，只保留匯入的）</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer-cyber">
+                <button class="btn-secondary-cyber" onclick="closeModal('importPersonListModal')">取消</button>
+                <button class="btn-primary-cyber" id="confirmImportPersonList">開始匯入</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>倉儲部門標準作業指南 - 晨會指導</title>
+    <style>
+        /* ----------------------- 螢幕顯示樣式 (SCREEN VIEW) ----------------------- */
+        body { background-color: #f4f7f6; margin: 0; padding: 0; }
+        .container {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px; /* 縮小容器寬度，更接近A4 */
+            margin: 30px auto;
+            padding: 25px; /* 略微縮小邊距 */
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            font-size: 0.95em; /* 略微縮小整體字體 */
+        }
+        .section-title {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db; /* 縮小邊框厚度 */
+            padding-bottom: 12px;
+            margin-bottom: 25px;
+            font-size: 1.8em; /* 縮小標題字體 */
+            font-weight: 600;
+            text-align: center;
+        }
+        .subsection-title {
+            color: #e67e22; 
+            margin-top: 25px; /* 縮小上邊距 */
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            font-weight: 500;
+        }
+        .check-table { width: 100%; border-collapse: separate; border-spacing: 0 5px; } /* 縮小表格間距 */
+        .check-table thead tr { background-color: #ecf0f1; color: #2c3e50; font-weight: 600; }
+        .check-table th { padding: 8px 10px; text-align: left; } /* 縮小表頭內距 */
+        .check-table tbody tr { background-color: #fcfcfc; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .check-table td { padding: 10px; vertical-align: middle; } /* 縮小表格內距 */
+        .check-table td:first-child { font-weight: bold; text-align: center; }
+        .check-table input[type="checkbox"] { transform: scale(1.1); cursor: pointer; } /* 縮小打勾框 */
+
+        /* 表格欄位寬度調整：讓檢查項目更寬 */
+        .check-table th:nth-child(1) { width: 5%; }
+        .check-table th:nth-child(2) { width: 65%; } /* 檢查項目佔更寬 */
+        .check-table th:nth-child(3) { width: 20%; }
+        .check-table th:nth-child(4) { width: 10%; }
+        
+        /* 側邊顏色條 - 確保正確應用到 TD */
+        .check-table td:nth-child(2) { border-left: 4px solid; padding-left: 15px; } 
+        .color-blue td:nth-child(2) { border-left-color: #3498db !important; }
+        .color-orange td:nth-child(2) { border-left-color: #e67e22 !important; }
+        .color-green td:nth-child(2) { border-left-color: #2ecc71 !important; }
+        .color-red td:nth-child(2) { border-left-color: #e74c3c !important; }
+        
+        .highlight-text { font-weight: bold; }
+        
+        .manager-check { background-color: #bdc3c7; color: #2c3e50; font-size: 0.9em; padding: 3px 6px; border-radius: 5px; display: inline-block; }
+        
+        /* 5S 折疊區塊樣式調整 */
+        .details-5s { background-color: #ecf0f1; border: 1px solid #c0c3c7; border-radius: 8px; padding: 5px 15px; margin-bottom: 20px; }
+        .details-5s summary { padding: 5px 0; font-size: 0.95em; }
+        .details-5s ul { padding-left: 10px; margin-top: 5px; }
+        .details-5s li { margin-bottom: 3px; font-size: 0.9em; }
+
+        hr { border: 0; border-top: 1px dashed #cccccc; margin: 30px 0; }
+        .nav-link { display: block; width: 200px; margin: 20px auto 10px; padding: 10px; text-align: center; background-color: #3498db; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .nav-link:hover { background-color: #2980b9; }
+
+        /* ----------------------- 列印樣式 (PRINT STYLES) ----------------------- */
+        @media print {
+            body { 
+                background-color: #ffffff; /* 列印時背景變白 */
+                margin: 0; /* 移除邊距 */
+            }
+            .container {
+                max-width: 100%;
+                box-shadow: none; /* 移除陰影 */
+                padding: 0; /* 移除 padding */
+                margin: 0;
+            }
+            .nav-link, hr {
+                display: none; /* 隱藏導航和分隔線 */
+            }
+            .section-title {
+                margin-top: 10px;
+                padding-bottom: 5px;
+                border-bottom: 2px solid #3498db;
+                font-size: 1.4em; /* 列印時標題更小 */
+            }
+            .subsection-title {
+                margin-top: 15px;
+                font-size: 1.1em;
+            }
+            .check-table td {
+                padding: 5px; /* 列印時表格內距更小 */
+                font-size: 0.85em; /* 列印時字體更小 */
+            }
+            .check-table th {
+                padding: 5px;
+                font-size: 0.9em;
+                background-color: #f0f0f0 !important; /* 確保表頭有灰色背景 */
+            }
+            .check-table td:first-child { width: 3%; }
+            .check-table input[type="checkbox"] { transform: scale(1.0); } /* 列印時不要太大 */
+
+            /* 確保 5S 區塊在列印時自動展開 */
+            .details-5s {
+                display: block !important;
+                border: 1px solid #ccc;
+                padding: 5px;
+                margin-bottom: 15px;
+            }
+            .details-5s summary {
+                display: none; /* 隱藏「點擊展開」的文字 */
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <h2 class="section-title">🗓️ 倉儲部門標準作業指南</h2>
+    <hr>
+
+    <h2 class="section-title" style="border-color: #f39c12;">一、 晨會指導 (8:30 AM)</h2>
+
+    <details class="details-5s">
+        <summary>
+            🧹 什麼是 5S？（點擊展開查看 5S 管理法的定義）
+        </summary>
+        <ul style="list-style-type: none; padding-left: 0;">
+            <li style="margin-bottom: 5px;"><span style="font-weight: bold; color: #e67e22;">1. 整理 (Seiri)</span>：清掉雜物</li>
+            <li style="margin-bottom: 5px;"><span style="font-weight: bold; color: #e67e22;">2. 整頓 (Seiton)</span>：物歸原位</li>
+            <li style="margin-bottom: 5px;"><span style="font-weight: bold; color: #e67e22;">3. 清掃 (Seiso)</span>：打掃與檢查</li>
+            <li style="margin-bottom: 5px;"><span style="font-weight: bold; color: #e67e22;">4. 清潔 (Seiketsu)</span>：維持標準</li>
+            <li style="margin-bottom: 0px;"><span style="font-weight: bold; color: #e67e22;">5. 素養 (Shitsuke)</span>：養成紀律</li>
+        </ul>
+    </details>
+    
+    <h3 class="subsection-title">🎯 晨會項目總覽</h3>
+    <table class="check-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 60%;">檢查項目與標準</th>
+                <th style="text-align: center; width: 25%;">項目分類</th>
+                <th style="text-align: center; width: 10%;">確認</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="color-blue">
+                <td>1.</td>
+                <td>人員到齊與簽到：確認所有應出席人員準時到達並完成簽到。</td>
+                <td style="text-align: center;">準時與出勤</td>
+                <td style="text-align: center;"><input type="checkbox" name="morning_check1"></td>
+            </tr>
+            <tr class="color-green">
+                <td>2.</td>
+                <td>儀容與服裝：確認所有人員服裝儀容整齊，穿戴工作服與識別證。</td>
+                <td style="text-align: center;">5S/安全</td>
+                <td style="text-align: center;"><input type="checkbox" name="morning_check2"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>3.</td>
+                <td><span class="highlight-text">工具裝備檢查</span>：PDA / 貼紙機 等個人工作設備必須<span class="highlight-text">帶在身上且滿電</span>。</td>
+                <td style="text-align: center;">裝備整備</td>
+                <td style="text-align: center;"><input type="checkbox" name="morning_check3"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>4.</td>
+                <td>裝備標示：確認所有裝備都有貼上自己的姓名貼。</td>
+                <td style="text-align: center;">5S 定位</td>
+                <td style="text-align: center;"><input type="checkbox" name="morning_check4"></td>
+            </tr>
+            
+            <tr class="color-orange">
+                <td>5.</td>
+                <td>昨日任務回顧：回顧昨日作業目標達成率及未完成事項。</td>
+                <td style="text-align: center;">績效檢討</td>
+                <td style="text-align: center;"><span class="manager-check">主管確認</span></td>
+            </tr>
+            <tr class="color-blue">
+                <td>6.</td>
+                <td>今日任務分配：明確分配今日進貨、上架、檢貨、包裝等各區工作目標。</td>
+                <td style="text-align: center;">任務規劃</td>
+                <td style="text-align: center;"><span class="manager-check">主管確認</span></td>
+            </tr>
+            <tr class="color-green">
+                <td>7.</td>
+                <td>5S 區域檢討：快速檢查各組負責區域的 5S 狀況，並指定改善事項。</td>
+                <td style="text-align: center;">環境管理</td>
+                <td style="text-align: center;"><span class="manager-check">主管確認</span></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <a href="index1.html" class="nav-link">前往下一區：作業區檢查 &raquo;</a> 
+
+</div>
+
+</body>
+</html>

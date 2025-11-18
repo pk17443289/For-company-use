@@ -61,6 +61,53 @@
                     <div class="stat-value" id="averageTime">0</div>
                     <div class="stat-unit">分鐘/區</div>
                 </div>
+
+                <div class="stat-item stat-warning">
+                    <div class="stat-label">異常數量</div>
+                    <div class="stat-value" id="abnormalCount">0</div>
+                    <div class="stat-unit">項</div>
+                </div>
+            </div>
+
+            <!-- 每日確認事項 -->
+            <div class="form-section">
+                <h2 class="section-title">
+                    <span class="bracket">[</span> 每日確認事項 <span class="bracket">]</span>
+                </h2>
+
+                <div class="daily-checklist">
+                    <div class="checklist-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="check_shipping_date" name="check_shipping_date">
+                            <span class="checkbox-text">確認 1.0 / 2.0 / 酷澎 出貨日期和箱數</span>
+                        </label>
+                        <input type="text" id="shipping_note" name="shipping_note" placeholder="備註：日期、箱數" class="cyber-input note-input">
+                    </div>
+
+                    <div class="checklist-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="check_sample_qty" name="check_sample_qty">
+                            <span class="checkbox-text">確認看樣數量剩餘多少</span>
+                        </label>
+                        <input type="text" id="sample_qty_note" name="sample_qty_note" placeholder="剩餘數量" class="cyber-input note-input">
+                    </div>
+
+                    <div class="checklist-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="check_abnormal_qty" name="check_abnormal_qty">
+                            <span class="checkbox-text">確認進貨異常剩餘多少</span>
+                        </label>
+                        <input type="text" id="abnormal_qty_note" name="abnormal_qty_note" placeholder="異常數量" class="cyber-input note-input">
+                    </div>
+
+                    <div class="checklist-item">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="check_kupon_mo" name="check_kupon_mo">
+                            <span class="checkbox-text">確認酷澎/MO+店是否包貨完成，並確認總共包了多少箱</span>
+                        </label>
+                        <input type="text" id="kupon_mo_note" name="kupon_mo_note" placeholder="完成狀態、箱數" class="cyber-input note-input">
+                    </div>
+                </div>
             </div>
 
             <!-- 工作區域卡片 -->
@@ -150,61 +197,69 @@
                                     </div>
                                 </div>
                                 <div class="card-details">
-                                    <div class="detail-item">
-                                        <label>拆蛇皮</label>
+                                    <div class="detail-item" data-standard="5">
+                                        <label>拆蛇皮 <span class="standard-badge">標準5分/個</span></label>
                                         <input type="number" data-area="receiving" data-subitem="snake" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                         <span class="unit">個</span>
                                         <input type="number" data-area="receiving" data-subitem="snake" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                         <span class="unit">分</span>
+                                        <span class="item-average" data-avg-area="receiving" data-avg-subitem="snake">-</span>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>數數</label>
+                                    <div class="detail-item" data-standard="3">
+                                        <label>數數 <span class="standard-badge">標準3分/個</span></label>
                                         <input type="number" data-area="receiving" data-subitem="count" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                         <span class="unit">個</span>
                                         <input type="number" data-area="receiving" data-subitem="count" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                         <span class="unit">分</span>
+                                        <span class="item-average" data-avg-area="receiving" data-avg-subitem="count">-</span>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>簽收</label>
+                                    <div class="detail-item" data-standard="2">
+                                        <label>簽收 <span class="standard-badge">標準2分/個</span></label>
                                         <input type="number" data-area="receiving" data-subitem="sign" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                         <span class="unit">個</span>
                                         <input type="number" data-area="receiving" data-subitem="sign" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                         <span class="unit">分</span>
+                                        <span class="item-average" data-avg-area="receiving" data-avg-subitem="sign">-</span>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>分類樣品與大貨</label>
+                                    <div class="detail-item" data-standard="4">
+                                        <label>分類樣品與大貨 <span class="standard-badge">標準4分/個</span></label>
                                         <input type="number" data-area="receiving" data-subitem="classify" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                         <span class="unit">個</span>
                                         <input type="number" data-area="receiving" data-subitem="classify" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                         <span class="unit">分</span>
+                                        <span class="item-average" data-avg-area="receiving" data-avg-subitem="classify">-</span>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>異常</label>
+                                    <div class="detail-item" data-standard="10">
+                                        <label>異常 <span class="standard-badge">標準10分/個</span></label>
                                         <input type="number" data-area="receiving" data-subitem="abnormal" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                         <span class="unit">個</span>
                                         <input type="number" data-area="receiving" data-subitem="abnormal" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                         <span class="unit">分</span>
+                                        <span class="item-average" data-avg-area="receiving" data-avg-subitem="abnormal">-</span>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>大貨上架</label>
+                                    <div class="detail-item" data-standard="3">
+                                        <label>大貨上架 <span class="standard-badge">標準3分/個</span></label>
                                         <input type="number" data-area="receiving" data-subitem="shelve" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                         <span class="unit">個</span>
                                         <input type="number" data-area="receiving" data-subitem="shelve" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                         <span class="unit">分</span>
+                                        <span class="item-average" data-avg-area="receiving" data-avg-subitem="shelve">-</span>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>整理環境</label>
+                                    <div class="detail-item" data-standard="15">
+                                        <label>整理環境 <span class="standard-badge">標準15分/個</span></label>
                                         <input type="number" data-area="receiving" data-subitem="organize" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                         <span class="unit">個</span>
                                         <input type="number" data-area="receiving" data-subitem="organize" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                         <span class="unit">分</span>
+                                        <span class="item-average" data-avg-area="receiving" data-avg-subitem="organize">-</span>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>打掃進貨區環境</label>
+                                    <div class="detail-item" data-standard="20">
+                                        <label>打掃進貨區環境 <span class="standard-badge">標準20分/個</span></label>
                                         <input type="number" data-area="receiving" data-subitem="clean" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                         <span class="unit">個</span>
                                         <input type="number" data-area="receiving" data-subitem="clean" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                         <span class="unit">分</span>
+                                        <span class="item-average" data-avg-area="receiving" data-avg-subitem="clean">-</span>
                                     </div>
                                 </div>
                             </div>
@@ -233,40 +288,45 @@
                                 </div>
                             </div>
                             <div class="card-details">
-                                <div class="detail-item">
-                                    <label>去各個地方取貨</label>
+                                <div class="detail-item" data-standard="5">
+                                    <label>去各個地方取貨 <span class="standard-badge">標準5分/個</span></label>
                                     <input type="number" data-area="picking" data-subitem="fetch" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="picking" data-subitem="fetch" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="picking" data-avg-subitem="fetch">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>拆破損箱子</label>
+                                <div class="detail-item" data-standard="3">
+                                    <label>拆破損箱子 <span class="standard-badge">標準3分/個</span></label>
                                     <input type="number" data-area="picking" data-subitem="unbox_damaged" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="picking" data-subitem="unbox_damaged" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="picking" data-avg-subitem="unbox_damaged">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>把C料號黏在一起</label>
+                                <div class="detail-item" data-standard="2">
+                                    <label>把C料號黏在一起 <span class="standard-badge">標準2分/個</span></label>
                                     <input type="number" data-area="picking" data-subitem="stick_c" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="picking" data-subitem="stick_c" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="picking" data-avg-subitem="stick_c">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>分手包與包裝機包</label>
+                                <div class="detail-item" data-standard="4">
+                                    <label>分手包與包裝機包 <span class="standard-badge">標準4分/個</span></label>
                                     <input type="number" data-area="picking" data-subitem="separate" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="picking" data-subitem="separate" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="picking" data-avg-subitem="separate">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>過包裝機</label>
+                                <div class="detail-item" data-standard="1">
+                                    <label>過包裝機 <span class="standard-badge">標準1分/個</span></label>
                                     <input type="number" data-area="picking" data-subitem="machine" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="picking" data-subitem="machine" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="picking" data-avg-subitem="machine">-</span>
                                 </div>
                             </div>
                         </div>
@@ -295,33 +355,37 @@
                                 </div>
                             </div>
                             <div class="card-details">
-                                <div class="detail-item">
-                                    <label>手包（包＋貼）</label>
+                                <div class="detail-item" data-standard="3">
+                                    <label>手包（包＋貼） <span class="standard-badge">標準3分/個</span></label>
                                     <input type="number" data-area="packing" data-subitem="hand_pack" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="packing" data-subitem="hand_pack" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="packing" data-avg-subitem="hand_pack">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>包裝機（貼貼紙）</label>
+                                <div class="detail-item" data-standard="1">
+                                    <label>包裝機（貼貼紙） <span class="standard-badge">標準1分/個</span></label>
                                     <input type="number" data-area="packing" data-subitem="machine_sticker" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="packing" data-subitem="machine_sticker" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="packing" data-avg-subitem="machine_sticker">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>拿箱子裝貨</label>
+                                <div class="detail-item" data-standard="5">
+                                    <label>拿箱子裝貨 <span class="standard-badge">標準5分/個</span></label>
                                     <input type="number" data-area="packing" data-subitem="box" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="packing" data-subitem="box" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="packing" data-avg-subitem="box">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>整理環境（打掃倉儲區域）</label>
+                                <div class="detail-item" data-standard="20">
+                                    <label>整理環境（打掃倉儲區域） <span class="standard-badge">標準20分/個</span></label>
                                     <input type="number" data-area="packing" data-subitem="clean_area" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="packing" data-subitem="clean_area" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="packing" data-avg-subitem="clean_area">-</span>
                                 </div>
                             </div>
                         </div>
@@ -350,47 +414,53 @@
                                 </div>
                             </div>
                             <div class="card-details">
-                                <div class="detail-item">
-                                    <label>退貨（3天內）</label>
+                                <div class="detail-item" data-standard="3">
+                                    <label>退貨（3天內） <span class="standard-badge">標準3分/個</span></label>
                                     <input type="number" data-area="returns" data-subitem="return_3day" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="returns" data-subitem="return_3day" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="returns" data-avg-subitem="return_3day">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>退清</label>
+                                <div class="detail-item" data-standard="5">
+                                    <label>退清 <span class="standard-badge">標準5分/個</span></label>
                                     <input type="number" data-area="returns" data-subitem="return_clear" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="returns" data-subitem="return_clear" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="returns" data-avg-subitem="return_clear">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>檢測</label>
+                                <div class="detail-item" data-standard="4">
+                                    <label>檢測 <span class="standard-badge">標準4分/個</span></label>
                                     <input type="number" data-area="returns" data-subitem="inspect" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="returns" data-subitem="inspect" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="returns" data-avg-subitem="inspect">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>簽收</label>
+                                <div class="detail-item" data-standard="2">
+                                    <label>簽收 <span class="standard-badge">標準2分/個</span></label>
                                     <input type="number" data-area="returns" data-subitem="sign" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="returns" data-subitem="sign" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="returns" data-avg-subitem="sign">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>上架</label>
+                                <div class="detail-item" data-standard="3">
+                                    <label>上架 <span class="standard-badge">標準3分/個</span></label>
                                     <input type="number" data-area="returns" data-subitem="shelve" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="returns" data-subitem="shelve" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="returns" data-avg-subitem="shelve">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>異常退貨／非公司商品</label>
+                                <div class="detail-item" data-standard="10">
+                                    <label>異常退貨／非公司商品 <span class="standard-badge">標準10分/個</span></label>
                                     <input type="number" data-area="returns" data-subitem="abnormal" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="returns" data-subitem="abnormal" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="returns" data-avg-subitem="abnormal">-</span>
                                 </div>
                             </div>
                         </div>
@@ -419,33 +489,37 @@
                                 </div>
                             </div>
                             <div class="card-details">
-                                <div class="detail-item">
-                                    <label>印單</label>
+                                <div class="detail-item" data-standard="2">
+                                    <label>印單 <span class="standard-badge">標準2分/個</span></label>
                                     <input type="number" data-area="mo_shop" data-subitem="print" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="mo_shop" data-subitem="print" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="mo_shop" data-avg-subitem="print">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>去B棟拿商品</label>
+                                <div class="detail-item" data-standard="5">
+                                    <label>去B棟拿商品 <span class="standard-badge">標準5分/個</span></label>
                                     <input type="number" data-area="mo_shop" data-subitem="fetch_b" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="mo_shop" data-subitem="fetch_b" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="mo_shop" data-avg-subitem="fetch_b">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>撿貨</label>
+                                <div class="detail-item" data-standard="3">
+                                    <label>撿貨 <span class="standard-badge">標準3分/個</span></label>
                                     <input type="number" data-area="mo_shop" data-subitem="pick" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="mo_shop" data-subitem="pick" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="mo_shop" data-avg-subitem="pick">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>出貨</label>
+                                <div class="detail-item" data-standard="4">
+                                    <label>出貨 <span class="standard-badge">標準4分/個</span></label>
                                     <input type="number" data-area="mo_shop" data-subitem="ship" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="mo_shop" data-subitem="ship" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="mo_shop" data-avg-subitem="ship">-</span>
                                 </div>
                             </div>
                         </div>
@@ -474,40 +548,45 @@
                                 </div>
                             </div>
                             <div class="card-details">
-                                <div class="detail-item">
-                                    <label>檢貨</label>
+                                <div class="detail-item" data-standard="3">
+                                    <label>檢貨 <span class="standard-badge">標準3分/個</span></label>
                                     <input type="number" data-area="kupon" data-subitem="check" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="kupon" data-subitem="check" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="kupon" data-avg-subitem="check">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>拆盒</label>
+                                <div class="detail-item" data-standard="2">
+                                    <label>拆盒 <span class="standard-badge">標準2分/個</span></label>
                                     <input type="number" data-area="kupon" data-subitem="unbox" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="kupon" data-subitem="unbox" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="kupon" data-avg-subitem="unbox">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>包貨</label>
+                                <div class="detail-item" data-standard="4">
+                                    <label>包貨 <span class="standard-badge">標準4分/個</span></label>
                                     <input type="number" data-area="kupon" data-subitem="pack" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="kupon" data-subitem="pack" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="kupon" data-avg-subitem="pack">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>擺貨</label>
+                                <div class="detail-item" data-standard="3">
+                                    <label>擺貨 <span class="standard-badge">標準3分/個</span></label>
                                     <input type="number" data-area="kupon" data-subitem="arrange" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="kupon" data-subitem="arrange" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="kupon" data-avg-subitem="arrange">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>盤點酷澎反殺商品</label>
+                                <div class="detail-item" data-standard="10">
+                                    <label>盤點酷澎反殺商品 <span class="standard-badge">標準10分/個</span></label>
                                     <input type="number" data-area="kupon" data-subitem="inventory" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="kupon" data-subitem="inventory" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="kupon" data-avg-subitem="inventory">-</span>
                                 </div>
                             </div>
                         </div>
@@ -536,19 +615,21 @@
                                 </div>
                             </div>
                             <div class="card-details">
-                                <div class="detail-item">
-                                    <label>值日生</label>
+                                <div class="detail-item" data-standard="30">
+                                    <label>值日生 <span class="standard-badge">標準30分/個</span></label>
                                     <input type="number" data-area="inventory" data-subitem="duty" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="inventory" data-subitem="duty" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="inventory" data-avg-subitem="duty">-</span>
                                 </div>
-                                <div class="detail-item">
-                                    <label>盤點商品</label>
+                                <div class="detail-item" data-standard="5">
+                                    <label>盤點商品 <span class="standard-badge">標準5分/個</span></label>
                                     <input type="number" data-area="inventory" data-subitem="count_goods" data-field="quantity" min="0" placeholder="0" class="cyber-input quantity-input-small">
                                     <span class="unit">個</span>
                                     <input type="number" data-area="inventory" data-subitem="count_goods" data-field="time" min="0" placeholder="0" class="cyber-input time-input-small">
                                     <span class="unit">分</span>
+                                    <span class="item-average" data-avg-area="inventory" data-avg-subitem="count_goods">-</span>
                                 </div>
                             </div>
                         </div>

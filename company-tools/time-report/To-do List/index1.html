@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>倉儲部門標準作業指南 - 作業區檢查</title>
+    <style>
+        /* ----------------------- 螢幕顯示樣式 (SCREEN VIEW) ----------------------- */
+        body { background-color: #f4f7f6; margin: 0; padding: 0; }
+        .container {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px; /* 縮小容器寬度 */
+            margin: 30px auto;
+            padding: 25px; 
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            font-size: 0.95em;
+        }
+        .section-title {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 12px;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 600;
+            text-align: center;
+        }
+        .subsection-title {
+            color: #16a085;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            font-weight: 500;
+        }
+        .check-table { width: 100%; border-collapse: separate; border-spacing: 0 5px; } 
+        .check-table thead tr { background-color: #ecf0f1; color: #2c3e50; font-weight: 600; }
+        .check-table th { padding: 8px 10px; text-align: left; }
+        .check-table tbody tr { background-color: #fcfcfc; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .check-table td { padding: 10px; vertical-align: middle; } 
+        .check-table td:first-child { font-weight: bold; text-align: center; }
+        .check-table input[type="checkbox"] { transform: scale(1.1); cursor: pointer; } 
+
+        /* 表格欄位寬度調整：讓檢查項目更寬 */
+        .check-table th:nth-child(1) { width: 5%; }
+        .check-table th:nth-child(2) { width: 65%; } /* 檢查項目佔更寬 */
+        .check-table th:nth-child(3) { width: 20%; }
+        .check-table th:nth-child(4) { width: 10%; }
+        
+        /* 側邊顏色條 - 確保正確應用到 TD */
+        .check-table td:nth-child(2) { border-left: 4px solid; padding-left: 15px; } 
+        .color-blue td:nth-child(2) { border-left-color: #3498db !important; }
+        .color-orange td:nth-child(2) { border-left-color: #e67e22 !important; }
+        .color-green td:nth-child(2) { border-left-color: #2ecc71 !important; }
+        .color-red td:nth-child(2) { border-left-color: #e74c3c !important; }
+        
+        .highlight-text { font-weight: bold; }
+
+        hr { border: 0; border-top: 1px dashed #cccccc; margin: 30px 0; }
+        .nav-link { display: block; width: 200px; margin: 20px auto 10px; padding: 10px; text-align: center; background-color: #f39c12; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .nav-link:hover { background-color: #e67e22; }
+
+        /* ----------------------- 列印樣式 (PRINT STYLES) ----------------------- */
+        @media print {
+            body { 
+                background-color: #ffffff; 
+                margin: 0; 
+            }
+            .container {
+                max-width: 100%;
+                box-shadow: none; 
+                padding: 0;
+                margin: 0;
+            }
+            .nav-link, hr {
+                display: none; 
+            }
+            .section-title {
+                margin-top: 10px;
+                padding-bottom: 5px;
+                border-bottom: 2px solid #3498db;
+                font-size: 1.4em; 
+            }
+            .subsection-title {
+                margin-top: 15px;
+                font-size: 1.1em;
+            }
+            .check-table td {
+                padding: 5px; 
+                font-size: 0.85em; 
+            }
+            .check-table th {
+                padding: 5px;
+                font-size: 0.9em;
+                background-color: #f0f0f0 !important; 
+            }
+            .check-table td:first-child { width: 3%; }
+            .check-table input[type="checkbox"] { transform: scale(1.0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <h2 class="section-title">📦 倉儲部門作業區檢查清單</h2>
+    <hr>
+
+    <h2 class="section-title" style="border-color: #1abc9c;">一、 進貨區 (Inbound Area) 整頓標準</h2>
+
+    <h3 class="subsection-title" style="color: #1abc9c;">📋 現場環境與物料擺放檢查</h3>
+    <table class="check-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 60%;">檢查項目與標準</th>
+                <th style="text-align: center; width: 25%;">項目分類</th>
+                <th style="text-align: center; width: 10%;">確認</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="color-blue">
+                <td>1.</td>
+                <td class="color-blue">卸貨區準備： 確認進貨的貨車停靠在指定卸貨區，且已準備好棧板。</td>
+                <td style="text-align: center;">工具/區域準備</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check1"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>2.</td>
+                <td class="color-blue">工具定位： 貨架推車是否整齊擺放在左側26區/樣品區那側的指定位置。</td>
+                <td style="text-align: center;">5S 定位</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check2"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>3.</td>
+                <td class="color-blue">待驗貨物： 所有貨物都在棧板上，並安全、穩定地疊高在棧板上。</td>
+                <td style="text-align: center;">安全堆疊</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check3"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>4.</td>
+                <td class="color-blue">看樣箱堆疊： 所有看樣箱都堆高疊起並已封箱。</td>
+                <td style="text-align: center;">樣品整理</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check4"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>5.</td>
+                <td class="color-blue">看樣箱標示： 看樣箱上有貼上1.0樣品日期和是否簽收表。</td>
+                <td style="text-align: center;">文件標示</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check5"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>6.</td>
+                <td class="color-orange">異常數據確認： <span class="highlight-text">簽收進貨異常區記錄</span>每個狀態的<span class="highlight-text">確認數量</span>。</td>
+                <td style="text-align: center;">數據/文件</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check_new1"></td>
+            </tr>
+            <tr class="color-red">
+                <td>7.</td>
+                <td class="color-red">異常品處理 (安全)： 異常區的異常商品都在異常箱子內，不在地板上。</td>
+                <td style="text-align: center;">異常品控制</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check6"></td>
+            </tr>
+            <tr class="color-green">
+                <td>8.</td>
+                <td class="color-green">辦公區整潔 (5S)： 異常區電腦桌整潔乾淨，只留下電腦、滑鼠與椅子（無雜物）。</td>
+                <td style="text-align: center;">5S 整潔</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check7"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>9.</td>
+                <td class="color-blue">樣品歸位： 已簽樣品都存放在黑鋼的樣品箱裡。</td>
+                <td style="text-align: center;">樣品歸檔</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check8"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>10.</td>
+                <td class="color-blue">環境清潔 (5S)： 地板無垃圾、無紙箱碎屑或塑膠包材。</td>
+                <td style="text-align: center;">5S 清潔</td>
+                <td style="text-align: center;"><input type="checkbox" name="inbound_check9"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h2 class="section-title" style="border-color: #2980b9;">二、 檢貨區 (Picking Area) 關鍵檢查清單</h2>
+
+    <h3 class="subsection-title" style="color: #2980b9;">🔍 區域準備與任務執行重點檢查</h3>
+    <table class="check-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 60%;">檢查項目與標準</th>
+                <th style="text-align: center; width: 25%;">項目分類</th>
+                <th style="text-align: center; width: 10%;">確認</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="color-blue">
+                <td>1.</td>
+                <td class="color-blue">區域預檢： 通道暢通，地面無障礙物（5S 標準）。</td>
+                <td style="text-align: center;">環境整潔</td>
+                <td style="text-align: center;"><input type="checkbox" id="pick_check1" name="pick_check1"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>2.</td>
+                <td class="color-blue">工具準備 (可用)： 有足夠的揀貨推車或籃子可做使用。</td>
+                <td style="text-align: center;">備品充足</td>
+                <td style="text-align: center;"><input type="checkbox" id="pick_check2" name="pick_check2"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>3.</td>
+                <td class="color-blue">工具歸位 (未使用)： 未使用的揀貨車有被排整齊歸類在包裝機旁的空地上。</td>
+                <td style="text-align: center;">工具定位</td>
+                <td style="text-align: center;"><input type="checkbox" id="pick_check3" name="pick_check3"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>4.</td>
+                <td class="color-orange">三方核對： 進行過三方核對確認揀貨無誤（掃描儲位條碼／掃描商品條碼／核對 PDA 顯示的商品圖片和應揀數量）。</td>
+                <td style="text-align: center;">防呆機制</td>
+                <td style="text-align: center;"><input type="checkbox" id="pick_check4" name="pick_check4"></td>
+            </tr>
+            <tr class="color-green">
+                <td>5.</td>
+                <td class="color-green">品質檢查： 商品外觀無破損、效期無誤，品質檢查無誤。</td>
+                <td style="text-align: center;">品管確認</td>
+                <td style="text-align: center;"><input type="checkbox" id="pick_check5" name="pick_check5"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>6.</td>
+                <td class="color-blue">出貨標記： 揀貨完成的推車上都有貼上「倉庫推車標示單」並有操作人員簽名。</td>
+                <td style="text-align: center;">流程標示</td>
+                <td style="text-align: center;"><input type="checkbox" id="pick_check6" name="pick_check6"></td>
+            </tr>
+            <tr class="color-red">
+                <td>7.</td>
+                <td class="color-red">異常處理： 遇到異常揀貨問題（儲位缺貨、商品損壞或數量不足）時，已依規定流程處理並上報。</td>
+                <td style="text-align: center;">異常回報</td>
+                <td style="text-align: center;"><input type="checkbox" id="pick_check7" name="pick_check7"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>8.</td>
+                <td class="color-blue">區域整頓 (清潔)： 確認揀貨區地板上無垃圾，無遺留的商品在地上。</td>
+                <td style="text-align: center;">5S 清潔</td>
+                <td style="text-align: center;"><input type="checkbox" id="pick_check8" name="pick_check8"></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <a href="index.html" class="nav-link" style="background-color: #3498db;">返回上一頁：晨會指導 &raquo;</a> 
+    <a href="index2.html" class="nav-link">前往下一頁：包貨區 &raquo;</a>
+
+</div>
+
+</body>
+</html>

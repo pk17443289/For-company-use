@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>倉儲部門標準作業指南 - 回報前區</title>
+    <style>
+        /* ----------------------- 螢幕顯示樣式 (SCREEN VIEW) ----------------------- */
+        body { background-color: #f4f7f6; margin: 0; padding: 0; }
+        .container {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px; /* 縮小容器寬度 */
+            margin: 30px auto;
+            padding: 25px; 
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            font-size: 0.95em;
+        }
+        .section-title {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 12px;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 600;
+            text-align: center;
+        }
+        .subsection-title {
+            color: #16a085;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            font-weight: 500;
+        }
+        .check-table { width: 100%; border-collapse: separate; border-spacing: 0 5px; } 
+        .check-table thead tr { background-color: #ecf0f1; color: #2c3e50; font-weight: 600; }
+        .check-table th { padding: 8px 10px; text-align: left; }
+        .check-table tbody tr { background-color: #fcfcfc; border: 1px solid #e0e0e0; border-radius: 5px; }
+        .check-table td { padding: 10px; vertical-align: middle; } 
+        .check-table td:first-child { font-weight: bold; text-align: center; }
+        .check-table input[type="checkbox"] { transform: scale(1.1); cursor: pointer; } 
+
+        /* 表格欄位寬度調整：讓檢查項目更寬 */
+        .check-table th:nth-child(1) { width: 5%; }
+        .check-table th:nth-child(2) { width: 65%; } 
+        .check-table th:nth-child(3) { width: 20%; }
+        .check-table th:nth-child(4) { width: 10%; }
+        
+        /* 側邊顏色條 - 確保正確應用到 TD */
+        .check-table td:nth-child(2) { border-left: 4px solid; padding-left: 15px; } 
+        .color-blue td:nth-child(2) { border-left-color: #3498db !important; }
+        .color-orange td:nth-child(2) { border-left-color: #e67e22 !important; }
+        .color-green td:nth-child(2) { border-left-color: #2ecc71 !important; }
+        .color-red td:nth-child(2) { border-left-color: #e74c3c !important; }
+        
+        .highlight-text { font-weight: bold; }
+
+        hr { border: 0; border-top: 1px dashed #cccccc; margin: 30px 0; }
+        .nav-link { display: block; width: 200px; margin: 20px auto 10px; padding: 10px; text-align: center; background-color: #f39c12; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .nav-link:hover { background-color: #e67e22; }
+
+        /* ----------------------- 列印樣式 (PRINT STYLES) ----------------------- */
+        @media print {
+            body { 
+                background-color: #ffffff; 
+                margin: 0; 
+            }
+            .container {
+                max-width: 100%;
+                box-shadow: none; 
+                padding: 0;
+                margin: 0;
+            }
+            .nav-link, hr {
+                display: none; 
+            }
+            .section-title {
+                margin-top: 10px;
+                padding-bottom: 5px;
+                border-bottom: 2px solid #3498db;
+                font-size: 1.4em; 
+            }
+            .subsection-title {
+                margin-top: 15px;
+                font-size: 1.1em;
+            }
+            .check-table td {
+                padding: 5px; 
+                font-size: 0.85em; 
+            }
+            .check-table th {
+                padding: 5px;
+                font-size: 0.9em;
+                background-color: #f0f0f0 !important; 
+            }
+            .check-table td:first-child { width: 3%; }
+            .check-table input[type="checkbox"] { transform: scale(1.0); }
+            
+            /* 隱藏頁尾的「清單結束」文字 */
+            .end-of-list {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <h2 class="section-title">📦 倉儲部門標準作業指南</h2>
+    <hr>
+
+    <h2 class="section-title" style="border-color: #f39c12;">一、 回報前區 (Daily Closeout & Prep) 結算與準備</h2>
+
+    <h3 class="subsection-title" style="color: #34495e;">📈 數據結算與軟體清結</h3>
+    <table class="check-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 60%;">檢查項目與標準</th>
+                <th style="text-align: center; width: 25%;">項目分類</th>
+                <th style="text-align: center; width: 10%;">確認</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="color-blue">
+                <td>1.</td>
+                <td class="color-blue">工作效率總結： 今日<span class="highlight-text">回報表</span>已填寫完成，數據核對無誤。</td>
+                <td style="text-align: center;">數據記錄</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check1"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>2.</td>
+                <td class="color-blue">庫存結算： 所有的<span class="highlight-text">庫存盤點、或異常調整</span>已在系統中完成登錄，確保帳料相符。</td>
+                <td style="text-align: center;">系統作業</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check2"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>3.</td>
+                <td class="color-orange">設備充電與歸位： 個人工作設備（PDA、貼紙機等）已放回指定充電位置，確保<span class="highlight-text">滿電</span>狀態。</td>
+                <td style="text-align: center;">工具準備</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check4"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>4.</td>
+                <td class="color-blue">出貨結清： 所有<span class="highlight-text">已包裝完成的箱子</span>已在指定出貨區完成點收，並確保<span class="highlight-text">每個棧板上的日期與倉位相同</span>，<span class="highlight-text">不同批次和倉位不可混棧</span>。</td>
+                <td style="text-align: center;">物流交接</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check6"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>5.</td>
+                <td class="color-orange">出貨日期與箱數確認： 確認<span class="highlight-text">1.0 / 2.0 / 酷澎</span>的<span class="highlight-text">出貨日期和箱數</span>。</td>
+                <td style="text-align: center;">數據確認</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_shipping"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>6.</td>
+                <td class="color-blue">看樣數量確認： 確認看樣數量<span class="highlight-text">剩餘多少</span>。</td>
+                <td style="text-align: center;">數據確認</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_sample"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>7.</td>
+                <td class="color-orange">進貨異常數量確認： 確認進貨異常<span class="highlight-text">剩餘多少</span>。</td>
+                <td style="text-align: center;">數據確認</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_abnormal"></td>
+            </tr>
+            <tr class="color-green">
+                <td>8.</td>
+                <td class="color-green">酷澎/MO+店包貨確認： 確認<span class="highlight-text">酷澎 / MO+店</span>是否<span class="highlight-text">包貨完成</span>，並確認總共包了<span class="highlight-text">多少箱</span>。</td>
+                <td style="text-align: center;">數據確認</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_kupon_mo"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3 class="subsection-title" style="color: #2ecc71;">🧹 實體環境與物料最終檢查 (5S)</h3>
+    <table class="check-table">
+        <thead>
+            <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 60%;">檢查項目與標準</th>
+                <th style="text-align: center; width: 25%;">項目分類</th>
+                <th style="text-align: center; width: 10%;">確認</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="color-green">
+                <td>9.</td>
+                <td class="color-green">工作區總整理： 所有區域（進貨、檢貨、包貨、退貨）已執行 5S，地面無雜物，<span class="highlight-text">工具/推車都歸位置原處</span>。</td>
+                <td style="text-align: center;">環境結清</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check5"></td>
+            </tr>
+            <tr class="color-green">
+                <td>10.</td>
+                <td class="color-green">門鈴正常聲音： 確保門鈴聲音<span class="highlight-text">運作正常</span>，防止漏接物流。</td>
+                <td style="text-align: center;">環境/設備</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_new1"></td>
+            </tr>
+            <tr class="color-red">
+                <td>11.</td>
+                <td class="color-red">門鎖有往上扳： 確認大門或側門鎖已<span class="highlight-text">往上扳動上鎖</span>，確保夜間安全。</td>
+                <td style="text-align: center;">安全檢查</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_new2"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>12.</td>
+                <td class="color-orange">出貨告知單最終確認： 確認所有已結清的箱子上皆貼有<span class="highlight-text">出貨資訊告知</span>。</td>
+                <td style="text-align: center;">文件稽核</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_final1"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>13.</td>
+                <td class="color-orange">入庫通知單最終確認： 確認所有已結清的箱子上皆貼有<span class="highlight-text">入庫通知單</span>。</td>
+                <td style="text-align: center;">文件稽核</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_final2"></td>
+            </tr>
+            <tr class="color-orange">
+                <td>14.</td>
+                <td class="color-orange">宏威行單最終確認： 確認所有已結清的箱子上皆貼有<span class="highlight-text">基隆站宏威行單</span>。</td>
+                <td style="text-align: center;">文件稽核</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_final3"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>15.</td>
+                <td class="color-blue">進貨異常區數量確認： 確認進貨異常區<span class="highlight-text">每個狀態</span> (如待檢、待報廢) 的商品<span class="highlight-text">數量已登錄或清點</span>。</td>
+                <td style="text-align: center;">數據稽核</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_new3"></td>
+            </tr>
+            <tr class="color-green">
+                <td>16.</td>
+                <td class="color-green">檢貨車狀態： 揀貨車確認有<span class="highlight-text">倉庫推車狀態標示單</span>，且有操作人員<span class="highlight-text">簽名</span>。</td>
+                <td style="text-align: center;">工具標示</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check7"></td>
+            </tr>
+            <tr class="color-green">
+                <td>17.</td>
+                <td class="color-green">油壓車有歸位： 所有的油壓車已放置於<span class="highlight-text">指定歸位區</span>，通道暢通。</td>
+                <td style="text-align: center;">5S/歸位</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check_new4"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>18.</td>
+                <td class="color-blue">退貨商品標示： 所有退貨商品皆已在左上角貼上<span class="highlight-text">退貨日期</span>。</td>
+                <td style="text-align: center;">文件標記</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check8"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>19.</td>
+                <td class="color-blue">進貨區物料定位： 進貨區所有商品都<span class="highlight-text">在棧板上</span>。</td>
+                <td style="text-align: center;">安全堆疊</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check9"></td>
+            </tr>
+            <tr class="color-red">
+                <td>20.</td>
+                <td class="color-red">異常區隔離： <span class="highlight-text">異常區商品皆全在異常箱裡</span> (所有異常品皆已隔離)。</td>
+                <td style="text-align: center;">異常品控制</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check10"></td>
+            </tr>
+            <tr class="color-blue">
+                <td>21.</td>
+                <td class="color-blue">看樣區整頓： 看樣區<span class="highlight-text">箱子疊整齊</span>，有歸位到<span class="highlight-text">未簽樣的樣品箱集中區</span>。</td>
+                <td style="text-align: center;">樣品區 5S</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check11"></td>
+            </tr>
+            <tr class="color-red">
+                <td>22.</td>
+                <td class="color-red">異常商品清點： 包貨、揀貨、進貨區<span class="highlight-text">沒有異常多出的商品</span>，或<span class="highlight-text">異常商品</span>（所有異常已歸入異常區）。</td>
+                <td style="text-align: center;">跨區稽核</td>
+                <td style="text-align: center;"><input type="checkbox" name="closeout_check12"></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <a href="index3.html" class="nav-link" style="background-color: #f39c12;">返回上一頁：退貨區 &raquo;</a> 
+    <a href="index.html" class="nav-link" style="background-color: #3498db;">返回首頁：晨會指導 &raquo;</a> 
+    <p class="end-of-list" style="text-align: center; margin-top: 30px; font-weight: bold; color: #7f8c8d;">--- 倉儲部門作業指南清單結束 ---</p>
+
+</div>
+
+</body>
+</html>

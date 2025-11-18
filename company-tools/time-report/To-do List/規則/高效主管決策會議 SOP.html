@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>【主管決策層】會議效率優化 SOP - 最終版 (含負責人選單)</title>
+    <style>
+        /* 螢幕顯示與列印通用設定 */
+        body {
+            font-family: '微軟正黑體', 'Microsoft JhengHei', Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 30px;
+            background-color: #f0f4f8;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 10px;
+            text-align: center;
+            font-size: 28px;
+        }
+        h2 {
+            color: #34495e;
+            background-color: #eaf2f8;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-top: 30px;
+            font-size: 22px;
+        }
+        h3 {
+            color: #e67e22; /* 橙色標籤 */
+            margin-top: 20px;
+            border-left: 5px solid #f39c12;
+            padding-left: 10px;
+            font-size: 18px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            table-layout: fixed;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #dcdcdc;
+            vertical-align: top;
+        }
+        th {
+            background-color: #3498db;
+            color: white;
+        }
+        .highlight {
+            font-weight: bold;
+            color: #e74c3c; /* 醒目紅 */
+            background-color: #fde8e5;
+            padding: 2px 4px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        .note {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-left: 5px solid #95a5a6;
+            margin-top: 15px;
+        }
+        .note-strong {
+            font-weight: bold;
+        }
+        
+        /* 停車場輸入欄位樣式 */
+        .parking-input, .parking-select {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            border: none;
+            padding: 0;
+            margin: 0;
+            background-color: transparent;
+            font-size: 1em; 
+            line-height: 1.5;
+            -webkit-appearance: none; /* 移除預設箭頭，讓列印更簡潔 */
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        /* Details/Summary for Dropdown - 螢幕顯示 */
+        details {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            background-color: #fcfcfc;
+        }
+        summary {
+            font-weight: bold;
+            cursor: pointer;
+            color: #34495e;
+            list-style: none;
+            padding: 5px 0;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary:before {
+            content: "▶ ";
+            margin-right: 5px;
+            display: inline-block;
+            transition: transform 0.2s;
+        }
+        details[open] > summary:before {
+            content: "▼ ";
+            transform: rotate(90deg);
+        }
+
+        /* 停車場專區樣式 - 螢幕顯示 */
+        .parking-lot-area {
+            margin-top: 50px;
+            padding: 20px;
+            border: 2px dashed #95a5a6;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+        .parking-lot-area h2 {
+            border-left: 5px solid #e67e22;
+            background-color: transparent;
+            text-align: left;
+            padding-left: 10px;
+        }
+
+        /* ********************************************************* */
+        /* 列印版本專屬樣式 (Print Styles - @media print) */
+        /* ********************************************************* */
+        @media print {
+            /* 強制設定 A4 邊界 */
+            @page { 
+                size: A4 portrait;
+                margin: 10mm; 
+            }
+            body { 
+                background-color: white !important; 
+                font-size: 10.5pt; 
+                color: black; 
+                padding: 0;
+                margin: 0;
+            }
+            .container { 
+                box-shadow: none; 
+                padding: 0; 
+                width: 100%;
+                max-width: 100%;
+            }
+
+            /* --- 核心分頁點 --- */
+            #sop-structure-end {
+                page-break-after: always;
+            }
+
+            /* 內容樣式優化 */
+            table, .note, .note details { 
+                page-break-inside: avoid !important; 
+            }
+            
+            /* 顏色保留設置 (關鍵) */
+            h1, h2, h3, th, .highlight {
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;        
+            }
+            h1 { color: #2c3e50 !important; border-bottom: 2px solid #3498db !important; }
+            h2 { color: #34495e !important; border-left: 4px solid #34495e !important; background-color: #eaf2f8 !important; }
+            th { 
+                background-color: #3498db !important; 
+                color: white !important; 
+            }
+            .highlight { 
+                color: #e74c3c !important; 
+                background-color: #fde8e5 !important; 
+            }
+            .note { 
+                background-color: #ecf0f1 !important; 
+                border-left: 5px solid #95a5a6 !important; 
+            }
+
+            th, td { border: 1px solid black; padding: 6px; }
+            
+            /* 展開 Details */
+            details { display: block !important; border: none; padding: 0; }
+            summary { list-style: disc; color: black; }
+            summary:before { content: ""; display: none; }
+
+            /* 停車場輸入欄位優化 */
+            .parking-lot-area { margin-top: 0; padding: 0; border: none; background-color: white; }
+            .parking-lot-area h2 { border-left: 4px solid black; }
+            
+            .parking-input, .parking-select {
+                border: none !important; 
+                padding: 0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            #parking-lot-table td {
+                padding: 3px 6px; 
+                min-height: 25px; 
+                height: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <h1>高效主管決策會議 SOP</h1>
+    <p style="text-align: center;"><strong>目標：將每日人員分配會議時長，強制壓縮至 60 分鐘以內。</strong></p>
+
+    <h2>I. 會議分流：將「今日問題」與「明日決策」完全分離</h2>
+    <p>過去耗時的「整理今天問題」工作必須<span class="highlight">前置化 (即時登錄)</span>，並根據對明日的影響進行<span class="highlight">分流</span>，避免佔用排班決策時間。</p>
+
+    <h3>1. 建立「每日異常記錄與追蹤」</h3>
+    <p>所有問題必須在下班前 30 分鐘內登錄，禁止在會議上從零開始討論。</p>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 30%;">責任方</th>
+                <th>登錄內容 (簡潔格式)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>主管/組長</td>
+                <td><span class="highlight">\[時間點]</span> 哪個 <span class="highlight">\[區域]</span> 發生 <span class="highlight">\[什麼問題]</span>？</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><span class="highlight">\[受影響程度]</span> (例：延遲 1h) 與 <span class="highlight">\[建議分類]</span> (A/B/C)</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>2. 問題分級處理機制 (會前分流)</h3>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 20%;">分類</th>
+                <th style="width: 30%;">定義</th>
+                <th>處置方式</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="highlight">【A 級】</span> 當日影響明日</td>
+                <td>問題直接影響到明天的人力需求或排班結構。</td>
+                <td><strong>排班會（優先討論）：</strong> 這是唯一可以在排班會上討論的問題。目的：確認影響、做出調度。</td>
+            </tr>
+            <tr>
+                <td>【B 級】 流程異常/常規問題</td>
+                <td>屬於系統性、流程性、需長期優化的問題。</td>
+                <td><strong>納入週檢討會（延後處理）：</strong> 記錄並移交給每週一次的「流程改進會」處理，<span class="highlight">嚴禁在排班會上討論。</span></td>
+            </tr>
+            <tr>
+                <td>【C 級】 單一事件/責任</td>
+                <td>例如：某員工操作失誤。</td>
+                <td><strong>會後單獨追蹤（授權處理）：</strong> 指派直屬主管會後單獨約談/處理。</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>II. 數據前置：讓會議只解決「衝突」，不計算「數據」</h2>
+    <p>在會議開始前，所有數據必須由指定 <span class="highlight">【數據彙整人】</span> 完成計算與草案擬定。</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 25%;">會前任務</th>
+                <th>要求產出 (截止點：會前 15 分鐘)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>需求數據化</strong></td>
+                <td>計算出明天包貨、理貨、前置作業的 <span class="highlight">總所需工時</span> 或 <span class="highlight">總需求量</span> (箱/件/小時)。</td>
+            </tr>
+            <tr>
+                <td><strong>人力現況彙整</strong></td>
+                <td>彙整明天確定可出勤人員清單，並計算與需求的 <span class="highlight">人力缺口</span>。</td>
+            </tr>
+            <tr>
+                <td><strong>擬定建議草案</strong></td>
+                <td>製作一份初步的排班草案，並標示 <span class="highlight">核心衝突點 (紅燈區)</span>。</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>III. 會議結構化執行 (45-60 分鐘強制上限)</h2>
+    <div class="note">
+        <span class="note-strong">📌 關鍵控場工具：</span> 啟用 <span class="highlight">「停車場清單」</span> 處理離題發言。
+        
+        <details>
+            <summary>「停車場清單」是什麼意思？點擊展開說明</summary>
+            <p>
+                「停車場清單 (Parking Lot)」是一種會議管理技巧。它用於<strong>暫時存放</strong>在討論過程中出現的、但與當前議程<strong>無關</strong>或<strong>需要更多時間</strong>研究的議題。目的在於確保會議保持專注於主要決策目標（人員分配），防止發言離題或陷入冗長細節。
+            </p>
+        </details>
+        </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 20%;">時間分配</th>
+                <th style="width: 30%;">議程重點</th>
+                <th>主持人控場方式</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>0 - 5 分鐘</td>
+                <td><strong>數據與排班簡報</strong></td>
+                <td>彙整人報告核心需求、總可用工時、與 <span class="highlight">紅燈衝突點</span>。 (只許提問澄清數據，不許討論決策)</td>
+            </tr>
+            <tr>
+                <td>5 - 25 分鐘</td>
+                <td><strong>解決 A 級問題與紅燈區</strong></td>
+                <td>只針對 <span class="highlight">A 級問題</span> 和 <span class="highlight">紅燈區</span> 進行決策。引導主管從預設方案中做選擇。<span class="highlight">(20 分鐘內必須完成)</span></td>
+            </tr>
+            <tr>
+                <td>25 - 45 分鐘</td>
+                <td><strong>排班總決策</strong></td>
+                <td>主管們敲定最終人員分配表。確認跨組別的人力調撥。</td>
+            </tr>
+            <tr>
+                <td>45 - 60 分鐘</td>
+                <td><strong>總結與散會</strong></td>
+                <td>主持人確認最終排班，指派 <span class="highlight">B 級與 C 級問題的追蹤人</span>。若無未決事項，<span class="highlight">立即結束會議</span>。</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div id="sop-structure-end"></div> 
+
+    <div class="parking-lot-area">
+        <h2 style="color: #e67e22; border-left: 5px solid #f39c12; background-color: transparent;">🅿️ 會議停車場清單 (Parking Lot) 放置處</h2>
+        <p style="text-align: center; font-size: 1.1em; font-weight: bold; margin-bottom: 20px;">
+            — 請於此處即時記錄被停放的議題，並標註分類標籤 —
+        </p>
+
+        <h3>停車場分類 SOP：</h3>
+        <p>請在記錄問題時，立即加上最合適的 [類別標籤]，以便會後分流處理：</p>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 20%;">分類標籤</th>
+                    <th>適用範圍</th>
+                    <th>預期處置部門/層級</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>\[場地/設備]</strong></td>
+                    <td>涉及倉儲空間、貨架損壞、照明、搬運設備等物理資產的問題。</td>
+                    <td>總務部 / 採購部</td>
+                </tr>
+                <tr>
+                    <td><strong>\[流程/規則]</strong></td>
+                    <td>涉及 SOP 執行效率、工作步驟優化、跨部門協作規則等制度性問題。</td>
+                    <td>主管週檢討會</td>
+                </tr>
+                <tr>
+                    <td><strong>\[系統/IT]</strong></td>
+                    <td>涉及 WMS 系統、掃描槍、網路連線、數據報表邏輯錯誤等資訊科技相關問題。</td>
+                    <td>IT 部門</td>
+                </tr>
+                <tr>
+                    <td><strong>\[人力/培訓]</strong></td>
+                    <td>涉及人員技能落差、新人培訓需求、員工士氣等相關問題。</td>
+                    <td>人資部 / 直屬主管</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h3 style="margin-top: 25px;">實際記錄區：</h3>
+        <table id="parking-lot-table">
+            <thead>
+                <tr>
+                    <th style="width: 15%;">編號</th>
+                    <th style="width: 40%;">議題簡述 (問題點)</th>
+                    <th style="width: 20%;">分類標籤</th>
+                    <th style="width: 25%;">會後負責人/期限</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-001"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option> 
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option> 
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-002"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-003"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-004"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-005"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-006"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-007"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-008"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-009"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td><input type="text" class="parking-input" value="PL-010"></td>
+                    <td><input type="text" class="parking-input"></td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="場地/設備">\[場地/設備]</option>
+                            <option value="流程/規則">\[流程/規則]</option>
+                            <option value="系統/IT">\[系統/IT]</option>
+                            <option value="人力/培訓">\[人力/培訓]</option>
+                        </select>
+                    </td>
+                    <td>
+                        <select class="parking-select">
+                            <option value="" selected></option>
+                            <option value="鈴鈺">鈴鈺</option>
+                            <option value="阿駿">阿駿</option>
+                            <option value="老闆">老闆</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <p style="text-align: center; color: #95a5a6; margin-top: 15px;">
+            (會議結束前，必須指派負責人與預計處理期限)
+        </p>
+    </div>
+    </div>
+
+</body>
+</html>
