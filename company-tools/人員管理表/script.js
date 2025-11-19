@@ -3,6 +3,49 @@ let personnel = [];
 let tasks = [];
 let history = [];
 
+// 工作性質分類（可自訂）
+let WORK_CATEGORIES = {};
+
+// 取得預設工作性質分類
+function getDefaultWorkCategories() {
+    return {
+        'patrol': '巡邏巡視',
+        'monitor': '監控值勤',
+        'service': '客戶服務',
+        'admin': '行政文書',
+        'meeting': '會議出席',
+        'maintenance': '設備維護',
+        'training': '教育訓練',
+        'support': '支援協助',
+        'inspection': '檢查驗收',
+        'reception': '接待引導',
+        'guard': '警衛站崗',
+        'other': '其他雜務'
+    };
+}
+
+// 階級設定
+let MAX_RANK = 10; // 最高階級（可自訂）
+
+// 階級標籤（可自訂）
+let RANK_LABELS = {};
+
+// 取得預設階級標籤
+function getDefaultRankLabels() {
+    return {
+        '10': '最高階',
+        '9': '高階',
+        '8': '中高階',
+        '7': '中高階',
+        '6': '中階',
+        '5': '中階',
+        '4': '基層',
+        '3': '基層',
+        '2': '新進',
+        '1': '新進'
+    };
+}
+
 // 當前篩選設定
 let currentDate = new Date(); // 當前查詢的日期
 let currentDateString = ''; // 格式化的日期字串 (YYYY-MM-DD)
@@ -143,16 +186,170 @@ function setupEventListeners() {
     document.getElementById('taskList').addEventListener('dragover', handleTaskListDragOver);
     document.getElementById('taskList').addEventListener('drop', handleTaskListDrop);
 
-    // 操作按鈕
-    document.getElementById('addPersonBtn').addEventListener('click', showAddPersonModal);
-    document.getElementById('importPersonListBtn').addEventListener('click', showImportPersonListModal);
-    document.getElementById('addTaskBtn').addEventListener('click', showAddTaskModal);
-    document.getElementById('exportDataBtn').addEventListener('click', exportData);
+    // 操作選單下拉功能
+    const actionMenuBtn = document.getElementById('actionMenuBtn');
+    const actionMenuDropdown = document.getElementById('actionMenuDropdown');
+
+    actionMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        actionMenuDropdown.classList.toggle('hidden');
+    });
+
+    // 點擊外部關閉選單
+    document.addEventListener('click', (e) => {
+        if (!actionMenuDropdown.classList.contains('hidden')) {
+            actionMenuDropdown.classList.add('hidden');
+        }
+    });
+
+    // 防止下拉選單內部點擊時關閉
+    actionMenuDropdown.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // 操作按鈕（點擊後關閉選單）
+    document.getElementById('addPersonBtn').addEventListener('click', () => {
+        showAddPersonModal();
+        actionMenuDropdown.classList.add('hidden');
+    });
+    document.getElementById('importPersonListBtn').addEventListener('click', () => {
+        showImportPersonListModal();
+        actionMenuDropdown.classList.add('hidden');
+    });
+    document.getElementById('addTaskBtn').addEventListener('click', () => {
+        showAddTaskModal();
+        actionMenuDropdown.classList.add('hidden');
+    });
+    document.getElementById('manageWorkCategoryBtn').addEventListener('click', () => {
+        showWorkCategoryModal();
+        actionMenuDropdown.classList.add('hidden');
+    });
+    document.getElementById('manageRankLabelBtn').addEventListener('click', () => {
+        showRankLabelModal();
+        actionMenuDropdown.classList.add('hidden');
+    });
+    document.getElementById('previewScheduleBtn').addEventListener('click', () => {
+        showSchedulePreview();
+        actionMenuDropdown.classList.add('hidden');
+    });
+    document.getElementById('exportDataBtn').addEventListener('click', () => {
+        exportData();
+        actionMenuDropdown.classList.add('hidden');
+    });
     document.getElementById('importDataBtn').addEventListener('click', () => {
         document.getElementById('importFileInput').click();
+        actionMenuDropdown.classList.add('hidden');
     });
     document.getElementById('importFileInput').addEventListener('change', importData);
-    document.getElementById('resetDataBtn').addEventListener('click', resetToSampleData);
+    document.getElementById('resetDataBtn').addEventListener('click', () => {
+        resetToSampleData();
+        actionMenuDropdown.classList.add('hidden');
+    });
+
+    // 調試日誌函數（生產環境改為 console.log）
+    window.debugLog = function(msg) {
+        // 調試模式：將下面改為 true 可以顯示調試面板
+        const debugMode = false;
+
+        if (debugMode && window.innerWidth <= 768) {
+            let debugDiv = document.getElementById('debugInfo');
+            if (!debugDiv) {
+                debugDiv = document.createElement('div');
+                debugDiv.id = 'debugInfo';
+                debugDiv.style.cssText = `
+                    position: fixed;
+                    bottom: 0;
+                    left: 0;
+                    right: 0;
+                    background: rgba(0, 0, 0, 0.9);
+                    color: #0f0;
+                    padding: 10px;
+                    font-size: 12px;
+                    z-index: 9999;
+                    max-height: 150px;
+                    overflow-y: auto;
+                    font-family: monospace;
+                `;
+                document.body.appendChild(debugDiv);
+            }
+            const time = new Date().toLocaleTimeString();
+            debugDiv.innerHTML = `[${time}] ${msg}<br>` + debugDiv.innerHTML;
+        }
+        // 所有訊息都記錄到控制台
+        console.log(msg);
+    };
+
+    // 折疊功能 - 使用直接綁定的方式
+    window.toggleCollapsible = function(targetId) {
+        const content = document.getElementById(targetId);
+        const title = document.querySelector(`[data-target="${targetId}"]`);
+
+        if (content && title) {
+            title.classList.toggle('collapsed');
+            content.classList.toggle('collapsed');
+        }
+    };
+
+    // 為每個折疊標題添加 onclick
+    document.querySelectorAll('.collapsible-title').forEach((title, index) => {
+        const targetId = title.dataset.target;
+
+        // 直接設置 onclick 屬性（最可靠的方式）
+        title.onclick = function() {
+            window.toggleCollapsible(targetId);
+        };
+
+        // 添加觸控視覺反饋
+        title.addEventListener('touchstart', function(e) {
+            this.style.opacity = '0.7';
+        }, { passive: true });
+
+        title.addEventListener('touchend', function(e) {
+            this.style.opacity = '1';
+        }, { passive: true });
+
+        title.addEventListener('touchcancel', function(e) {
+            this.style.opacity = '1';
+        }, { passive: true });
+    });
+
+    // 手機版默認折疊時段選擇和任務池
+    if (window.innerWidth <= 768) {
+        const timeTitle = document.querySelector('.time-selector-panel .collapsible-title');
+        const timeContent = document.getElementById('timeContent');
+        if (timeTitle && timeContent) {
+            timeTitle.classList.add('collapsed');
+            timeContent.classList.add('collapsed');
+        }
+
+        const taskPoolTitle = document.querySelector('.task-pool .collapsible-title');
+        const taskPoolContent = document.getElementById('taskPoolContent');
+        if (taskPoolTitle && taskPoolContent) {
+            taskPoolTitle.classList.add('collapsed');
+            taskPoolContent.classList.add('collapsed');
+        }
+    }
+
+    // 監聽視窗大小改變，切換到電腦版時自動展開所有面板
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            if (window.innerWidth > 768) {
+                // 電腦版：移除所有折疊狀態
+                document.querySelectorAll('.collapsible-title.collapsed').forEach(title => {
+                    title.classList.remove('collapsed');
+                });
+                document.querySelectorAll('.collapsible-content.collapsed').forEach(content => {
+                    content.classList.remove('collapsed');
+                });
+            }
+        }, 250); // 延遲 250ms 避免頻繁觸發
+    });
+
+    // 排班預覽匯出按鈕
+    document.getElementById('exportScheduleTextBtn').addEventListener('click', exportScheduleAsText);
+    document.getElementById('exportScheduleImageBtn').addEventListener('click', exportScheduleAsImage);
 
     // 批量匯入人員
     document.getElementById('addPersonRowBtn').addEventListener('click', addPersonRow);
@@ -181,6 +378,9 @@ function loadData() {
         personnel = data.personnel || [];
         tasks = data.tasks || [];
         history = data.history || [];
+        WORK_CATEGORIES = data.workCategories || getDefaultWorkCategories();
+        RANK_LABELS = data.rankLabels || getDefaultRankLabels();
+        MAX_RANK = data.maxRank || 10;
 
         // 修正舊資料格式：將 assignee (單數) 轉換為 assignees (複數陣列)
         tasks.forEach(task => {
@@ -216,7 +416,10 @@ function saveData() {
     const data = {
         personnel,
         tasks,
-        history
+        history,
+        workCategories: WORK_CATEGORIES,
+        rankLabels: RANK_LABELS,
+        maxRank: MAX_RANK
     };
     localStorage.setItem('personnelManagementData', JSON.stringify(data));
     console.log('儲存資料成功');
@@ -234,7 +437,8 @@ function createSampleData() {
         name,
         rank: ranks[i],
         contact: `分機${101 + i}`,
-        isSpecial: specialPeople.includes(i)
+        isSpecial: specialPeople.includes(i),
+        status: 'normal' // normal, leave, mission, lunch
     }));
 
     // 建立今天和明天的任務
@@ -248,22 +452,24 @@ function createSampleData() {
 
     tasks = [
         // 今天的任務
-        { id: 1, name: '夜班值勤', type: 'daily', date: todayStr, startHour: 0, endHour: 6, assignees: [14, 15], requiredPeople: 2, description: '凌晨時段監控' },
-        { id: 2, name: '早班準備', type: 'daily', date: todayStr, startHour: 6, endHour: 8, assignees: [16, 17], requiredPeople: 2, description: '' },
-        { id: 3, name: '早晨巡視', type: 'daily', date: todayStr, startHour: 8, endHour: 10, assignees: [18], requiredPeople: 2, description: '' },
-        { id: 4, name: '主管會議', type: 'important', date: todayStr, startHour: 10, endHour: 12, assignees: [1, 2], requiredPeople: 5, description: '' },
-        { id: 5, name: '午間服務', type: 'daily', date: todayStr, startHour: 12, endHour: 14, assignees: [5, 6], requiredPeople: 3, description: '' },
-        { id: 6, name: '下午作業', type: 'daily', date: todayStr, startHour: 14, endHour: 18, assignees: [7, 8], requiredPeople: 4, description: '' },
-        { id: 7, name: '晚班交接', type: 'important', date: todayStr, startHour: 18, endHour: 20, assignees: [9], requiredPeople: 2, description: '' },
-        { id: 8, name: '夜間巡檢', type: 'daily', date: todayStr, startHour: 20, endHour: 24, assignees: [10, 11], requiredPeople: 2, description: '' },
+        { id: 1, name: '夜班值勤', type: 'daily', workCategory: 'monitor', date: todayStr, startHour: 0, endHour: 6, assignees: [14, 15], requiredPeople: 2, description: '凌晨時段監控' },
+        { id: 2, name: '早班準備', type: 'daily', workCategory: 'admin', date: todayStr, startHour: 6, endHour: 8, assignees: [16, 17], requiredPeople: 2, description: '' },
+        { id: 3, name: '早晨巡視', type: 'daily', workCategory: 'patrol', date: todayStr, startHour: 8, endHour: 10, assignees: [18], requiredPeople: 2, description: '' },
+        { id: 4, name: '主管會議', type: 'important', workCategory: 'meeting', date: todayStr, startHour: 10, endHour: 12, assignees: [1, 2], requiredPeople: 5, description: '' },
+        { id: 5, name: '午間服務', type: 'daily', workCategory: 'service', date: todayStr, startHour: 12, endHour: 14, assignees: [5, 6], requiredPeople: 3, description: '' },
+        { id: 6, name: '下午作業', type: 'daily', workCategory: 'admin', date: todayStr, startHour: 14, endHour: 18, assignees: [7, 8], requiredPeople: 4, description: '' },
+        { id: 7, name: '晚班交接', type: 'important', workCategory: 'admin', date: todayStr, startHour: 18, endHour: 20, assignees: [9], requiredPeople: 2, description: '' },
+        { id: 8, name: '夜間巡檢', type: 'daily', workCategory: 'patrol', date: todayStr, startHour: 20, endHour: 24, assignees: [10, 11], requiredPeople: 2, description: '' },
 
         // 明天的任務（未分配）
-        { id: 9, name: '夜班值勤', type: 'daily', date: tomorrowStr, startHour: 0, endHour: 6, assignees: [], requiredPeople: 2, description: '凌晨時段監控' },
-        { id: 10, name: '早班準備', type: 'daily', date: tomorrowStr, startHour: 6, endHour: 8, assignees: [], requiredPeople: 2, description: '' },
-        { id: 11, name: '主管會議', type: 'important', date: tomorrowStr, startHour: 10, endHour: 12, assignees: [], requiredPeople: 5, description: '' }
+        { id: 9, name: '夜班值勤', type: 'daily', workCategory: 'monitor', date: tomorrowStr, startHour: 0, endHour: 6, assignees: [], requiredPeople: 2, description: '凌晨時段監控' },
+        { id: 10, name: '早班準備', type: 'daily', workCategory: 'admin', date: tomorrowStr, startHour: 6, endHour: 8, assignees: [], requiredPeople: 2, description: '' },
+        { id: 11, name: '主管會議', type: 'important', workCategory: 'meeting', date: tomorrowStr, startHour: 10, endHour: 12, assignees: [], requiredPeople: 5, description: '' }
     ];
 
     history = [];
+    WORK_CATEGORIES = getDefaultWorkCategories();
+    RANK_LABELS = getDefaultRankLabels();
     saveData();
 }
 
@@ -584,6 +790,19 @@ function filterPersonnel() {
         // 狀態過濾
         if (currentStatusFilter !== 'all') {
             const status = getPersonStatus(person);
+
+            // 特殊狀態篩選（請假、出任務、午休）
+            if (currentStatusFilter === 'leave' && status !== 'leave') {
+                return false;
+            }
+            if (currentStatusFilter === 'mission' && status !== 'mission') {
+                return false;
+            }
+            if (currentStatusFilter === 'lunch' && status !== 'lunch') {
+                return false;
+            }
+
+            // 一般狀態篩選（空閒、忙碌）
             if (currentStatusFilter === 'free' && status !== 'free') {
                 return false;
             }
@@ -609,6 +828,19 @@ function getPersonStatus(person) {
         return !(t.endHour <= currentStartHour || t.startHour > currentEndHour);
     });
 
+    // 優先檢查是否有特殊任務（請假、出任務、午休）
+    const specialTask = personTasks.find(t => t.type === 'leave' || t.type === 'mission' || t.type === 'lunch');
+    if (specialTask) {
+        return specialTask.type; // 返回特殊狀態：leave, mission, lunch
+    }
+
+    // 如果沒有特殊任務，但人員狀態標記為特殊狀態，也返回該狀態
+    const personStatus = person.status || 'normal';
+    if (personStatus !== 'normal') {
+        return personStatus;
+    }
+
+    // 檢查一般工作任務
     if (personTasks.length === 0) {
         return 'free'; // 完全空閒
     }
@@ -668,7 +900,10 @@ function createPersonCardGrid(person) {
     const statusText = {
         'free': '空閒',
         'busy': '忙碌',
-        'partial': '部分空閒'
+        'partial': '部分空閒',
+        'leave': '🏖️ 請假',
+        'mission': '🚀 出任務',
+        'lunch': '🍱 午休'
     };
 
     const rankLabel = getRankLabel(person.rank);
@@ -719,8 +954,22 @@ function createPersonCardGrid(person) {
 
     const specialBadge = person.isSpecial ? '<span class="special-badge">🔸 特殊人員</span>' : '';
 
+    // 特殊狀態徽章（請假、出任務、午休）
+    const personStatus = person.status || 'normal';
+    let statusBadge = '';
+    if (personStatus === 'leave') {
+        statusBadge = '<span class="person-status-badge status-badge-leave">🏖️ 請假中</span>';
+    } else if (personStatus === 'mission') {
+        statusBadge = '<span class="person-status-badge status-badge-mission">🚀 出任務</span>';
+    } else if (personStatus === 'lunch') {
+        statusBadge = '<span class="person-status-badge status-badge-lunch">🍱 午休中</span>';
+    }
+
     card.innerHTML = `
-        <div class="person-name-grid">${person.name} ${specialBadge}</div>
+        <div class="person-name-grid">
+            ${person.name} ${specialBadge}
+            ${statusBadge}
+        </div>
         <div class="person-rank-display">
             <span class="rank-badge-grid">LV ${person.rank} - ${rankLabel}</span>
         </div>
@@ -759,11 +1008,7 @@ function getHourRanges(hours) {
 }
 
 function getRankLabel(rank) {
-    if (rank >= 9) return '高階';
-    if (rank >= 7) return '中高階';
-    if (rank >= 5) return '中階';
-    if (rank >= 3) return '基層';
-    return '新進';
+    return RANK_LABELS[String(rank)] || `LV${rank}`;
 }
 
 // ===== 統計更新 =====
@@ -772,16 +1017,25 @@ function updateStats() {
 
     let freeCount = 0;
     let busyCount = 0;
+    let leaveCount = 0;
+    let missionCount = 0;
+    let lunchCount = 0;
 
     filteredPersonnel.forEach(person => {
         const status = getPersonStatus(person);
         if (status === 'free') freeCount++;
         else if (status === 'busy') busyCount++;
+        else if (status === 'leave') leaveCount++;
+        else if (status === 'mission') missionCount++;
+        else if (status === 'lunch') lunchCount++;
     });
 
     document.getElementById('totalCount').textContent = filteredPersonnel.length;
     document.getElementById('freeCount').textContent = freeCount;
     document.getElementById('busyCount').textContent = busyCount;
+    document.getElementById('leaveCount').textContent = leaveCount;
+    document.getElementById('missionCount').textContent = missionCount;
+    document.getElementById('lunchCount').textContent = lunchCount;
 }
 
 // ===== 任務列表渲染 =====
@@ -836,7 +1090,10 @@ function createTaskCard(task) {
     const typeText = {
         'daily': '日常',
         'important': '重要',
-        'urgent': '臨時'
+        'urgent': '臨時',
+        'leave': '🏖️ 請假',
+        'mission': '🚀 出任務',
+        'lunch': '🍱 午休'
     };
 
     // 建立成員列表
@@ -865,11 +1122,16 @@ function createTaskCard(task) {
     // 未達標警告標示
     const understaffedBadge = !isFull ? '<span class="understaffed-badge">⚠️ 缺人</span>' : '';
 
+    // 工作性質標籤
+    const categoryName = task.workCategory ? WORK_CATEGORIES[task.workCategory] : '';
+    const categoryBadge = categoryName ? `<span class="work-category-badge">📋 ${categoryName}</span>` : '';
+
     card.innerHTML = `
         <div class="task-card-header">
             <span class="task-card-name">${task.name} ${understaffedBadge}</span>
             <span class="task-type-badge ${task.type}">${typeText[task.type]}</span>
         </div>
+        ${categoryBadge}
         <div class="task-card-time">${startTime} - ${endTime}</div>
         <div class="task-progress-section">
             <div class="task-people-count ${progressClass}">
@@ -974,6 +1236,22 @@ function highlightAvailablePersonnel(taskId) {
             return;
         }
 
+        // 檢查人員是否處於特殊狀態（請假、出任務、午休）
+        const personStatus = person.status || 'normal';
+        if (personStatus !== 'normal') {
+            personCard.classList.add('time-conflict');
+            console.log(person.name, '處於特殊狀態:', personStatus);
+            return;
+        }
+
+        // 檢查是否在過去7天內做過相同性質的工作
+        const taskCategory = task.workCategory;
+        if (taskCategory && hasRecentWorkCategory(personId, taskCategory, 7)) {
+            personCard.classList.add('work-repeat');
+            console.log(person.name, '近7天內已做過此性質工作:', WORK_CATEGORIES[taskCategory] || taskCategory);
+            return;
+        }
+
         // 找出此人在同一天的所有任務
         const personTasks = tasks.filter(t => {
             const tDate = t.date || formatDate(new Date());
@@ -1006,7 +1284,7 @@ function highlightAvailablePersonnel(taskId) {
 // 清除可用性高亮
 function clearAvailabilityHighlight() {
     document.querySelectorAll('.person-card-grid').forEach(card => {
-        card.classList.remove('time-conflict', 'time-available', 'already-assigned');
+        card.classList.remove('time-conflict', 'time-available', 'already-assigned', 'work-repeat');
     });
 }
 
@@ -1040,10 +1318,32 @@ function handlePersonDrop(e) {
             delete task.assignee;
         }
 
+        // 檢查人員是否處於特殊狀態
+        const personStatus = person.status || 'normal';
+        if (personStatus !== 'normal') {
+            const statusNames = {
+                'leave': '請假中',
+                'mission': '出任務中',
+                'lunch': '午休中'
+            };
+            alert(`${person.name} 目前${statusNames[personStatus]}，無法分配任務！`);
+            return;
+        }
+
         // 檢查是否已經在任務中
         if (task.assignees.includes(personId)) {
             alert(`${person.name} 已經在任務「${task.name}」中！`);
             return;
+        }
+
+        // 檢查是否在過去7天內做過相同性質的工作
+        const taskCategory = task.workCategory;
+        if (taskCategory && hasRecentWorkCategory(personId, taskCategory, 7)) {
+            const categoryName = WORK_CATEGORIES[taskCategory] || taskCategory;
+            const confirmMsg = `⚠️ 工作性質重複警告\n\n${person.name} 在過去 7 天內已經執行過「${categoryName}」性質的工作。\n\n為了工作多樣性，建議安排其他性質的任務。\n\n仍要分配嗎？`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
         }
 
         // 檢查是否已滿
@@ -1166,7 +1466,8 @@ function importPersonList() {
             name,
             rank,
             contact,
-            isSpecial
+            isSpecial,
+            status: 'normal' // 預設為正常狀態
         });
     });
 
@@ -1231,7 +1532,8 @@ function savePerson() {
             name,
             rank,
             contact,
-            isSpecial
+            isSpecial,
+            status: 'normal' // 預設為正常狀態
         };
         personnel.push(newPerson);
         addHistory(`新增人員: ${name}${isSpecial ? ' (特殊人員)' : ''}`);
@@ -1254,6 +1556,8 @@ function showAddTaskModal() {
     document.getElementById('taskName').value = '';
     document.getElementById('taskDate').value = currentDateString; // 預設為當前查詢的日期
     document.getElementById('taskType').value = 'daily';
+    updateTaskWorkCategoryOptions();
+    document.getElementById('taskWorkCategory').value = Object.keys(WORK_CATEGORIES)[0] || '';
     document.getElementById('taskStartHour').value = '';
     document.getElementById('taskEndHour').value = '';
     document.getElementById('taskRequiredPeople').value = '1';
@@ -1265,6 +1569,7 @@ function saveTask() {
     const name = document.getElementById('taskName').value.trim();
     const date = document.getElementById('taskDate').value;
     const type = document.getElementById('taskType').value;
+    const workCategory = document.getElementById('taskWorkCategory').value;
     const startHour = parseInt(document.getElementById('taskStartHour').value);
     const endHour = parseInt(document.getElementById('taskEndHour').value);
     const requiredPeople = parseInt(document.getElementById('taskRequiredPeople').value);
@@ -1306,6 +1611,7 @@ function saveTask() {
             task.name = name;
             task.date = date;
             task.type = type;
+            task.workCategory = workCategory;
             task.startHour = startHour;
             task.endHour = endHour;
             task.requiredPeople = requiredPeople;
@@ -1319,6 +1625,7 @@ function saveTask() {
             name,
             date,
             type,
+            workCategory,
             startHour,
             endHour,
             assignees: [],
@@ -1343,6 +1650,8 @@ function editTask(taskId) {
     document.getElementById('taskName').value = task.name;
     document.getElementById('taskDate').value = task.date || currentDateString;
     document.getElementById('taskType').value = task.type;
+    updateTaskWorkCategoryOptions();
+    document.getElementById('taskWorkCategory').value = task.workCategory || Object.keys(WORK_CATEGORIES)[0] || '';
     document.getElementById('taskStartHour').value = task.startHour;
     document.getElementById('taskEndHour').value = task.endHour;
     document.getElementById('taskRequiredPeople').value = task.requiredPeople || 1;
@@ -1379,7 +1688,10 @@ function showPersonDetail(personId) {
     const statusText = {
         'free': '空閒',
         'busy': '忙碌',
-        'partial': '部分空閒'
+        'partial': '部分空閒',
+        'leave': '🏖️ 請假',
+        'mission': '🚀 出任務',
+        'lunch': '🍱 午休'
     };
 
     let html = `
@@ -1391,6 +1703,41 @@ function showPersonDetail(personId) {
                 <span style="color: var(--gaming-cyan); font-size: 0.9rem;">當前狀態: </span>
                 <span style="color: var(--status-${status}); font-weight: bold; text-shadow: var(--glow-${status === 'free' ? 'green' : status === 'busy' ? 'red' : 'yellow'});">${statusText[status]}</span>
             </div>
+        </div>
+
+        <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px;">
+            <h4 style="color: var(--gaming-yellow); margin: 0 0 15px 0; font-size: 1rem;">設定人員狀態</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <button onclick="setPersonStatus(${person.id}, 'normal')"
+                    style="padding: 8px; background: ${(person.status || 'normal') === 'normal' ? 'var(--gaming-yellow)' : 'rgba(255,255,255,0.1)'};
+                    color: ${(person.status || 'normal') === 'normal' ? 'var(--gaming-black)' : 'var(--gaming-white)'};
+                    border: 1px solid var(--gaming-yellow); border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                    ✅ 正常
+                </button>
+                <button onclick="setPersonStatus(${person.id}, 'leave')"
+                    style="padding: 8px; background: ${(person.status || 'normal') === 'leave' ? '#FF6B6B' : 'rgba(255,255,255,0.1)'};
+                    color: var(--gaming-white);
+                    border: 1px solid #FF6B6B; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                    🏖️ 請假
+                </button>
+                <button onclick="setPersonStatus(${person.id}, 'mission')"
+                    style="padding: 8px; background: ${(person.status || 'normal') === 'mission' ? '#4ECDC4' : 'rgba(255,255,255,0.1)'};
+                    color: var(--gaming-white);
+                    border: 1px solid #4ECDC4; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                    🚀 出任務
+                </button>
+                <button onclick="setPersonStatus(${person.id}, 'lunch')"
+                    style="padding: 8px; background: ${(person.status || 'normal') === 'lunch' ? '#FFB84D' : 'rgba(255,255,255,0.1)'};
+                    color: var(--gaming-white);
+                    border: 1px solid #FFB84D; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                    🍱 午休
+                </button>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 8px; border: 1px solid rgba(255, 184, 77, 0.3);">
+            <h4 style="color: var(--gaming-yellow); margin: 0 0 15px 0; font-size: 1rem;">📊 過去 7 天工作記錄</h4>
+            <div id="workHistorySection"></div>
         </div>
     `;
 
@@ -1405,7 +1752,10 @@ function showPersonDetail(personId) {
             const typeText = {
                 'daily': '日常',
                 'important': '重要',
-                'urgent': '臨時'
+                'urgent': '臨時',
+                'leave': '🏖️ 請假',
+                'mission': '🚀 出任務',
+                'lunch': '🍱 午休'
             };
 
             const taskStartTime = `${String(task.startHour).padStart(2, '0')}:00`;
@@ -1425,6 +1775,45 @@ function showPersonDetail(personId) {
     content.innerHTML = html;
     panel.classList.remove('hidden');
     document.querySelector('.main-workspace').classList.add('with-detail');
+
+    // 渲染工作歷史記錄
+    renderWorkHistory(person.id);
+}
+
+// 渲染工作歷史記錄
+function renderWorkHistory(personId) {
+    const container = document.getElementById('workHistorySection');
+    if (!container) return;
+
+    const workHistory = getPersonWorkHistory(personId, 7);
+
+    if (workHistory.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--gaming-cyan); padding: 15px; opacity: 0.7;">近 7 天無工作記錄</div>';
+        return;
+    }
+
+    // 統計工作性質
+    const categoryCount = {};
+    workHistory.forEach(task => {
+        const category = task.workCategory || 'other';
+        categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+
+    // 生成統計標籤
+    let statsHtml = '<div style="display: flex; flex-wrap: wrap; gap: 8px;">';
+
+    Object.entries(categoryCount).forEach(([category, count]) => {
+        const categoryName = WORK_CATEGORIES[category] || category;
+        statsHtml += `
+            <div style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; background: rgba(255, 184, 77, 0.2); border: 1px solid rgba(255, 184, 77, 0.4); border-radius: 15px; font-size: 0.9rem;">
+                <span style="color: var(--gaming-white);">${categoryName}</span>
+                <span style="color: var(--gaming-yellow); font-weight: bold;">×${count}</span>
+            </div>
+        `;
+    });
+    statsHtml += '</div>';
+
+    container.innerHTML = statsHtml;
 }
 
 function closeDetailPanel() {
@@ -1583,7 +1972,10 @@ function showTaskDetail(taskId) {
     const typeText = {
         'daily': '日常任務',
         'important': '重要任務',
-        'urgent': '臨時任務'
+        'urgent': '臨時任務',
+        'leave': '🏖️ 請假',
+        'mission': '🚀 出任務',
+        'lunch': '🍱 午休'
     };
 
     const progress = Math.min((assignees.length / required) * 100, 100);
@@ -1703,3 +2095,832 @@ function handleTaskListDrop(e) {
 
 // 初始化時套用預設時段
 applyTimeMode('now');
+
+// ===== 排班預覽功能 =====
+function showSchedulePreview() {
+    const modal = document.getElementById('schedulePreviewModal');
+    const content = document.getElementById('schedulePreviewContent');
+    const dateDisplay = document.getElementById('previewDate');
+
+    // 設定日期顯示
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayString = formatDate(today);
+
+    const daysDiff = Math.round((currentDate - today) / (1000 * 60 * 60 * 24));
+    let dateLabel = currentDateString;
+    if (daysDiff === 0) {
+        dateLabel += ' (今天)';
+    } else if (daysDiff === 1) {
+        dateLabel += ' (明天)';
+    } else if (daysDiff === 2) {
+        dateLabel += ' (後天)';
+    } else if (daysDiff > 0) {
+        dateLabel += ` (${daysDiff}天後)`;
+    } else if (daysDiff === -1) {
+        dateLabel += ' (昨天)';
+    } else if (daysDiff < 0) {
+        dateLabel += ` (${-daysDiff}天前)`;
+    }
+
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    const weekday = weekdays[currentDate.getDay()];
+    dateLabel += ` 星期${weekday}`;
+
+    dateDisplay.textContent = dateLabel;
+
+    // 取得當前日期的所有任務
+    const dayTasks = tasks.filter(t => {
+        const taskDate = t.date || formatDate(new Date());
+        return taskDate === currentDateString;
+    });
+
+    if (dayTasks.length === 0) {
+        content.innerHTML = '<div style="text-align: center; color: var(--gaming-cyan); padding: 40px;">此日期尚無任務安排</div>';
+        modal.classList.remove('hidden');
+        return;
+    }
+
+    // 按時間排序
+    dayTasks.sort((a, b) => a.startHour - b.startHour);
+
+    // 生成時間軸
+    let html = '<div class="schedule-timeline">';
+
+    dayTasks.forEach(task => {
+        const typeColors = {
+            'daily': '#00FF88',
+            'important': '#FF0080',
+            'urgent': '#FF6B00',
+            'leave': '#FF6B6B',
+            'mission': '#4ECDC4',
+            'lunch': '#FFB84D'
+        };
+        const typeNames = {
+            'daily': '日常',
+            'important': '重要',
+            'urgent': '臨時',
+            'leave': '🏖️ 請假',
+            'mission': '🚀 出任務',
+            'lunch': '🍱 午休'
+        };
+
+        const startTime = `${String(task.startHour).padStart(2, '0')}:00`;
+        const endTime = task.endHour === 24 ? '00:00(隔日)' : `${String(task.endHour).padStart(2, '0')}:00`;
+        const duration = (task.endHour === 24 ? 24 : task.endHour) - task.startHour;
+
+        // 取得分配的人員
+        const assignees = task.assignees || [];
+        const required = task.requiredPeople || 1;
+        let assigneeList = '';
+
+        if (assignees.length === 0) {
+            assigneeList = '<div class="preview-assignee-empty">❌ 尚未分配人員</div>';
+        } else {
+            assigneeList = '<div class="preview-assignee-list">';
+            assignees.forEach((personId, index) => {
+                const person = personnel.find(p => p.id === personId);
+                if (person) {
+                    const rankLabel = getRankLabel(person.rank);
+                    assigneeList += `
+                        <div class="preview-assignee-item">
+                            <span class="assignee-number">${index + 1}.</span>
+                            <span class="assignee-name">${person.name}</span>
+                            <span class="assignee-rank">LV${person.rank} ${rankLabel}</span>
+                            <span class="assignee-contact">${person.contact}</span>
+                        </div>
+                    `;
+                }
+            });
+            assigneeList += '</div>';
+        }
+
+        const understaffedWarning = assignees.length < required
+            ? `<div class="preview-warning">⚠️ 缺少 ${required - assignees.length} 人</div>`
+            : '';
+
+        html += `
+            <div class="preview-task-block" data-task-id="${task.id}">
+                <div class="preview-task-header" style="border-left: 4px solid ${typeColors[task.type]};">
+                    <div class="preview-task-title">
+                        <span class="task-icon">📋</span>
+                        <span class="task-name">${task.name}</span>
+                        <span class="task-type-tag" style="background: ${typeColors[task.type]}40; border-color: ${typeColors[task.type]}; color: ${typeColors[task.type]};">
+                            ${typeNames[task.type]}
+                        </span>
+                        ${task.workCategory ? `<span class="task-category-tag" style="background: rgba(255, 184, 77, 0.2); border: 1px solid rgba(255, 184, 77, 0.4); color: var(--gaming-yellow);">
+                            ${WORK_CATEGORIES[task.workCategory] || task.workCategory}
+                        </span>` : ''}
+                    </div>
+                    <div class="preview-task-time">
+                        <span class="time-icon">🕐</span>
+                        <span class="time-range">${startTime} - ${endTime}</span>
+                        <span class="time-duration">(${duration}小時)</span>
+                    </div>
+                    <div class="preview-task-people">
+                        <span class="people-icon">👥</span>
+                        <span class="people-count ${assignees.length >= required ? 'count-full' : 'count-short'}">
+                            ${assignees.length} / ${required} 人
+                        </span>
+                    </div>
+                </div>
+                ${understaffedWarning}
+                ${assigneeList}
+                ${task.description ? `<div class="preview-task-desc">💡 ${task.description}</div>` : ''}
+            </div>
+        `;
+    });
+
+    html += '</div>';
+
+    // 統計人員狀態
+    const statusStats = {
+        leave: [],
+        mission: [],
+        lunch: []
+    };
+
+    personnel.forEach(person => {
+        if (person.status === 'leave') {
+            statusStats.leave.push(person.name);
+        } else if (person.status === 'mission') {
+            statusStats.mission.push(person.name);
+        } else if (person.status === 'lunch') {
+            statusStats.lunch.push(person.name);
+        }
+    });
+
+    // 加上人員狀態統計區塊
+    if (statusStats.leave.length > 0 || statusStats.mission.length > 0 || statusStats.lunch.length > 0 || personnel.length > 0) {
+        html += `
+            <div style="margin-top: 30px; padding: 20px; background: rgba(0, 212, 255, 0.1); border: 2px solid var(--gaming-cyan); border-radius: 10px;">
+                <div style="font-size: 1.2rem; font-weight: bold; color: var(--gaming-cyan); margin-bottom: 15px; text-align: center;">
+                    📊 人員狀態統計
+                </div>
+
+                <div style="display: grid; gap: 12px;">
+                    <div style="padding: 10px; background: rgba(0, 255, 136, 0.1); border-left: 4px solid var(--gaming-green); border-radius: 5px;">
+                        <span style="color: var(--gaming-green); font-weight: bold;">今日總人數：</span>
+                        <span style="color: var(--gaming-white); font-size: 1.1rem; font-weight: bold;">${personnel.length} 人</span>
+                    </div>
+        `;
+
+        if (statusStats.leave.length > 0) {
+            html += `
+                    <div style="padding: 10px; background: rgba(255, 0, 128, 0.1); border-left: 4px solid var(--status-busy); border-radius: 5px;">
+                        <span style="color: var(--status-busy); font-weight: bold;">請假 (${statusStats.leave.length}人)：</span>
+                        <span style="color: var(--gaming-white);">${statusStats.leave.join('、')}</span>
+                    </div>
+            `;
+        }
+
+        if (statusStats.mission.length > 0) {
+            html += `
+                    <div style="padding: 10px; background: rgba(255, 107, 0, 0.1); border-left: 4px solid var(--gaming-orange); border-radius: 5px;">
+                        <span style="color: var(--gaming-orange); font-weight: bold;">出任務 (${statusStats.mission.length}人)：</span>
+                        <span style="color: var(--gaming-white);">${statusStats.mission.join('、')}</span>
+                    </div>
+            `;
+        }
+
+        if (statusStats.lunch.length > 0) {
+            html += `
+                    <div style="padding: 10px; background: rgba(255, 184, 77, 0.1); border-left: 4px solid var(--gaming-yellow); border-radius: 5px;">
+                        <span style="color: var(--gaming-yellow); font-weight: bold;">午休 (${statusStats.lunch.length}人)：</span>
+                        <span style="color: var(--gaming-white);">${statusStats.lunch.join('、')}</span>
+                    </div>
+            `;
+        }
+
+        html += `
+                </div>
+            </div>
+        `;
+    }
+
+    content.innerHTML = html;
+    modal.classList.remove('hidden');
+}
+
+// 匯出為文字格式
+function exportScheduleAsText() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const daysDiff = Math.round((currentDate - today) / (1000 * 60 * 60 * 24));
+    let dateLabel = currentDateString;
+    if (daysDiff === 0) {
+        dateLabel += ' (今天)';
+    } else if (daysDiff === 1) {
+        dateLabel += ' (明天)';
+    }
+
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    const weekday = weekdays[currentDate.getDay()];
+    dateLabel += ` 星期${weekday}`;
+
+    // 取得當前日期的所有任務
+    const dayTasks = tasks.filter(t => {
+        const taskDate = t.date || formatDate(new Date());
+        return taskDate === currentDateString;
+    });
+
+    if (dayTasks.length === 0) {
+        alert('此日期尚無任務安排');
+        return;
+    }
+
+    // 建立人員時間表 (每個人 0-24 點的任務安排)
+    const personnelSchedule = new Map();
+
+    // 收集所有有任務的人員
+    dayTasks.forEach(task => {
+        const assignees = task.assignees || [];
+        assignees.forEach(personId => {
+            const person = personnel.find(p => p.id === personId);
+            if (person) {
+                if (!personnelSchedule.has(personId)) {
+                    personnelSchedule.set(personId, {
+                        name: person.name,
+                        tasks: []
+                    });
+                }
+                personnelSchedule.get(personId).tasks.push({
+                    name: task.name,
+                    startHour: task.startHour,
+                    endHour: task.endHour,
+                    type: task.type
+                });
+            }
+        });
+    });
+
+    if (personnelSchedule.size === 0) {
+        alert('此日期尚無人員分配');
+        return;
+    }
+
+    // 統計人員狀態
+    const statusStats = {
+        leave: [],
+        mission: [],
+        lunch: []
+    };
+
+    personnel.forEach(person => {
+        if (person.status === 'leave') {
+            statusStats.leave.push(person.name);
+        } else if (person.status === 'mission') {
+            statusStats.mission.push(person.name);
+        } else if (person.status === 'lunch') {
+            statusStats.lunch.push(person.name);
+        }
+    });
+
+    // 生成文字格式 - 按人員列出（正式版本，無 emoji）
+    let text = `排班表 - ${dateLabel}\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    // 執勤人員
+    text += `【執勤人員】\n\n`;
+
+    // 將人員按名稱排序
+    const sortedPersonnel = Array.from(personnelSchedule.entries()).sort((a, b) => {
+        return a[1].name.localeCompare(b[1].name);
+    });
+
+    sortedPersonnel.forEach(([personId, personData], index) => {
+        text += `${personData.name}\n`;
+
+        // 將任務按時間排序
+        const sortedTasks = personData.tasks.sort((a, b) => a.startHour - b.startHour);
+
+        sortedTasks.forEach(task => {
+            const startTime = `${String(task.startHour).padStart(2, '0')}:00`;
+            const endTime = task.endHour === 24 ? '24:00' : `${String(task.endHour).padStart(2, '0')}:00`;
+            text += `   ${startTime}-${endTime}  ${task.name}\n`;
+        });
+
+        text += `\n`;
+    });
+
+    text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `總計：${personnelSchedule.size} 人執勤\n\n`;
+
+    // 人員狀態
+    let hasStatus = false;
+    if (statusStats.leave.length > 0 || statusStats.mission.length > 0 || statusStats.lunch.length > 0) {
+        text += `【人員狀態】\n\n`;
+        hasStatus = true;
+    }
+
+    // 今日總人數
+    text += `今日總人數：${personnel.length} 人\n\n`;
+
+    if (statusStats.leave.length > 0) {
+        text += `請假 (${statusStats.leave.length}人)：${statusStats.leave.join('、')}\n\n`;
+    }
+
+    if (statusStats.mission.length > 0) {
+        text += `出任務 (${statusStats.mission.length}人)：${statusStats.mission.join('、')}\n\n`;
+    }
+
+    if (statusStats.lunch.length > 0) {
+        text += `午休 (${statusStats.lunch.length}人)：${statusStats.lunch.join('、')}\n\n`;
+    }
+
+    text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+
+    // 複製到剪貼簿
+    navigator.clipboard.writeText(text).then(() => {
+        alert('排班表已複製到剪貼簿！\n可以直接貼到通訊軟體。');
+    }).catch(err => {
+        // 如果複製失敗，顯示文字讓用戶手動複製
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('✅ 排班表已複製到剪貼簿！');
+    });
+}
+
+// 匯出為圖片
+function exportScheduleAsImage() {
+    const content = document.getElementById('schedulePreviewContent');
+    const dateLabel = document.getElementById('previewDate').textContent;
+
+    // 建立一個臨時容器用於生成圖片
+    const container = document.createElement('div');
+    container.style.cssText = `
+        position: fixed;
+        left: -9999px;
+        top: 0;
+        width: 1200px;
+        background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+        padding: 40px;
+        font-family: 'Microsoft JhengHei', 'Consolas', sans-serif;
+        color: #FFFFFF;
+    `;
+
+    container.innerHTML = `
+        <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #00D4FF 0%, #00FF88 100%); border-radius: 10px;">
+            <h1 style="margin: 0; font-size: 32px; color: #000000; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">📅 排班表</h1>
+            <p style="margin: 10px 0 0 0; font-size: 20px; color: #000000; font-weight: bold;">${dateLabel}</p>
+        </div>
+        ${content.innerHTML}
+    `;
+
+    document.body.appendChild(container);
+
+    // 使用 html2canvas 生成圖片
+    // 注意：需要引入 html2canvas 庫
+    if (typeof html2canvas !== 'undefined') {
+        html2canvas(container, {
+            backgroundColor: '#0a0a0a',
+            scale: 2
+        }).then(canvas => {
+            document.body.removeChild(container);
+
+            // 下載圖片
+            const link = document.createElement('a');
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+            link.download = `排班表_${dateStr}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            alert('✅ 排班表已匯出為圖片！');
+        });
+    } else {
+        document.body.removeChild(container);
+        alert('⚠️ 圖片匯出功能需要載入 html2canvas 函式庫。\n目前僅支援文字匯出功能。');
+    }
+}
+
+// ===== 工作性質追蹤功能 =====
+// 取得人員過去N天的工作記錄
+function getPersonWorkHistory(personId, days = 7) {
+    const targetDate = new Date(currentDate);
+    targetDate.setHours(0, 0, 0, 0);
+
+    const startDate = new Date(targetDate);
+    startDate.setDate(startDate.getDate() - days);
+
+    // 取得該人員在此期間的所有任務
+    const workHistory = tasks.filter(t => {
+        if (!t.assignees || !t.assignees.includes(personId)) return false;
+
+        const taskDate = new Date(t.date + 'T00:00:00');
+        taskDate.setHours(0, 0, 0, 0);
+
+        // 包含過去N天（不包含當前選擇的日期）
+        return taskDate >= startDate && taskDate < targetDate;
+    });
+
+    // 按日期排序（由近到遠）
+    workHistory.sort((a, b) => {
+        const dateA = new Date(a.date);
+        const dateB = new Date(b.date);
+        return dateB - dateA;
+    });
+
+    return workHistory;
+}
+
+// 取得人員在過去N天內做過的工作性質清單
+function getPersonWorkCategories(personId, days = 7) {
+    const history = getPersonWorkHistory(personId, days);
+    const categories = new Set();
+
+    history.forEach(task => {
+        if (task.workCategory) {
+            categories.add(task.workCategory);
+        }
+    });
+
+    return Array.from(categories);
+}
+
+// 檢查人員是否在過去N天內做過該性質的工作
+function hasRecentWorkCategory(personId, workCategory, days = 7) {
+    const categories = getPersonWorkCategories(personId, days);
+    return categories.includes(workCategory);
+}
+
+// ===== 工作性質分類管理 =====
+function showWorkCategoryModal() {
+    document.getElementById('newCategoryKey').value = '';
+    document.getElementById('newCategoryName').value = '';
+    renderCategoryList();
+    document.getElementById('workCategoryModal').classList.remove('hidden');
+}
+
+function renderCategoryList() {
+    const container = document.getElementById('categoryListContainer');
+    if (!container) return;
+
+    const categories = Object.entries(WORK_CATEGORIES);
+
+    if (categories.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--gaming-cyan); padding: 20px;">尚無分類</div>';
+        return;
+    }
+
+    let html = '';
+    categories.forEach(([key, name]) => {
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255, 184, 77, 0.3); border-radius: 8px;">
+                <div>
+                    <div style="color: var(--gaming-white); font-weight: bold; margin-bottom: 3px;">${name}</div>
+                    <div style="color: var(--gaming-cyan); font-size: 0.8rem; opacity: 0.7;">${key}</div>
+                </div>
+                <button onclick="deleteWorkCategory('${key}')" class="delete-category-btn" style="padding: 6px 12px; background: rgba(255, 0, 128, 0.2); border: 1px solid var(--status-busy); border-radius: 5px; color: var(--status-busy); cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                    🗑️ 刪除
+                </button>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function addWorkCategory() {
+    const key = document.getElementById('newCategoryKey').value.trim();
+    const name = document.getElementById('newCategoryName').value.trim();
+
+    if (!key) {
+        alert('請輸入分類代碼');
+        return;
+    }
+
+    if (!name) {
+        alert('請輸入分類名稱');
+        return;
+    }
+
+    // 驗證代碼格式（只能英文和底線）
+    if (!/^[a-zA-Z_]+$/.test(key)) {
+        alert('分類代碼只能使用英文字母和底線');
+        return;
+    }
+
+    // 檢查是否已存在
+    if (WORK_CATEGORIES[key]) {
+        alert('此分類代碼已存在');
+        return;
+    }
+
+    // 新增分類
+    WORK_CATEGORIES[key] = name;
+    saveData();
+    addHistory(`新增工作性質分類: ${name} (${key})`);
+
+    // 清空輸入並更新列表
+    document.getElementById('newCategoryKey').value = '';
+    document.getElementById('newCategoryName').value = '';
+    renderCategoryList();
+    updateTaskWorkCategoryOptions();
+
+    alert(`✅ 成功新增分類「${name}」`);
+}
+
+function deleteWorkCategory(key) {
+    const name = WORK_CATEGORIES[key];
+
+    const confirmMsg = `確定要刪除分類「${name}」(${key})嗎？\n\n注意：刪除後不會影響已建立的任務，但新建任務時將無法選擇此分類。`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    delete WORK_CATEGORIES[key];
+    saveData();
+    addHistory(`刪除工作性質分類: ${name} (${key})`);
+    renderCategoryList();
+    updateTaskWorkCategoryOptions();
+
+    alert(`✅ 已刪除分類「${name}」`);
+}
+
+function updateTaskWorkCategoryOptions() {
+    const select = document.getElementById('taskWorkCategory');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '';
+
+    Object.entries(WORK_CATEGORIES).forEach(([key, name]) => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+
+    // 恢復原來的選擇
+    if (currentValue && WORK_CATEGORIES[currentValue]) {
+        select.value = currentValue;
+    }
+}
+
+// ===== 階級範圍設定 =====
+function setMaxRank() {
+    const currentMax = MAX_RANK;
+    const newMax = prompt(`請輸入最高階級數字（1-20）\n\n目前設定：LV${currentMax}`, currentMax);
+
+    if (newMax === null) return; // 取消
+
+    const maxRankNum = parseInt(newMax);
+
+    if (isNaN(maxRankNum) || maxRankNum < 1 || maxRankNum > 20) {
+        alert('請輸入 1-20 之間的數字');
+        return;
+    }
+
+    MAX_RANK = maxRankNum;
+    saveData();
+
+    // 更新顯示
+    document.getElementById('currentMaxRankDisplay').textContent = `目前最高階級：LV${MAX_RANK}`;
+    renderRankLabelList();
+
+    addHistory(`修改最高階級為 LV${MAX_RANK}`);
+    alert(`已設定最高階級為 LV${MAX_RANK}`);
+}
+
+// ===== 階級名稱管理 =====
+function showRankLabelModal() {
+    document.getElementById('currentMaxRankDisplay').textContent = `目前最高階級：LV${MAX_RANK}`;
+    renderRankLabelList();
+    document.getElementById('rankLabelModal').classList.remove('hidden');
+}
+
+function renderRankLabelList() {
+    const container = document.getElementById('rankLabelListContainer');
+    container.innerHTML = '';
+
+    // 從最高階級到 LV1 顯示
+    for (let rank = MAX_RANK; rank >= 1; rank--) {
+        const rankStr = String(rank);
+        const label = RANK_LABELS[rankStr] || '';
+
+        const item = document.createElement('div');
+        item.style.cssText = `
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-radius: 8px;
+        `;
+
+        item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <div style="
+                    background: linear-gradient(135deg, var(--neon-blue), var(--gaming-cyan));
+                    color: var(--gaming-black);
+                    padding: 5px 12px;
+                    border-radius: 5px;
+                    font-weight: bold;
+                    font-size: 0.9rem;
+                    min-width: 60px;
+                    text-align: center;
+                ">LV${rank}</div>
+                <input
+                    type="text"
+                    value="${label}"
+                    placeholder="例如: 高階主管"
+                    maxlength="10"
+                    onchange="updateRankLabel('${rankStr}', this.value)"
+                    style="
+                        flex: 1;
+                        padding: 8px 12px;
+                        background: rgba(0, 0, 0, 0.3);
+                        border: 1px solid rgba(0, 212, 255, 0.3);
+                        border-radius: 5px;
+                        color: var(--gaming-white);
+                        font-family: 'Consolas', monospace;
+                    "
+                >
+            </div>
+        `;
+
+        container.appendChild(item);
+    }
+}
+
+function updateRankLabel(rank, newLabel) {
+    RANK_LABELS[rank] = newLabel.trim();
+    saveData();
+    updateDisplay(); // 更新所有顯示
+    addHistory(`修改階級標籤: LV${rank} = ${newLabel}`);
+}
+
+// ===== 人員狀態管理 =====
+function setPersonStatus(personId, newStatus) {
+    const person = personnel.find(p => p.id === personId);
+    if (!person) return;
+
+    const statusNames = {
+        'normal': '正常',
+        'leave': '請假',
+        'mission': '出任務',
+        'lunch': '午休'
+    };
+
+    const oldStatus = person.status || 'normal';
+
+    // 如果設為正常，直接恢復
+    if (newStatus === 'normal') {
+        person.status = 'normal';
+        addHistory(`恢復 ${person.name} 為正常狀態`);
+        saveData();
+        updateDisplay();
+        showPersonDetail(personId);
+        return;
+    }
+
+    // 如果設為特殊狀態（請假/出任務/午休），彈出時間選擇對話框
+    if (newStatus === 'leave' || newStatus === 'mission' || newStatus === 'lunch') {
+        showStatusTimeRangeModal(personId, newStatus);
+        return;
+    }
+}
+
+// 顯示狀態時間範圍選擇對話框
+function showStatusTimeRangeModal(personId, statusType) {
+    const person = personnel.find(p => p.id === personId);
+    if (!person) return;
+
+    const statusNames = {
+        'leave': '請假',
+        'mission': '出任務',
+        'lunch': '午休'
+    };
+
+    const statusIcons = {
+        'leave': '🏖️',
+        'mission': '🚀',
+        'lunch': '🍱'
+    };
+
+    // 設定對話框標題
+    document.getElementById('statusTimeRangeTitle').textContent = `${statusIcons[statusType]} 設定${statusNames[statusType]}時間 - ${person.name}`;
+
+    // 設定預設日期為今天
+    const today = formatDate(new Date());
+    document.getElementById('statusStartDate').value = today;
+    document.getElementById('statusEndDate').value = today;
+
+    // 根據狀態類型設定預設時間
+    if (statusType === 'lunch') {
+        // 午休預設 12:00-13:00
+        document.getElementById('statusStartHour').value = 12;
+        document.getElementById('statusEndHour').value = 13;
+    } else if (statusType === 'mission') {
+        // 出任務預設 8:00-17:00
+        document.getElementById('statusStartHour').value = 8;
+        document.getElementById('statusEndHour').value = 17;
+    } else {
+        // 請假預設全天 0:00-24:00
+        document.getElementById('statusStartHour').value = 0;
+        document.getElementById('statusEndHour').value = 24;
+    }
+
+    document.getElementById('statusDescription').value = '';
+
+    // 顯示對話框
+    document.getElementById('statusTimeRangeModal').classList.remove('hidden');
+
+    // 設定確認按鈕事件
+    const confirmBtn = document.getElementById('confirmStatusTimeRange');
+    confirmBtn.onclick = function() {
+        confirmStatusTimeRange(personId, statusType);
+    };
+}
+
+// 確認設定狀態時間範圍
+function confirmStatusTimeRange(personId, statusType) {
+    const person = personnel.find(p => p.id === personId);
+    if (!person) return;
+
+    const startDate = document.getElementById('statusStartDate').value;
+    const startHour = parseInt(document.getElementById('statusStartHour').value);
+    const endDate = document.getElementById('statusEndDate').value;
+    const endHour = parseInt(document.getElementById('statusEndHour').value);
+    const description = document.getElementById('statusDescription').value.trim();
+
+    // 驗證輸入
+    if (!startDate || !endDate) {
+        alert('請選擇開始和結束日期');
+        return;
+    }
+
+    if (isNaN(startHour) || startHour < 0 || startHour > 23) {
+        alert('開始時間必須在 0-23 之間');
+        return;
+    }
+
+    if (isNaN(endHour) || endHour < 1 || endHour > 24) {
+        alert('結束時間必須在 1-24 之間');
+        return;
+    }
+
+    const statusNames = {
+        'leave': '請假',
+        'mission': '出任務',
+        'lunch': '午休'
+    };
+
+    // 創建特殊任務
+    const taskName = `${statusNames[statusType]} - ${person.name}`;
+    const newTask = {
+        id: Date.now(),
+        name: taskName,
+        type: statusType,
+        date: startDate,
+        startHour: startHour,
+        endHour: endDate === startDate ? endHour : 24,
+        assignees: [personId],
+        requiredPeople: 1,
+        description: description,
+        workCategory: null
+    };
+
+    tasks.push(newTask);
+
+    // 如果跨日，創建第二天的任務
+    if (endDate !== startDate) {
+        const nextDayTask = {
+            id: Date.now() + 1,
+            name: taskName,
+            type: statusType,
+            date: endDate,
+            startHour: 0,
+            endHour: endHour,
+            assignees: [personId],
+            requiredPeople: 1,
+            description: description,
+            workCategory: null
+        };
+        tasks.push(nextDayTask);
+    }
+
+    // 設定人員狀態
+    person.status = statusType;
+
+    // 記錄歷史
+    addHistory(`${person.name} ${statusNames[statusType]}: ${startDate} ${String(startHour).padStart(2, '0')}:00 - ${endDate} ${String(endHour).padStart(2, '0')}:00`);
+
+    // 儲存資料
+    saveData();
+
+    // 更新顯示
+    updateDisplay();
+
+    // 關閉對話框
+    closeModal('statusTimeRangeModal');
+
+    // 重新顯示人員詳細資訊
+    showPersonDetail(personId);
+}
