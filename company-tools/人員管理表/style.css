@@ -23,6 +23,7 @@
     --status-leave: #FF6B6B;
     --status-mission: #4ECDC4;
     --status-lunch: #FFB84D;
+    --status-comp-leave: #0096FF;
     --gaming-cyan: #00FFFF;
     --gaming-white: #FFFFFF;
 
@@ -144,6 +145,17 @@ body {
     93% { transform: translate(3px, -2px) skew(2deg); }
     95% { transform: translate(-2px, -2px) skew(1deg); }
     97% { transform: translate(2px, 2px) skew(-1deg); }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 .subtitle {
@@ -722,9 +734,20 @@ body {
     color: var(--status-lunch);
 }
 
+.filter-btn.status-comp-leave {
+    border-color: var(--status-comp-leave);
+    color: var(--status-comp-leave);
+}
+
 .filter-btn.status-lunch.active {
     background: var(--status-lunch);
     border-color: var(--status-lunch);
+    color: var(--gaming-white);
+}
+
+.filter-btn.status-comp-leave.active {
+    background: var(--status-comp-leave);
+    border-color: var(--status-comp-leave);
     color: var(--gaming-white);
 }
 
@@ -766,12 +789,38 @@ body {
 /* ===== 簡化操作按鈕面板 ===== */
 .action-panel {
     position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .action-dropdown {
     position: relative;
-    display: inline-block;
-    width: 100%;
+    flex: 1;
+    min-width: 200px;
+}
+
+/* 主要功能按鈕 */
+.primary-action-btn {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, var(--gaming-yellow) 0%, #FFD700 100%);
+    border: none;
+    border-radius: 8px;
+    color: var(--gaming-black);
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    font-family: 'Consolas', monospace;
+    white-space: nowrap;
+}
+
+.primary-action-btn:hover {
+    background: linear-gradient(135deg, #FFD700 0%, var(--gaming-yellow) 100%);
+    box-shadow: 0 6px 25px rgba(255, 215, 0, 0.6);
+    transform: translateY(-2px);
 }
 
 .action-menu-btn {
@@ -1267,6 +1316,11 @@ body {
     text-shadow: 0 0 5px var(--status-lunch);
 }
 
+.stat-simple.status-comp-leave strong {
+    color: var(--status-comp-leave);
+    text-shadow: 0 0 5px var(--status-comp-leave);
+}
+
 /* ===== 人員網格（放大卡片） ===== */
 .personnel-grid {
     display: grid;
@@ -1391,6 +1445,20 @@ body {
     transform: translateY(-3px);
 }
 
+.person-card-grid.status-comp_leave {
+    border-color: var(--status-comp-leave);
+    box-shadow: 0 0 20px rgba(0, 150, 255, 0.3);
+}
+
+.person-card-grid.status-comp_leave::before {
+    color: var(--status-comp-leave);
+}
+
+.person-card-grid.status-comp_leave:hover {
+    box-shadow: 0 0 30px rgba(0, 150, 255, 0.5);
+    transform: translateY(-3px);
+}
+
 .person-card-grid.drag-over {
     background: rgba(0, 255, 136, 0.1);
     box-shadow: 0 0 40px rgba(0, 255, 136, 0.6);
@@ -1508,8 +1576,9 @@ body {
     padding: 4px 10px;
     border-radius: 12px;
     font-weight: bold;
-    margin-left: 8px;
+    margin: 4px 4px 0 4px;
     animation: badgePulse 2s ease-in-out infinite;
+    white-space: nowrap;
 }
 
 @keyframes badgePulse {
@@ -1542,6 +1611,13 @@ body {
     border: 1px solid #FFB84D;
     color: #FFB84D;
     text-shadow: 0 0 8px rgba(255, 184, 77, 0.8);
+}
+
+.status-badge-comp-leave {
+    background: linear-gradient(135deg, rgba(0, 150, 255, 0.4), rgba(0, 150, 255, 0.2));
+    border: 1px solid #0096FF;
+    color: #0096FF;
+    text-shadow: 0 0 8px rgba(0, 150, 255, 0.8);
 }
 
 .person-rank-display {
@@ -1683,6 +1759,37 @@ body {
 
 .detail-content {
     color: var(--gaming-white);
+}
+
+/* 任務成員卡片 */
+.task-member-card {
+    padding: 12px;
+    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border-left: 3px solid var(--gaming-cyan);
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.task-member-info {
+    flex: 1;
+    min-width: 0; /* 允許內容收縮 */
+}
+
+.task-member-remove-btn {
+    padding: 5px 10px;
+    background: rgba(255, 0, 0, 0.2);
+    border: 1px solid #FF0000;
+    color: #FF0000;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s;
+    white-space: nowrap; /* 防止按鈕文字換行 */
+    flex-shrink: 0; /* 防止按鈕被壓縮 */
 }
 
 /* ===== Modal 樣式 ===== */
@@ -1933,6 +2040,49 @@ body {
     box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
 }
 
+/* 按鈕樣式別名（與主要樣式保持一致） */
+.btn-cyber {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Consolas', monospace;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-green-dark) 100%);
+    color: var(--gaming-black);
+    box-shadow: 0 4px 15px rgba(0, 255, 136, 0.4);
+}
+
+.btn-cyber:hover {
+    box-shadow: 0 6px 25px rgba(0, 255, 136, 0.6);
+    transform: translateY(-2px);
+}
+
+.btn-cyber-secondary {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Consolas', monospace;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: rgba(0, 0, 0, 0.6);
+    color: var(--neon-green);
+    border: 2px solid var(--neon-green);
+}
+
+.btn-cyber-secondary:hover {
+    background: rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
 /* ===== 統計儀表板 ===== */
 .stats-grid {
     display: grid;
@@ -2092,6 +2242,23 @@ body {
         padding: 10px;
     }
 
+    /* 操作面板調整 */
+    .action-panel {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .primary-action-btn {
+        width: 100%;
+        padding: 10px 15px;
+        font-size: 0.9rem;
+    }
+
+    .action-dropdown {
+        width: 100%;
+        min-width: 0;
+    }
+
     /* 主要工作區改為單欄 */
     .main-workspace {
         grid-template-columns: 1fr;
@@ -2108,47 +2275,104 @@ body {
         display: none;
     }
 
-    /* 人員網格調整 - 單欄顯示讓卡片更大 */
+    /* 人員網格調整 - 四欄顯示方便拖移 */
     .personnel-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
     }
 
-    /* 人員卡片調整 - 放大以便拖移任務 */
+    /* 人員卡片調整 - 緊湊設計適合小螢幕 */
     .person-card-grid {
-        padding: 20px;
-        font-size: 1rem;
-        min-height: 150px;
+        padding: 10px 6px;
+        font-size: 0.75rem;
+        min-height: 100px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        cursor: pointer; /* 手機版點擊互動 */
+        -webkit-user-select: none; /* 禁止選取文字 */
+        user-select: none;
+        /* 移除 touch-action，讓觸控事件正常工作 */
+        -webkit-tap-highlight-color: rgba(0, 255, 136, 0.3); /* 觸控高亮效果 */
     }
 
     .person-name-grid {
-        font-size: 1.3rem;
-        margin-bottom: 10px;
+        font-size: 0.85rem;
+        margin-bottom: 5px;
+        line-height: 1.2;
+        word-break: break-word;
     }
 
     .rank-badge-grid {
-        font-size: 0.9rem;
-        padding: 4px 10px;
+        font-size: 0.65rem;
+        padding: 2px 5px;
+        white-space: nowrap;
     }
 
     .person-status-badge {
-        font-size: 0.85rem;
-        padding: 4px 10px;
-        margin-left: 6px;
+        font-size: 0.65rem;
+        padding: 2px 5px;
+        margin-left: 3px;
+        white-space: nowrap;
     }
 
     .special-badge {
-        font-size: 0.85rem;
-        padding: 4px 10px;
+        font-size: 0.65rem;
+        padding: 2px 5px;
     }
 
-    /* 空閒時段資訊也放大 */
+    /* 空閒時段資訊 - 緊湊設計 */
     .free-hours-all,
     .free-hours-partial,
     .free-hours-none {
-        font-size: 1rem;
-        padding: 12px;
-        margin-top: 12px;
+        font-size: 0.7rem;
+        padding: 6px;
+        margin-top: 5px;
+        line-height: 1.3;
+    }
+
+    /* 人員卡片補休列表 - 緊湊設計 */
+    .person-comp-leave-list {
+        margin: 5px 0;
+        padding: 6px;
+        font-size: 0.7rem;
+    }
+
+    .comp-leave-item {
+        padding: 4px;
+        margin: 3px 0;
+        font-size: 0.65rem;
+    }
+
+    /* 人員卡片任務列表 - 緊湊設計 */
+    .person-tasks-list {
+        margin: 5px 0;
+        padding: 4px;
+        display: none; /* 手機版隱藏任務列表節省空間 */
+    }
+
+    .task-item-mini {
+        font-size: 0.6rem;
+        padding: 2px 3px;
+        margin: 2px 0;
+    }
+
+    /* 任務成員卡片 - 手機版垂直排列 */
+    .task-member-card {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+    }
+
+    .task-member-info {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .task-member-remove-btn {
+        width: 100%;
+        padding: 10px;
+        font-size: 0.9rem;
     }
 
     /* 折疊功能 - 手機版默認折疊時段選擇 */
@@ -2401,6 +2625,10 @@ body {
     /* 任務卡片調整 */
     .task-card {
         padding: 12px;
+        cursor: pointer; /* 手機版改為指針，不是拖移 */
+        -webkit-user-select: none; /* 禁止選取文字 */
+        user-select: none;
+        /* 移除 touch-action，讓觸控事件正常工作 */
     }
 
     .task-card-header {
@@ -3069,4 +3297,300 @@ body {
     color: var(--gaming-white);
     font-size: 0.95rem;
     line-height: 1.5;
+}
+
+/* ===== 補休管理樣式 ===== */
+
+.modal-content-extra-wide {
+    max-width: 95%;
+    width: 1400px;
+}
+
+.stat-card {
+    background: rgba(0, 255, 255, 0.1);
+    border: 1px solid rgba(0, 255, 255, 0.3);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+}
+
+.stat-label {
+    color: var(--gaming-cyan);
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.stat-value {
+    color: var(--gaming-white);
+    font-size: 2rem;
+    font-weight: bold;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.compensatory-leave-list {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid rgba(0, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.comp-leave-row {
+    display: grid;
+    grid-template-columns: 100px 120px 120px 200px 1fr 120px 100px 200px;
+    gap: 15px;
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(0, 255, 255, 0.1);
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.comp-leave-row:hover {
+    background: rgba(0, 255, 255, 0.05);
+}
+
+.comp-leave-date {
+    color: var(--gaming-cyan);
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.comp-leave-person {
+    color: var(--gaming-white);
+    font-weight: bold;
+}
+
+.comp-leave-type {
+    padding: 5px 10px;
+    background: rgba(255, 184, 77, 0.2);
+    border: 1px solid rgba(255, 184, 77, 0.4);
+    border-radius: 5px;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.comp-leave-task {
+    color: var(--gaming-white);
+    font-size: 0.9rem;
+}
+
+.comp-leave-reason {
+    color: var(--gaming-white);
+    opacity: 0.8;
+    font-size: 0.85rem;
+}
+
+.comp-leave-hours {
+    color: var(--gaming-white);
+    font-size: 0.85rem;
+    line-height: 1.6;
+}
+
+.comp-leave-hours strong {
+    color: var(--gaming-cyan);
+    font-size: 1.1rem;
+}
+
+.comp-leave-status {
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    text-align: center;
+    font-weight: bold;
+}
+
+.comp-leave-status.status-pending {
+    background: rgba(255, 184, 77, 0.2);
+    border: 1px solid rgba(255, 184, 77, 0.4);
+    color: #FFB84D;
+}
+
+.comp-leave-status.status-approved {
+    background: rgba(0, 255, 0, 0.2);
+    border: 1px solid rgba(0, 255, 0, 0.4);
+    color: #00FF00;
+}
+
+.comp-leave-status.status-scheduled {
+    background: rgba(0, 150, 255, 0.2);
+    border: 1px solid rgba(0, 150, 255, 0.4);
+    color: #0096FF;
+}
+
+.comp-leave-status.status-used {
+    background: rgba(128, 128, 128, 0.2);
+    border: 1px solid rgba(128, 128, 128, 0.4);
+    color: #999;
+}
+
+.comp-leave-schedule {
+    margin-top: 8px;
+    padding: 5px 10px;
+    background: rgba(0, 150, 255, 0.1);
+    border-left: 3px solid #0096FF;
+    border-radius: 5px;
+    font-size: 0.85rem;
+    color: #0096FF;
+    font-weight: bold;
+}
+
+.comp-leave-actions {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.comp-leave-actions button {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: bold;
+}
+
+.btn-approve {
+    background: rgba(0, 255, 0, 0.2);
+    color: #00FF00;
+    border: 1px solid rgba(0, 255, 0, 0.4);
+}
+
+.btn-approve:hover {
+    background: rgba(0, 255, 0, 0.3);
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+}
+
+.btn-use {
+    background: rgba(0, 255, 255, 0.2);
+    color: var(--gaming-cyan);
+    border: 1px solid rgba(0, 255, 255, 0.4);
+}
+
+.btn-use:hover {
+    background: rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.btn-edit {
+    background: rgba(255, 184, 77, 0.2);
+    color: #FFB84D;
+    border: 1px solid rgba(255, 184, 77, 0.4);
+}
+
+.btn-edit:hover {
+    background: rgba(255, 184, 77, 0.3);
+    box-shadow: 0 0 10px rgba(255, 184, 77, 0.5);
+}
+
+.btn-delete {
+    background: rgba(255, 0, 0, 0.2);
+    color: #FF0000;
+    border: 1px solid rgba(255, 0, 0, 0.4);
+}
+
+.btn-delete:hover {
+    background: rgba(255, 0, 0, 0.3);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+.btn-cancel {
+    background: rgba(255, 165, 0, 0.2);
+    color: #FFA500;
+    border: 1px solid rgba(255, 165, 0, 0.4);
+}
+
+.btn-cancel:hover {
+    background: rgba(255, 165, 0, 0.3);
+    box-shadow: 0 0 10px rgba(255, 165, 0, 0.5);
+}
+
+/* 人員卡片中的補休列表 */
+.person-comp-leave-list {
+    margin: 10px 0;
+    padding: 12px;
+    background: rgba(0, 150, 255, 0.05);
+    border: 1px solid rgba(0, 150, 255, 0.2);
+    border-radius: 8px;
+}
+
+.comp-leave-list-title {
+    color: var(--status-comp-leave);
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(0, 150, 255, 0.2);
+}
+
+.comp-leave-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    margin: 5px 0;
+    border-radius: 5px;
+    font-size: 0.85rem;
+}
+
+.comp-leave-item.comp-leave-today {
+    background: rgba(0, 150, 255, 0.2);
+    border-left: 3px solid var(--status-comp-leave);
+}
+
+.comp-leave-item.comp-leave-future {
+    background: rgba(0, 150, 255, 0.1);
+    border-left: 3px solid rgba(0, 150, 255, 0.4);
+}
+
+.comp-leave-item.comp-leave-past {
+    background: rgba(128, 128, 128, 0.1);
+    border-left: 3px solid rgba(128, 128, 128, 0.4);
+    opacity: 0.6;
+}
+
+.comp-leave-date-label {
+    color: var(--gaming-cyan);
+    font-weight: bold;
+    min-width: 60px;
+}
+
+.comp-leave-time {
+    color: var(--gaming-white);
+    flex: 1;
+}
+
+.comp-leave-hours {
+    color: var(--status-comp-leave);
+    font-size: 0.75rem;
+    font-weight: bold;
+}
+
+/* 手機版樣式調整 */
+@media (max-width: 768px) {
+    .modal-content-extra-wide {
+        width: 95%;
+        max-width: 95%;
+    }
+
+    .comp-leave-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .comp-leave-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .comp-leave-actions {
+        justify-content: flex-start;
+    }
+
+    .comp-leave-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
 }
