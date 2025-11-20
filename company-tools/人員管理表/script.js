@@ -1263,7 +1263,7 @@ function updateStats() {
 }
 
 // ===== 任務列表渲染 =====
-// 判斷任務是否逾時
+// 判斷任務是否逾時（逾時且未達標才算）
 function isTaskOverdue(task) {
     const now = new Date();
     const today = formatDate(now);
@@ -1271,17 +1271,30 @@ function isTaskOverdue(task) {
 
     const taskDate = task.date || formatDate(new Date());
 
-    // 如果任務日期在今天之前，一定逾時
+    // 先檢查時間是否已過
+    let timePassed = false;
+
+    // 如果任務日期在今天之前，時間已過
     if (taskDate < today) {
-        return true;
+        timePassed = true;
     }
-
     // 如果任務日期是今天，檢查結束時間是否已過
-    if (taskDate === today && task.endHour <= currentHour) {
-        return true;
+    else if (taskDate === today && task.endHour <= currentHour) {
+        timePassed = true;
     }
 
-    return false;
+    // 如果時間未過，不算逾時
+    if (!timePassed) {
+        return false;
+    }
+
+    // 時間已過，但如果已經分配足夠人員，也不算逾時（已經處理好了）
+    const assignees = task.assignees || [];
+    const required = task.requiredPeople || 1;
+    const isUnderstaffed = assignees.length < required;
+
+    // 只有時間已過且人員不足，才算逾時
+    return isUnderstaffed;
 }
 
 function renderTaskList() {
@@ -1303,6 +1316,9 @@ function renderTaskList() {
             const required = t.requiredPeople || 1;
             return assignees.length < required;
         });
+    } else if (currentTaskFilter === 'overdue') {
+        // 已逾時：只顯示逾時任務
+        filteredTasks = filteredTasks.filter(t => isTaskOverdue(t));
     } else if (currentTaskFilter !== 'all') {
         filteredTasks = filteredTasks.filter(t => t.type === currentTaskFilter);
     }
@@ -1319,6 +1335,16 @@ function renderTaskList() {
         return;
     }
 
+    // 如果篩選器選擇「已逾時」，只顯示逾時任務，不顯示區塊標題
+    if (currentTaskFilter === 'overdue') {
+        overdueTasks.forEach(task => {
+            const card = createTaskCard(task, true);
+            container.appendChild(card);
+        });
+        return;
+    }
+
+    // 一般篩選：顯示正常任務和逾時任務區
     // 渲染正常任務
     if (normalTasks.length > 0) {
         const normalSection = document.createElement('div');
