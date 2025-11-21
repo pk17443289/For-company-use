@@ -1468,23 +1468,10 @@ body {
 .person-card-grid.work-repeat {
     border-color: #FFB84D !important;
     background: rgba(255, 184, 77, 0.1) !important;
-    box-shadow: 0 0 20px rgba(255, 184, 77, 0.3) !important;
     position: relative;
 }
 
-.person-card-grid.work-repeat::after {
-    content: '⚠️ 近7天已做過';
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    font-size: 0.7rem;
-    padding: 3px 8px;
-    background: rgba(255, 184, 77, 0.9);
-    color: #000;
-    border-radius: 10px;
-    font-weight: bold;
-    z-index: 10;
-}
+/* 移除工作重複標籤 */
 
 .person-card-grid.time-conflict {
     display: none !important;
@@ -1492,24 +1479,10 @@ body {
 
 .person-card-grid.time-available {
     border-color: var(--neon-green) !important;
-    animation: pulseAvailable 1.2s ease-in-out infinite;
     background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(26, 26, 26, 0.9));
 }
 
-.person-card-grid.time-available::before {
-    content: '✅ 可分配';
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 255, 136, 0.9);
-    color: var(--gaming-black);
-    padding: 4px 10px;
-    border-radius: 5px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    z-index: 5;
-    box-shadow: 0 2px 8px rgba(0, 255, 136, 0.6);
-}
+/* 移除可分配標籤 */
 
 .person-card-grid.already-assigned {
     border-color: var(--neon-blue) !important;
@@ -1518,33 +1491,13 @@ body {
     cursor: default !important;
 }
 
-.person-card-grid.already-assigned::before {
-    content: '📌 已分配';
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(0, 212, 255, 0.9);
-    color: var(--gaming-black);
-    padding: 4px 10px;
-    border-radius: 5px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    z-index: 5;
-    box-shadow: 0 2px 8px rgba(0, 212, 255, 0.6);
-}
+/* 移除已分配標籤 */
 
 .person-card-grid.already-assigned:hover {
     transform: none !important;
 }
 
-@keyframes pulseAvailable {
-    0%, 100% {
-        box-shadow: 0 0 25px rgba(0, 255, 136, 0.5), 0 0 40px rgba(0, 255, 136, 0.3);
-    }
-    50% {
-        box-shadow: 0 0 35px rgba(0, 255, 136, 0.8), 0 0 60px rgba(0, 255, 136, 0.5);
-    }
-}
+/* 移除脈衝動畫 */
 
 .person-name-grid {
     font-size: 1.3rem;
@@ -1924,6 +1877,31 @@ body {
 .cyber-select option {
     background: var(--gaming-black);
     color: var(--neon-green);
+}
+
+/* 下拉選單深色主題 - 更易讀 */
+select.cyber-input,
+select.cyber-select,
+#missionCategorySelect {
+    background: rgba(0, 0, 0, 0.85) !important;
+    color: #FFFFFF !important;
+    cursor: pointer;
+}
+
+select.cyber-input:focus,
+select.cyber-select:focus,
+#missionCategorySelect:focus {
+    background: rgba(0, 0, 0, 0.9) !important;
+    border-bottom-color: #4ECDC4;
+}
+
+/* 下拉選單選項深色樣式 */
+select.cyber-input option,
+select.cyber-select option,
+#missionCategorySelect option {
+    background: #1a1a1a !important;
+    color: #E0E0E0 !important;
+    padding: 10px;
 }
 
 .form-row-cyber {
@@ -3606,5 +3584,43 @@ body {
         opacity: 1;
         transform: scale(1.02);
         box-shadow: 0 0 25px rgba(255, 215, 0, 0.8);
+    }
+}
+
+/* ===== 手機裝置優化：減少動畫以提升性能 ===== */
+@media (max-width: 768px) {
+    /* 禁用背景網格動畫 */
+    body::before {
+        animation: none !important;
+    }
+
+    /* 禁用標題脈衝動畫 */
+    .system-title {
+        animation: none !important;
+    }
+
+    /* 禁用標題文字故障動畫 */
+    h1 {
+        animation: none !important;
+    }
+
+    /* 禁用括號閃爍動畫 */
+    .bracket {
+        animation: none !important;
+    }
+
+    /* 減少過渡時間 */
+    * {
+        transition-duration: 0.15s !important;
+    }
+
+    /* 禁用人員卡片的 hover 變換效果 */
+    .person-card-grid:hover {
+        transform: none !important;
+    }
+
+    /* 任務卡片 hover 效果簡化 */
+    .task-card:hover {
+        transform: none !important;
     }
 }

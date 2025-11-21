@@ -382,8 +382,59 @@
 
                     <!-- 已有分類列表 -->
                     <div>
-                        <h3 style="color: var(--gaming-cyan); margin-bottom: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); padding-bottom: 8px;">📋 現有分類</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); padding-bottom: 8px;">
+                            <h3 style="color: var(--gaming-cyan); margin: 0;">📋 現有分類</h3>
+                            <button onclick="clearAllWorkCategories()" style="padding: 5px 10px; background: rgba(255, 0, 128, 0.2); border: 1px solid var(--status-busy); border-radius: 5px; color: var(--status-busy); cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: all 0.3s;">
+                                🗑️ 清空全部
+                            </button>
+                        </div>
                         <div id="categoryListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+
+                <!-- 出任務類型管理 -->
+                <div style="margin-top: 30px; padding-top: 30px; border-top: 2px solid rgba(78, 205, 196, 0.3);">
+                    <h2 style="color: #4ECDC4; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                        <span>🚀 出任務類型管理</span>
+                    </h2>
+
+                    <div style="margin-bottom: 20px; padding: 15px; background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.3); border-radius: 8px;">
+                        <div style="color: #4ECDC4; font-weight: bold; margin-bottom: 10px;">💡 使用說明</div>
+                        <div style="color: var(--gaming-white); font-size: 0.9rem; line-height: 1.6;">
+                            • 出任務類型用於區分不同的外勤任務性質<br>
+                            • 新增類型後，設定出任務時可在下拉選單中選擇<br>
+                            • 便於統計各類型任務的執行次數和人員配置
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                        <!-- 新增出任務類型 -->
+                        <div>
+                            <h3 style="color: #4ECDC4; margin-bottom: 15px; border-bottom: 1px solid rgba(78, 205, 196, 0.3); padding-bottom: 8px;">➕ 新增類型</h3>
+                            <div class="form-group-cyber">
+                                <label>類型代碼（英文）</label>
+                                <input type="text" id="newMissionKey" class="cyber-input" placeholder="例如: transport" maxlength="20">
+                                <div style="color: #4ECDC4; font-size: 0.8rem; margin-top: 5px;">只能使用英文字母和底線</div>
+                            </div>
+                            <div class="form-group-cyber">
+                                <label>類型名稱（中文）</label>
+                                <input type="text" id="newMissionName" class="cyber-input" placeholder="例如: 運輸任務" maxlength="20">
+                            </div>
+                            <button onclick="addMissionCategory()" class="cyber-btn-primary" style="width: 100%; margin-top: 10px; background: #4ECDC4; border-color: #4ECDC4;">
+                                ➕ 新增類型
+                            </button>
+                        </div>
+
+                        <!-- 已有出任務類型列表 -->
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(78, 205, 196, 0.3); padding-bottom: 8px;">
+                                <h3 style="color: #4ECDC4; margin: 0;">📋 現有類型</h3>
+                                <button onclick="clearAllMissionCategories()" style="padding: 5px 10px; background: rgba(255, 0, 128, 0.2); border: 1px solid var(--status-busy); border-radius: 5px; color: var(--status-busy); cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: all 0.3s;">
+                                    🗑️ 清空全部
+                                </button>
+                            </div>
+                            <div id="missionCategoryListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -469,6 +520,17 @@
                     </div>
                     <div style="padding: 10px; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 5px; margin-top: 10px;">
                         <small style="color: var(--gaming-cyan);">💡 按天數會自動設定為全天（0:00-24:00）</small>
+                    </div>
+                </div>
+
+                <!-- 出任務類型選擇（只在出任務時顯示） -->
+                <div class="form-group-cyber" id="missionCategoryField" style="margin-top: 15px; display: none;">
+                    <label>🚀 出任務類型</label>
+                    <select id="missionCategorySelect" class="cyber-input">
+                        <!-- 選項將由 JavaScript 動態生成 -->
+                    </select>
+                    <div style="padding: 8px; background: rgba(78, 205, 196, 0.1); border: 1px solid rgba(78, 205, 196, 0.3); border-radius: 5px; margin-top: 8px;">
+                        <small style="color: var(--gaming-cyan);">💡 選擇此次出任務的類型，便於統計管理</small>
                     </div>
                 </div>
 

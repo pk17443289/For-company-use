@@ -25,6 +25,24 @@ function getDefaultWorkCategories() {
     };
 }
 
+// 出任務類型分類（獨立管理）
+let MISSION_CATEGORIES = {};
+
+// 取得預設出任務類型分類
+function getDefaultMissionCategories() {
+    return {
+        'court': '法院出庭',
+        'escort': '護送任務',
+        'inspection': '外部檢查',
+        'patrol': '巡邏任務',
+        'training': '外訓課程',
+        'support': '支援協助',
+        'meeting': '外部會議',
+        'emergency': '緊急任務',
+        'other': '其他任務'
+    };
+}
+
 // 階級設定
 let MAX_RANK = 10; // 最高階級（可自訂）
 
@@ -77,8 +95,17 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDate();
     loadData();
     setupEventListeners();
+    initializeRankSliders(); // 初始化階級滑動條
     updateDisplay();
 });
+
+// 初始化階級滑動條的最大值
+function initializeRankSliders() {
+    const rankSlider = document.getElementById('personRank');
+    if (rankSlider) {
+        rankSlider.max = MAX_RANK;
+    }
+}
 
 // ===== 日期初始化 =====
 function initializeDate() {
@@ -409,6 +436,7 @@ function loadData() {
         history = data.history || [];
         compensatoryLeaves = data.compensatoryLeaves || []; // 載入補休記錄
         WORK_CATEGORIES = data.workCategories || getDefaultWorkCategories();
+        MISSION_CATEGORIES = data.missionCategories || getDefaultMissionCategories();
         RANK_LABELS = data.rankLabels || getDefaultRankLabels();
         MAX_RANK = data.maxRank || 10;
 
@@ -449,6 +477,7 @@ function saveData() {
         history,
         compensatoryLeaves, // 儲存補休記錄
         workCategories: WORK_CATEGORIES,
+        missionCategories: MISSION_CATEGORIES,
         rankLabels: RANK_LABELS,
         maxRank: MAX_RANK
     };
@@ -500,6 +529,7 @@ function createSampleData() {
 
     history = [];
     WORK_CATEGORIES = getDefaultWorkCategories();
+    MISSION_CATEGORIES = getDefaultMissionCategories();
     RANK_LABELS = getDefaultRankLabels();
     saveData();
 
@@ -565,13 +595,22 @@ function resetToSampleData() {
 
 // ===== 資料匯出/匯入 =====
 function exportData() {
-    // 準備要匯出的資料
+    // 準備要匯出的資料（完整版本）
     const exportData = {
+        version: '2.0', // 版本號
+        exportDate: new Date().toISOString(),
+
+        // 核心資料
         personnel: personnel,
         tasks: tasks,
         history: history,
-        exportDate: new Date().toISOString(),
-        version: '1.0'
+
+        // 設定資料
+        compensatoryLeaves: compensatoryLeaves,
+        workCategories: WORK_CATEGORIES,
+        missionCategories: MISSION_CATEGORIES,
+        rankLabels: RANK_LABELS,
+        maxRank: MAX_RANK
     };
 
     // 轉換為 JSON 字串
@@ -613,15 +652,29 @@ function importData(event) {
                 return;
             }
 
+            // 版本檢測與提示
+            const dataVersion = importedData.version || '1.0';
+            let versionMsg = `\n資料版本：${dataVersion}`;
+            if (dataVersion === '1.0') {
+                versionMsg += '\n⚠️ 這是舊版資料，將自動升級並補齊預設設定';
+            }
+
             // 確認是否要覆蓋現有資料
-            if (!confirm('匯入資料將會覆蓋目前所有資料！\n確定要繼續嗎？')) {
+            if (!confirm(`匯入資料將會覆蓋目前所有資料！${versionMsg}\n\n確定要繼續嗎？`)) {
                 return;
             }
 
-            // 載入資料
+            // 載入核心資料
             personnel = importedData.personnel;
             tasks = importedData.tasks;
             history = importedData.history || [];
+
+            // 載入設定資料（向後相容）
+            compensatoryLeaves = importedData.compensatoryLeaves || [];
+            WORK_CATEGORIES = importedData.workCategories || getDefaultWorkCategories();
+            MISSION_CATEGORIES = importedData.missionCategories || getDefaultMissionCategories();
+            RANK_LABELS = importedData.rankLabels || getDefaultRankLabels();
+            MAX_RANK = importedData.maxRank || 10;
 
             // 儲存到 localStorage
             saveData();
@@ -629,11 +682,18 @@ function importData(event) {
             // 更新顯示
             updateDisplay();
 
-            alert(`資料匯入成功！\n人員：${personnel.length} 人\n任務：${tasks.length} 項`);
+            // 成功訊息
+            let successMsg = `✅ 資料匯入成功！\n\n人員：${personnel.length} 人\n任務：${tasks.length} 項\n歷史記錄：${history.length} 筆`;
+
+            if (dataVersion === '1.0') {
+                successMsg += '\n\n💡 舊版資料已自動升級，預設設定已補齊';
+            }
+
+            alert(successMsg);
 
         } catch (error) {
             console.error('匯入錯誤:', error);
-            alert('匯入失敗！檔案可能已損壞或格式不正確。');
+            alert('匯入失敗！檔案可能已損壞或格式不正確。\n\n錯誤訊息：' + error.message);
         }
     };
 
@@ -1135,12 +1195,15 @@ function createPersonCardGrid(person) {
 
     // 顯示出任務資訊（即使已經結束）
     if (todayMissionTasks.length > 0) {
-        const missionTimes = todayMissionTasks.map(t => {
+        todayMissionTasks.forEach(t => {
             const start = String(t.startHour).padStart(2, '0');
             const end = t.endHour === 24 ? '24' : String(t.endHour).padStart(2, '0');
-            return `${start}:00-${end}:00`;
-        }).join(', ');
-        statusBadge += `<span class="person-status-badge status-badge-mission">🚀 出任務 ${missionTimes}</span>`;
+            const timeStr = `${start}:00-${end}:00`;
+            const missionType = t.missionCategory && MISSION_CATEGORIES[t.missionCategory]
+                ? `(${MISSION_CATEGORIES[t.missionCategory]})`
+                : '';
+            statusBadge += `<span class="person-status-badge status-badge-mission">🚀 出任務 ${timeStr} ${missionType}</span>`;
+        });
     }
 
     // 補休列表顯示（當處於補休篩選模式時）
@@ -1847,6 +1910,37 @@ function assignTaskToPerson(taskId, personId) {
         return;
     }
 
+    // 檢查人數是否已滿
+    const required = task.requiredPeople || 1;
+    const currentAssigned = task.assignees ? task.assignees.length : 0;
+
+    if (currentAssigned >= required) {
+        // 人數已滿，顯示提示並退出分配模式
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 215, 0, 0.95);
+            color: #000000;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-weight: bold;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 2px solid #FFD700;
+        `;
+        toast.textContent = `✓ 任務「${task.name}」人數已滿 (${currentAssigned}/${required})`;
+        document.body.appendChild(toast);
+
+        setTimeout(() => toast.remove(), 2500);
+
+        // 立即退出分配模式
+        exitTaskAssignmentMode();
+        return;
+    }
+
     // 檢查是否已經分配
     if (task.assignees && task.assignees.includes(personId)) {
         // 已分配，顯示提示
@@ -2076,32 +2170,28 @@ function performTaskAssignment(task, person, personId, isLunchTime) {
 
     if (assigned >= required) {
         // 顯示完成提示
-        setTimeout(() => {
-            const completeToast = document.createElement('div');
-            completeToast.style.cssText = `
-                position: fixed;
-                top: 80px;
-                left: 50%;
-                transform: translateX(-50%);
-                background: rgba(255, 215, 0, 0.95);
-                color: #000000;
-                padding: 15px 25px;
-                border-radius: 8px;
-                z-index: 10000;
-                font-weight: bold;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-                border: 2px solid #FFD700;
-            `;
-            completeToast.textContent = `✓ 任務「${task.name}」人數已滿 (${assigned}/${required})`;
-            document.body.appendChild(completeToast);
+        const completeToast = document.createElement('div');
+        completeToast.style.cssText = `
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 215, 0, 0.95);
+            color: #000000;
+            padding: 15px 25px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-weight: bold;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 2px solid #FFD700;
+        `;
+        completeToast.textContent = `✓ 任務「${task.name}」人數已滿 (${assigned}/${required})`;
+        document.body.appendChild(completeToast);
 
-            setTimeout(() => completeToast.remove(), 2500);
-        }, 500);
+        setTimeout(() => completeToast.remove(), 2500);
 
-        // 延遲退出分配模式，讓用戶看到提示
-        setTimeout(() => {
-            exitTaskAssignmentMode();
-        }, 2500);
+        // 立即退出分配模式，防止用戶誤點
+        exitTaskAssignmentMode();
     }
 
     // 不要立即退出分配模式，讓用戶可以繼續分配給其他人（除非已達標）
@@ -2307,10 +2397,18 @@ function showAddPersonModal() {
     editingPersonId = null;
     document.getElementById('personModalTitle').textContent = '新增人員';
     document.getElementById('personName').value = '';
-    document.getElementById('personRank').value = '3';
+
+    // 更新階級滑動條的最大值
+    const rankSlider = document.getElementById('personRank');
+    rankSlider.max = MAX_RANK;
+
+    // 設定預設值（中階）
+    const defaultRank = Math.min(3, MAX_RANK);
+    rankSlider.value = defaultRank;
+
     document.getElementById('personContact').value = '';
     document.getElementById('personIsSpecial').checked = false;
-    updateRankDisplay(3);
+    updateRankDisplay(defaultRank);
     document.getElementById('personModal').classList.remove('hidden');
 }
 
@@ -2488,8 +2586,16 @@ function editPerson(personId) {
     editingPersonId = personId;
     document.getElementById('personModalTitle').textContent = '編輯人員';
     document.getElementById('personName').value = person.name;
-    document.getElementById('personRank').value = person.rank;
-    updateRankDisplay(person.rank);
+
+    // 更新階級滑動條的最大值
+    const rankSlider = document.getElementById('personRank');
+    rankSlider.max = MAX_RANK;
+
+    // 設定人員階級（如果超過最大值則調整）
+    const adjustedRank = Math.min(person.rank, MAX_RANK);
+    rankSlider.value = adjustedRank;
+
+    updateRankDisplay(adjustedRank);
     document.getElementById('personContact').value = person.contact || '';
     document.getElementById('personIsSpecial').checked = person.isSpecial || false;
     document.getElementById('personModal').classList.remove('hidden');
@@ -3860,6 +3966,7 @@ function showWorkCategoryModal() {
     document.getElementById('newCategoryKey').value = '';
     document.getElementById('newCategoryName').value = '';
     renderCategoryList();
+    renderMissionCategoryList();
     document.getElementById('workCategoryModal').classList.remove('hidden');
 }
 
@@ -3950,6 +4057,34 @@ function deleteWorkCategory(key) {
     alert(`✅ 已刪除分類「${name}」`);
 }
 
+function clearAllWorkCategories() {
+    const categories = Object.entries(WORK_CATEGORIES);
+
+    if (categories.length === 0) {
+        alert('目前沒有任何分類');
+        return;
+    }
+
+    const confirmMsg = `⚠️ 確定要清空所有工作性質分類嗎？\n\n目前共有 ${categories.length} 個分類\n\n注意：\n• 此操作無法復原\n• 已建立的任務不會受影響\n• 但新建任務時將無法選擇這些分類`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    // 二次確認
+    if (!confirm('🔴 最後確認：真的要清空全部分類嗎？')) {
+        return;
+    }
+
+    WORK_CATEGORIES = {};
+    saveData();
+    addHistory('清空所有工作性質分類');
+    renderCategoryList();
+    updateTaskWorkCategoryOptions();
+
+    alert(`✅ 已清空所有分類（共刪除 ${categories.length} 個）`);
+}
+
 function updateTaskWorkCategoryOptions() {
     const select = document.getElementById('taskWorkCategory');
     if (!select) return;
@@ -3970,6 +4105,119 @@ function updateTaskWorkCategoryOptions() {
     }
 }
 
+// ===== 出任務類型管理 =====
+function renderMissionCategoryList() {
+    const container = document.getElementById('missionCategoryListContainer');
+    if (!container) return;
+
+    const categories = Object.entries(MISSION_CATEGORIES);
+
+    if (categories.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #4ECDC4; padding: 20px;">尚無類型</div>';
+        return;
+    }
+
+    let html = '';
+    categories.forEach(([key, name]) => {
+        html += `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(78, 205, 196, 0.3); border-radius: 8px;">
+                <div>
+                    <div style="color: var(--gaming-white); font-weight: bold; margin-bottom: 3px;">${name}</div>
+                    <div style="color: #4ECDC4; font-size: 0.8rem; opacity: 0.7;">${key}</div>
+                </div>
+                <button onclick="deleteMissionCategory('${key}')" class="delete-category-btn" style="padding: 6px 12px; background: rgba(255, 0, 128, 0.2); border: 1px solid var(--status-busy); border-radius: 5px; color: var(--status-busy); cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                    🗑️ 刪除
+                </button>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function addMissionCategory() {
+    const key = document.getElementById('newMissionKey').value.trim();
+    const name = document.getElementById('newMissionName').value.trim();
+
+    if (!key) {
+        alert('請輸入類型代碼');
+        return;
+    }
+
+    if (!name) {
+        alert('請輸入類型名稱');
+        return;
+    }
+
+    // 驗證代碼格式（只能英文和底線）
+    if (!/^[a-zA-Z_]+$/.test(key)) {
+        alert('類型代碼只能使用英文字母和底線');
+        return;
+    }
+
+    // 檢查是否已存在
+    if (MISSION_CATEGORIES[key]) {
+        alert('此類型代碼已存在');
+        return;
+    }
+
+    // 新增類型
+    MISSION_CATEGORIES[key] = name;
+    saveData();
+    addHistory(`新增出任務類型: ${name} (${key})`);
+
+    // 清空輸入並更新列表
+    document.getElementById('newMissionKey').value = '';
+    document.getElementById('newMissionName').value = '';
+    renderMissionCategoryList();
+
+    alert(`✅ 成功新增出任務類型「${name}」`);
+}
+
+function deleteMissionCategory(key) {
+    const name = MISSION_CATEGORIES[key];
+
+    const confirmMsg = `確定要刪除出任務類型「${name}」(${key})嗎？\n\n注意：刪除後不會影響已建立的任務，但設定出任務時將無法選擇此類型。`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    delete MISSION_CATEGORIES[key];
+    saveData();
+    addHistory(`刪除出任務類型: ${name} (${key})`);
+    renderMissionCategoryList();
+
+    alert(`✅ 已刪除出任務類型「${name}」`);
+}
+
+function clearAllMissionCategories() {
+    const categories = Object.entries(MISSION_CATEGORIES);
+
+    if (categories.length === 0) {
+        alert('目前沒有任何出任務類型');
+        return;
+    }
+
+    const confirmMsg = `⚠️ 確定要清空所有出任務類型嗎？\n\n目前共有 ${categories.length} 個類型\n\n注意：\n• 此操作無法復原\n• 已建立的任務不會受影響\n• 但設定出任務時將無法選擇這些類型`;
+
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    // 二次確認
+    if (!confirm('🔴 最後確認：真的要清空全部出任務類型嗎？')) {
+        return;
+    }
+
+    MISSION_CATEGORIES = {};
+    saveData();
+    addHistory('清空所有出任務類型');
+    renderMissionCategoryList();
+
+    alert(`✅ 已清空所有出任務類型（共刪除 ${categories.length} 個）`);
+}
+
 // ===== 階級範圍設定 =====
 function setMaxRank() {
     const currentMax = MAX_RANK;
@@ -3984,15 +4232,64 @@ function setMaxRank() {
         return;
     }
 
+    const oldMax = MAX_RANK;
     MAX_RANK = maxRankNum;
+
+    // 如果降低了最高階級，需要調整超過上限的人員
+    if (maxRankNum < oldMax) {
+        let adjustedCount = 0;
+        let adjustedPersons = [];
+
+        personnel.forEach(person => {
+            if (person.rank > maxRankNum) {
+                adjustedPersons.push(`${person.name} (LV${person.rank} → LV${maxRankNum})`);
+                person.rank = maxRankNum;
+                adjustedCount++;
+            }
+        });
+
+        if (adjustedCount > 0) {
+            const adjustMsg = `⚠️ 降低最高階級後，以下人員的階級已自動調整：\n\n${adjustedPersons.join('\n')}\n\n共 ${adjustedCount} 人`;
+            alert(adjustMsg);
+            addHistory(`降低最高階級至 LV${MAX_RANK}，調整了 ${adjustedCount} 位人員的階級`);
+        }
+    }
+
     saveData();
+
+    // 更新階級滑動條的最大值
+    const rankSlider = document.getElementById('personRank');
+    if (rankSlider) {
+        rankSlider.max = MAX_RANK;
+        // 如果當前值超過新的最大值，調整為最大值
+        if (parseInt(rankSlider.value) > MAX_RANK) {
+            rankSlider.value = MAX_RANK;
+            document.getElementById('rankValue').textContent = `LV${MAX_RANK}`;
+        }
+    }
+
+    // 更新編輯模式的階級滑動條
+    const editRankSlider = document.getElementById('editPersonRank');
+    if (editRankSlider) {
+        editRankSlider.max = MAX_RANK;
+        if (parseInt(editRankSlider.value) > MAX_RANK) {
+            editRankSlider.value = MAX_RANK;
+            document.getElementById('editRankValue').textContent = `LV${MAX_RANK}`;
+        }
+    }
 
     // 更新顯示
     document.getElementById('currentMaxRankDisplay').textContent = `目前最高階級：LV${MAX_RANK}`;
     renderRankLabelList();
+    updateDisplay(); // 重新渲染人員列表
 
     addHistory(`修改最高階級為 LV${MAX_RANK}`);
-    alert(`已設定最高階級為 LV${MAX_RANK}`);
+
+    if (maxRankNum < oldMax) {
+        alert(`✅ 已設定最高階級為 LV${MAX_RANK}\n\n階級滑動條範圍已更新`);
+    } else {
+        alert(`✅ 已設定最高階級為 LV${MAX_RANK}\n\n階級滑動條範圍已更新`);
+    }
 }
 
 // ===== 階級名稱管理 =====
@@ -4207,6 +4504,27 @@ function showStatusTimeRangeModal(personId, statusType) {
 
     document.getElementById('statusDescription').value = '';
 
+    // 處理出任務類型選單（只在出任務時顯示）
+    const missionCategoryField = document.getElementById('missionCategoryField');
+    const missionCategorySelect = document.getElementById('missionCategorySelect');
+
+    if (statusType === 'mission') {
+        // 顯示出任務類型選單
+        missionCategoryField.style.display = 'block';
+
+        // 生成選項
+        missionCategorySelect.innerHTML = '';
+        for (const [key, value] of Object.entries(MISSION_CATEGORIES)) {
+            const option = document.createElement('option');
+            option.value = key;
+            option.textContent = value;
+            missionCategorySelect.appendChild(option);
+        }
+    } else {
+        // 隱藏出任務類型選單
+        missionCategoryField.style.display = 'none';
+    }
+
     // 顯示對話框
     document.getElementById('statusTimeRangeModal').classList.remove('hidden');
 
@@ -4223,6 +4541,12 @@ function confirmStatusTimeRange(personId, statusType) {
     if (!person) return;
 
     const description = document.getElementById('statusDescription').value.trim();
+
+    // 如果是出任務，讀取出任務類型
+    let missionCategory = null;
+    if (statusType === 'mission') {
+        missionCategory = document.getElementById('missionCategorySelect').value;
+    }
 
     // 判斷當前模式
     const isHourlyMode = document.getElementById('hourlyModeFields').style.display !== 'none';
@@ -4369,7 +4693,8 @@ function confirmStatusTimeRange(personId, statusType) {
             assignees: [personId],
             requiredPeople: 1,
             description: description,
-            workCategory: null
+            workCategory: null,
+            missionCategory: missionCategory // 出任務類型
         };
         tasks.push(newTask);
         createdTasks.push(newTask);
@@ -4393,7 +4718,8 @@ function confirmStatusTimeRange(personId, statusType) {
                 assignees: [personId],
                 requiredPeople: 1,
                 description: description,
-                workCategory: null
+                workCategory: null,
+                missionCategory: missionCategory // 出任務類型
             };
             tasks.push(newTask);
             createdTasks.push(newTask);
