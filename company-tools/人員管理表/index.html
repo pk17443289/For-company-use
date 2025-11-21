@@ -348,9 +348,17 @@
                 <div style="margin-bottom: 20px; padding: 15px; background: rgba(255, 184, 77, 0.1); border: 1px solid rgba(255, 184, 77, 0.3); border-radius: 8px;">
                     <div style="color: var(--gaming-yellow); font-weight: bold; margin-bottom: 10px;">💡 使用說明</div>
                     <div style="color: var(--gaming-white); font-size: 0.9rem; line-height: 1.6;">
-                        • 工作性質用於追蹤人員工作多樣性，避免7天內重複相同性質的工作<br>
+                        • 工作性質用於追蹤人員工作多樣性，避免重複相同性質的工作<br>
                         • 新增分類後，可在建立任務時選擇<br>
                         • 刪除分類不會影響已建立的任務（已有任務會保留原分類名稱）
+                    </div>
+                    <div style="margin-top: 15px; padding: 12px; background: rgba(0, 255, 255, 0.1); border: 1px solid rgba(0, 255, 255, 0.3); border-radius: 6px;">
+                        <div style="color: var(--gaming-cyan); font-weight: bold; margin-bottom: 8px;">📊 重複性判定規則</div>
+                        <div style="color: var(--gaming-white); font-size: 0.85rem; line-height: 1.6;">
+                            <strong>日常任務</strong>：近 7 天內執行 <strong style="color: var(--gaming-yellow);">7 次以上</strong>同性質工作才會警告<br>
+                            <strong>重要任務</strong>：近 7 天內執行 <strong style="color: var(--gaming-yellow);">3 次以上</strong>同性質工作才會警告<br>
+                            <strong>其他任務</strong>（臨時/請假/出任務/午休）：不檢查重複性
+                        </div>
                     </div>
                 </div>
 
@@ -420,12 +428,12 @@
             <div class="modal-body-cyber">
                 <!-- 時間類型選擇 -->
                 <div class="form-group-cyber" style="margin-bottom: 20px;">
-                    <label style="margin-bottom: 10px; display: block; font-weight: bold; color: var(--gaming-yellow);">請選擇類型</label>
+                    <label style="margin-bottom: 10px; display: block; font-weight: bold; color: #FFD700;">請選擇類型</label>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button type="button" id="selectHourlyMode" class="status-type-btn active" onclick="switchStatusTimeMode('hourly')" style="padding: 12px; background: var(--gaming-yellow); color: var(--gaming-black); border: 2px solid var(--gaming-yellow); border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                        <button type="button" id="selectHourlyMode" class="status-type-btn active" onclick="switchStatusTimeMode('hourly')" style="padding: 12px; background: #FFD700; color: #000000; border: 2px solid #FFD700; border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; font-size: 1rem;">
                             ⏰ 按小時
                         </button>
-                        <button type="button" id="selectDailyMode" class="status-type-btn" onclick="switchStatusTimeMode('daily')" style="padding: 12px; background: rgba(255,255,255,0.1); color: var(--gaming-white); border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                        <button type="button" id="selectDailyMode" class="status-type-btn" onclick="switchStatusTimeMode('daily')" style="padding: 12px; background: rgba(255,255,255,0.1); color: #FFFFFF; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; font-weight: bold; cursor: pointer; transition: all 0.3s; font-size: 1rem;">
                             📅 按天數
                         </button>
                     </div>
@@ -533,8 +541,9 @@
                     <div style="color: var(--gaming-cyan); font-weight: bold; margin-bottom: 10px;">💡 補休規則說明</div>
                     <div style="color: var(--gaming-white); font-size: 0.9rem; line-height: 1.6;">
                         • <strong>午休時間工作</strong>：中午12點到下午1點工作 → 下午1點開始補休<br>
-                        • <strong>晚間加班</strong>：晚上10點後工作 → 工作結束後立即開始補休<br>
-                        • <strong>自動排程</strong>：補休時段會自動從工作結束時間開始計算<br>
+                        • <strong>晚間加班</strong>：晚上10點後工作 → 工作結束後開始補休<br>
+                        • <strong>自動跳過休息時間</strong>：補休會自動跳過午休（12:00-13:00）和睡覺時間（00:00-06:00）<br>
+                        • <strong>智能排程</strong>：如果任務結束時間在休息時段內，補休會自動延後至休息時段結束後<br>
                         • <strong>時段保護</strong>：補休時段內無法被分配其他任務<br>
                         • 系統會自動掃描任務記錄並計算補休時數
                     </div>
