@@ -3,6 +3,7 @@ let personnel = [];
 let tasks = [];
 let history = [];
 let compensatoryLeaves = []; // 補休記錄
+let departments = []; // 部門列表
 
 // 工作性質分類（可自訂）
 let WORK_CATEGORIES = {};
@@ -43,6 +44,16 @@ function getDefaultMissionCategories() {
     };
 }
 
+// 取得預設部門列表
+function getDefaultDepartments() {
+    return [
+        { id: 1, name: '行政部', color: '#FF6B6B', description: '負責行政管理與文書作業' },
+        { id: 2, name: '業務部', color: '#4ECDC4', description: '負責業務開發與客戶服務' },
+        { id: 3, name: '技術部', color: '#FFD93D', description: '負責技術支援與系統維護' },
+        { id: 4, name: '總務部', color: '#95E1D3', description: '負責總務採購與設備管理' }
+    ];
+}
+
 // 階級設定
 let MAX_RANK = 10; // 最高階級（可自訂）
 
@@ -73,6 +84,7 @@ let currentStartHour = 8;
 let currentEndHour = 17;
 let currentStatusFilter = 'all';
 let currentRankFilter = 'all';
+let currentDepartmentFilter = 'all';
 let currentSearchText = '';
 let currentTaskFilter = 'all';
 
@@ -96,6 +108,8 @@ document.addEventListener('DOMContentLoaded', function() {
     loadData();
     setupEventListeners();
     initializeRankSliders(); // 初始化階級滑動條
+    updateRankFilterOptions(); // 初始化階級篩選下拉選單
+    updateDepartmentFilter(); // 初始化部門篩選下拉選單
     updateDisplay();
 });
 
@@ -104,6 +118,12 @@ function initializeRankSliders() {
     const rankSlider = document.getElementById('personRank');
     if (rankSlider) {
         rankSlider.max = MAX_RANK;
+    }
+
+    // 更新標籤顯示範圍
+    const personRankLabel = document.getElementById('personRankLabel');
+    if (personRankLabel) {
+        personRankLabel.textContent = `職位等級 (1-${MAX_RANK})`;
     }
 }
 
@@ -195,6 +215,11 @@ function setupEventListeners() {
     });
 
     // 位階篩選
+    document.getElementById('departmentFilter').addEventListener('change', function(e) {
+        currentDepartmentFilter = e.target.value;
+        updateDisplay();
+    });
+
     document.getElementById('rankFilter').addEventListener('change', function(e) {
         currentRankFilter = e.target.value;
         updateDisplay();
@@ -256,6 +281,10 @@ function setupEventListeners() {
     });
     document.getElementById('manageWorkCategoryBtn').addEventListener('click', () => {
         showWorkCategoryModal();
+        actionMenuDropdown.classList.add('hidden');
+    });
+    document.getElementById('manageDepartmentBtn').addEventListener('click', () => {
+        showDepartmentModal();
         actionMenuDropdown.classList.add('hidden');
     });
     document.getElementById('manageRankLabelBtn').addEventListener('click', () => {
@@ -435,6 +464,7 @@ function loadData() {
         tasks = data.tasks || [];
         history = data.history || [];
         compensatoryLeaves = data.compensatoryLeaves || []; // 載入補休記錄
+        departments = data.departments || getDefaultDepartments(); // 載入部門資料
         WORK_CATEGORIES = data.workCategories || getDefaultWorkCategories();
         MISSION_CATEGORIES = data.missionCategories || getDefaultMissionCategories();
         RANK_LABELS = data.rankLabels || getDefaultRankLabels();
@@ -462,7 +492,19 @@ function loadData() {
             }
         });
 
+        // 為舊人員資料加上部門欄位（預設分配到第一個部門）
+        let needSaveDeptFix = false;
+        personnel.forEach(person => {
+            if (!person.departmentId && departments.length > 0) {
+                person.departmentId = departments[0].id;
+                needSaveDeptFix = true;
+            }
+        });
+
         // 儲存修正後的資料
+        if (needSaveDeptFix) {
+            console.log('已為舊人員資料自動分配部門');
+        }
         saveData();
     } else {
         createSampleData();
@@ -476,6 +518,7 @@ function saveData() {
         tasks,
         history,
         compensatoryLeaves, // 儲存補休記錄
+        departments, // 儲存部門資料
         workCategories: WORK_CATEGORIES,
         missionCategories: MISSION_CATEGORIES,
         rankLabels: RANK_LABELS,
@@ -486,11 +529,16 @@ function saveData() {
 }
 
 function createSampleData() {
+    // 初始化部門
+    departments = getDefaultDepartments();
+
     // 建立示範資料（20人）
     const names = ['王大明', '李小華', '張三', '陳四', '劉五', '趙六', '錢七', '孫八', '周九', '吳十',
                    '鄭十一', '馮十二', '陳十三', '楚十四', '魏十五', '蔣十六', '沈十七', '韓十八', '楊十九', '朱二十'];
     const ranks = [9, 7, 7, 5, 5, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 6, 8, 5, 4, 3];
     const specialPeople = [0, 2, 16]; // 王大明、張三、沈十七為特殊人員
+    // 分配部門：前5人行政部(1)，6-10人業務部(2)，11-15人技術部(3)，16-20人總務部(4)
+    const deptAssignments = [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4];
 
     personnel = names.map((name, i) => ({
         id: i + 1,
@@ -498,6 +546,7 @@ function createSampleData() {
         rank: ranks[i],
         contact: `分機${101 + i}`,
         isSpecial: specialPeople.includes(i),
+        departmentId: deptAssignments[i], // 新增部門 ID
         status: 'normal' // normal, leave, mission, lunch
     }));
 
@@ -597,13 +646,14 @@ function resetToSampleData() {
 function exportData() {
     // 準備要匯出的資料（完整版本）
     const exportData = {
-        version: '2.0', // 版本號
+        version: '2.1', // 版本號（加入部門後升版）
         exportDate: new Date().toISOString(),
 
         // 核心資料
         personnel: personnel,
         tasks: tasks,
         history: history,
+        departments: departments, // 加入部門資料
 
         // 設定資料
         compensatoryLeaves: compensatoryLeaves,
@@ -668,6 +718,7 @@ function importData(event) {
             personnel = importedData.personnel;
             tasks = importedData.tasks;
             history = importedData.history || [];
+            departments = importedData.departments || getDefaultDepartments(); // 載入部門資料（向後相容）
 
             // 載入設定資料（向後相容）
             compensatoryLeaves = importedData.compensatoryLeaves || [];
@@ -676,17 +727,33 @@ function importData(event) {
             RANK_LABELS = importedData.rankLabels || getDefaultRankLabels();
             MAX_RANK = importedData.maxRank || 10;
 
+            // 為舊資料的人員補充部門ID（如果需要）
+            let needDeptFix = false;
+            personnel.forEach(person => {
+                if (!person.departmentId && departments.length > 0) {
+                    person.departmentId = departments[0].id;
+                    needDeptFix = true;
+                }
+            });
+
             // 儲存到 localStorage
             saveData();
 
-            // 更新顯示
+            // 更新介面元素
+            updateRankFilterOptions(); // 更新階級篩選器
+            updateDepartmentFilter(); // 更新部門篩選器
+            updatePersonDepartmentOptions(); // 更新人員新增介面的部門選項
             updateDisplay();
 
             // 成功訊息
-            let successMsg = `✅ 資料匯入成功！\n\n人員：${personnel.length} 人\n任務：${tasks.length} 項\n歷史記錄：${history.length} 筆`;
+            let successMsg = `✅ 資料匯入成功！\n\n人員：${personnel.length} 人\n任務：${tasks.length} 項\n部門：${departments.length} 個\n歷史記錄：${history.length} 筆`;
 
             if (dataVersion === '1.0') {
                 successMsg += '\n\n💡 舊版資料已自動升級，預設設定已補齊';
+            }
+
+            if (needDeptFix) {
+                successMsg += '\n⚠️ 部分人員已自動分配至預設部門';
             }
 
             alert(successMsg);
@@ -905,6 +972,13 @@ function filterPersonnel() {
             return false;
         }
 
+        // 部門過濾
+        if (currentDepartmentFilter !== 'all') {
+            if (person.departmentId !== parseInt(currentDepartmentFilter)) {
+                return false;
+            }
+        }
+
         // 位階過濾
         if (currentRankFilter !== 'all') {
             if (currentRankFilter === 'special') {
@@ -1111,6 +1185,11 @@ function createPersonCardGrid(person) {
 
     const rankLabel = getRankLabel(person.rank);
 
+    // 取得部門資訊
+    const department = departments.find(d => d.id === person.departmentId);
+    const deptName = department ? department.name : '未分配';
+    const deptColor = department ? department.color : '#999999';
+
     // 取得該人員在當前日期的所有任務
     const allPersonTasks = tasks.filter(t => {
         if (!t.assignees || !t.assignees.includes(person.id)) return false;
@@ -1249,6 +1328,11 @@ function createPersonCardGrid(person) {
         <div class="person-rank-display">
             <span class="rank-badge-grid">LV ${person.rank} - ${rankLabel}</span>
         </div>
+        <div class="person-dept-display" style="text-align: center; padding: 4px 0; margin: 3px 0;">
+            <span style="display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; background: ${deptColor}22; color: ${deptColor}; border: 1px solid ${deptColor};">
+                🏢 ${deptName}
+            </span>
+        </div>
         <div class="person-status-grid status-${status}">
             <span class="status-text">${statusText[status]}</span>
         </div>
@@ -1286,6 +1370,69 @@ function getHourRanges(hours) {
 
 function getRankLabel(rank) {
     return RANK_LABELS[String(rank)] || `LV${rank}`;
+}
+
+// 更新階級篩選下拉選單
+function updateRankFilterOptions() {
+    const rankFilter = document.getElementById('rankFilter');
+    if (!rankFilter) return;
+
+    // 保存當前選中的值
+    const currentValue = rankFilter.value;
+
+    // 清空選項
+    rankFilter.innerHTML = '';
+
+    // 添加「所有階級」選項
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '所有階級';
+    rankFilter.appendChild(allOption);
+
+    // 動態生成階級分組選項（每 2 個階級一組，從高到低）
+    for (let i = MAX_RANK; i >= 1; i -= 2) {
+        const option = document.createElement('option');
+        const upperRank = i;
+        const lowerRank = Math.max(1, i - 1);
+
+        // 判斷星級
+        let stars = '';
+        if (upperRank >= 9) {
+            stars = '⭐⭐⭐ 高階';
+        } else if (upperRank >= 7) {
+            stars = '⭐⭐ 中高階';
+        } else if (upperRank >= 5) {
+            stars = '⭐ 中階';
+        } else if (upperRank >= 3) {
+            stars = '基層';
+        } else {
+            stars = '新進';
+        }
+
+        if (upperRank === lowerRank) {
+            option.value = `${upperRank}-${upperRank}`;
+            option.textContent = `${stars} (${upperRank})`;
+        } else {
+            option.value = `${lowerRank}-${upperRank}`;
+            option.textContent = `${stars} (${lowerRank}-${upperRank})`;
+        }
+
+        rankFilter.appendChild(option);
+    }
+
+    // 添加「特殊人員」選項
+    const specialOption = document.createElement('option');
+    specialOption.value = 'special';
+    specialOption.textContent = '🔸 特殊人員';
+    rankFilter.appendChild(specialOption);
+
+    // 嘗試恢復之前的選擇，如果無效則選擇「所有階級」
+    const options = Array.from(rankFilter.options).map(opt => opt.value);
+    if (options.includes(currentValue)) {
+        rankFilter.value = currentValue;
+    } else {
+        rankFilter.value = 'all';
+    }
 }
 
 // ===== 統計更新 =====
@@ -2406,6 +2553,10 @@ function showAddPersonModal() {
     const defaultRank = Math.min(3, MAX_RANK);
     rankSlider.value = defaultRank;
 
+    // 更新部門選項
+    updatePersonDepartmentOptions();
+    document.getElementById('personDepartment').value = '';
+
     document.getElementById('personContact').value = '';
     document.getElementById('personIsSpecial').checked = false;
     updateRankDisplay(defaultRank);
@@ -2433,16 +2584,28 @@ function addPersonRow() {
 
     // 生成等級選項
     let rankOptions = '';
-    for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= MAX_RANK; i++) {
         rankOptions += `<option value="${i}">${i}</option>`;
     }
+
+    // 生成部門選項
+    let deptOptions = '';
+    departments.forEach(dept => {
+        deptOptions += `<option value="${dept.id}">${dept.name}</option>`;
+    });
 
     row.innerHTML = `
         <td><input type="text" class="import-input" placeholder="請輸入姓名"></td>
         <td>
-            <select class="import-select">
+            <select class="import-select rank-select">
                 <option value="">請選擇</option>
                 ${rankOptions}
+            </select>
+        </td>
+        <td>
+            <select class="import-select dept-select">
+                <option value="">請選擇</option>
+                ${deptOptions}
             </select>
         </td>
         <td><input type="text" class="import-input" placeholder="分機或手機"></td>
@@ -2472,16 +2635,18 @@ function importPersonList() {
 
     rows.forEach((row, index) => {
         const inputs = row.querySelectorAll('.import-input');
-        const select = row.querySelector('.import-select');
+        const rankSelect = row.querySelector('.rank-select');
+        const deptSelect = row.querySelector('.dept-select');
         const checkbox = row.querySelector('.cyber-checkbox');
 
         const name = inputs[0].value.trim();
-        const rank = parseInt(select.value);
+        const rank = parseInt(rankSelect.value);
+        const departmentId = parseInt(deptSelect.value);
         const contact = inputs[1].value.trim() || '未提供';
         const isSpecial = checkbox.checked;
 
-        // 如果姓名和等級都是空的，跳過這一行
-        if (!name && !select.value) {
+        // 如果姓名、等級和部門都是空的，跳過這一行
+        if (!name && !rankSelect.value && !deptSelect.value) {
             return;
         }
 
@@ -2491,8 +2656,13 @@ function importPersonList() {
             return;
         }
 
-        if (!select.value || isNaN(rank) || rank < 1 || rank > 10) {
-            errors.push(`第 ${index + 1} 行：請選擇等級 (1-10)`);
+        if (!rankSelect.value || isNaN(rank) || rank < 1 || rank > MAX_RANK) {
+            errors.push(`第 ${index + 1} 行：請選擇等級 (1-${MAX_RANK})`);
+            return;
+        }
+
+        if (!deptSelect.value || isNaN(departmentId)) {
+            errors.push(`第 ${index + 1} 行：請選擇部門`);
             return;
         }
 
@@ -2500,6 +2670,7 @@ function importPersonList() {
             id: Date.now() + index + Math.random() * 1000,
             name,
             rank,
+            departmentId,
             contact,
             isSpecial,
             status: 'normal' // 預設為正常狀態
@@ -2544,6 +2715,7 @@ function importPersonList() {
 function savePerson() {
     const name = document.getElementById('personName').value.trim();
     const rank = parseInt(document.getElementById('personRank').value);
+    const departmentId = parseInt(document.getElementById('personDepartment').value);
     const contact = document.getElementById('personContact').value.trim();
     const isSpecial = document.getElementById('personIsSpecial').checked;
 
@@ -2552,11 +2724,17 @@ function savePerson() {
         return;
     }
 
+    if (!departmentId) {
+        alert('請選擇所屬部門');
+        return;
+    }
+
     if (editingPersonId) {
         const person = personnel.find(p => p.id === editingPersonId);
         if (person) {
             person.name = name;
             person.rank = rank;
+            person.departmentId = departmentId;
             person.contact = contact;
             person.isSpecial = isSpecial;
             addHistory(`編輯人員: ${name}${isSpecial ? ' (特殊人員)' : ''}`);
@@ -2566,6 +2744,7 @@ function savePerson() {
             id: Date.now(),
             name,
             rank,
+            departmentId,
             contact,
             isSpecial,
             status: 'normal' // 預設為正常狀態
@@ -2596,6 +2775,11 @@ function editPerson(personId) {
     rankSlider.value = adjustedRank;
 
     updateRankDisplay(adjustedRank);
+
+    // 更新部門選項並設定當前部門
+    updatePersonDepartmentOptions();
+    document.getElementById('personDepartment').value = person.departmentId || '';
+
     document.getElementById('personContact').value = person.contact || '';
     document.getElementById('personIsSpecial').checked = person.isSpecial || false;
     document.getElementById('personModal').classList.remove('hidden');
@@ -4257,30 +4441,33 @@ function setMaxRank() {
 
     saveData();
 
-    // 更新階級滑動條的最大值
-    const rankSlider = document.getElementById('personRank');
-    if (rankSlider) {
-        rankSlider.max = MAX_RANK;
-        // 如果當前值超過新的最大值，調整為最大值
-        if (parseInt(rankSlider.value) > MAX_RANK) {
-            rankSlider.value = MAX_RANK;
-            document.getElementById('rankValue').textContent = `LV${MAX_RANK}`;
-        }
-    }
+    // 更新階級滑動條的最大值和標籤
+    initializeRankSliders();
 
-    // 更新編輯模式的階級滑動條
+    // 更新編輯模式的階級滑動條（如果存在的話）
     const editRankSlider = document.getElementById('editPersonRank');
     if (editRankSlider) {
         editRankSlider.max = MAX_RANK;
         if (parseInt(editRankSlider.value) > MAX_RANK) {
             editRankSlider.value = MAX_RANK;
-            document.getElementById('editRankValue').textContent = `LV${MAX_RANK}`;
+            const editRankValue = document.getElementById('editRankValue');
+            if (editRankValue) {
+                editRankValue.textContent = `LV${MAX_RANK}`;
+            }
         }
+    }
+
+    // 如果新增人員 modal 當前打開，確保滑動條當前值不超過新的最大值
+    const rankSlider = document.getElementById('personRank');
+    if (rankSlider && parseInt(rankSlider.value) > MAX_RANK) {
+        rankSlider.value = MAX_RANK;
+        updateRankDisplay(MAX_RANK);
     }
 
     // 更新顯示
     document.getElementById('currentMaxRankDisplay').textContent = `目前最高階級：LV${MAX_RANK}`;
     renderRankLabelList();
+    updateRankFilterOptions(); // 更新階級篩選下拉選單
     updateDisplay(); // 重新渲染人員列表
 
     addHistory(`修改最高階級為 LV${MAX_RANK}`);
@@ -4289,6 +4476,225 @@ function setMaxRank() {
         alert(`✅ 已設定最高階級為 LV${MAX_RANK}\n\n階級滑動條範圍已更新`);
     } else {
         alert(`✅ 已設定最高階級為 LV${MAX_RANK}\n\n階級滑動條範圍已更新`);
+    }
+}
+
+// ===== 部門管理 =====
+function showDepartmentModal() {
+    renderDepartmentList();
+    document.getElementById('departmentModal').classList.remove('hidden');
+    // 更新顏色預覽
+    updateColorPreview();
+}
+
+function renderDepartmentList() {
+    const container = document.getElementById('departmentListContainer');
+    container.innerHTML = '';
+
+    // 更新部門數量
+    document.getElementById('deptCountDisplay').textContent = `共 ${departments.length} 個部門`;
+
+    if (departments.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gaming-cyan); opacity: 0.6;">尚未建立任何部門</div>';
+        return;
+    }
+
+    departments.forEach(dept => {
+        // 計算該部門的人數
+        const deptPersonnelCount = personnel.filter(p => p.departmentId === dept.id).length;
+
+        const item = document.createElement('div');
+        item.style.cssText = `
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.2);
+            border-left: 4px solid ${dept.color};
+            border-radius: 8px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        `;
+
+        item.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <div style="width: 20px; height: 20px; background: ${dept.color}; border-radius: 4px;"></div>
+                        <span style="font-size: 1.1rem; font-weight: bold; color: var(--gaming-white);">${dept.name}</span>
+                    </div>
+                    <div style="color: var(--gaming-cyan); font-size: 0.9rem; opacity: 0.8; margin-left: 30px;">${dept.description || '無描述'}</div>
+                    <div style="color: var(--gaming-yellow); font-size: 0.85rem; margin-top: 8px; margin-left: 30px;">
+                        👥 ${deptPersonnelCount} 人
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="editDepartment(${dept.id})" style="padding: 6px 12px; background: rgba(0, 212, 255, 0.2); border: 1px solid var(--gaming-cyan); border-radius: 5px; color: var(--gaming-cyan); cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                        ✏️ 編輯
+                    </button>
+                    <button onclick="deleteDepartment(${dept.id})" style="padding: 6px 12px; background: rgba(255, 0, 128, 0.2); border: 1px solid var(--status-busy); border-radius: 5px; color: var(--status-busy); cursor: pointer; font-weight: bold; transition: all 0.3s;">
+                        🗑️ 刪除
+                    </button>
+                </div>
+            </div>
+        `;
+
+        container.appendChild(item);
+    });
+}
+
+function saveDepartment() {
+    const name = document.getElementById('deptName').value.trim();
+    const description = document.getElementById('deptDescription').value.trim();
+    const color = document.getElementById('deptColor').value;
+    const editingId = document.getElementById('editingDeptId').value;
+
+    if (!name) {
+        alert('請輸入部門名稱');
+        return;
+    }
+
+    if (editingId) {
+        // 編輯模式
+        const dept = departments.find(d => d.id === parseInt(editingId));
+        if (dept) {
+            dept.name = name;
+            dept.description = description;
+            dept.color = color;
+            addHistory(`編輯部門：${name}`);
+        }
+    } else {
+        // 新增模式
+        const newDept = {
+            id: departments.length > 0 ? Math.max(...departments.map(d => d.id)) + 1 : 1,
+            name,
+            description,
+            color
+        };
+        departments.push(newDept);
+        addHistory(`新增部門：${name}`);
+    }
+
+    saveData();
+    renderDepartmentList();
+    updatePersonDepartmentOptions(); // 更新人員新增介面的部門選項
+    updateDepartmentFilter(); // 更新部門篩選器
+    clearDepartmentForm();
+}
+
+function editDepartment(id) {
+    const dept = departments.find(d => d.id === id);
+    if (!dept) return;
+
+    document.getElementById('deptFormTitle').textContent = '✏️ 編輯部門';
+    document.getElementById('deptName').value = dept.name;
+    document.getElementById('deptDescription').value = dept.description || '';
+    document.getElementById('deptColor').value = dept.color;
+    document.getElementById('editingDeptId').value = dept.id;
+    document.getElementById('cancelEditDeptBtn').style.display = 'block';
+    updateColorPreview();
+}
+
+function cancelEditDepartment() {
+    clearDepartmentForm();
+}
+
+function clearDepartmentForm() {
+    document.getElementById('deptFormTitle').textContent = '➕ 新增部門';
+    document.getElementById('deptName').value = '';
+    document.getElementById('deptDescription').value = '';
+    document.getElementById('deptColor').value = '#4ECDC4';
+    document.getElementById('editingDeptId').value = '';
+    document.getElementById('cancelEditDeptBtn').style.display = 'none';
+    updateColorPreview();
+}
+
+function deleteDepartment(id) {
+    const dept = departments.find(d => d.id === id);
+    if (!dept) return;
+
+    // 檢查是否有人員屬於這個部門
+    const deptPersonnel = personnel.filter(p => p.departmentId === id);
+    if (deptPersonnel.length > 0) {
+        alert(`⚠️ 無法刪除部門「${dept.name}」\n\n該部門還有 ${deptPersonnel.length} 位人員。\n請先將這些人員轉移至其他部門或刪除後再試。`);
+        return;
+    }
+
+    if (!confirm(`確定要刪除部門「${dept.name}」嗎？`)) {
+        return;
+    }
+
+    departments = departments.filter(d => d.id !== id);
+    addHistory(`刪除部門：${dept.name}`);
+    saveData();
+    renderDepartmentList();
+    updatePersonDepartmentOptions(); // 更新人員新增介面的部門選項
+    updateDepartmentFilter(); // 更新部門篩選器
+}
+
+function updateColorPreview() {
+    const color = document.getElementById('deptColor').value;
+    const preview = document.getElementById('deptColorPreview');
+    preview.style.background = color;
+}
+
+// 監聽顏色變化
+document.addEventListener('DOMContentLoaded', function() {
+    const deptColorInput = document.getElementById('deptColor');
+    if (deptColorInput) {
+        deptColorInput.addEventListener('input', updateColorPreview);
+    }
+});
+
+// 更新人員新增介面的部門選項
+function updatePersonDepartmentOptions() {
+    const select = document.getElementById('personDepartment');
+    if (!select) return;
+
+    // 保存當前選中的值
+    const currentValue = select.value;
+
+    // 清空選項
+    select.innerHTML = '<option value="">請選擇部門</option>';
+
+    // 添加部門選項
+    departments.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept.id;
+        option.textContent = dept.name;
+        option.style.color = dept.color;
+        select.appendChild(option);
+    });
+
+    // 恢復之前的選擇（如果仍然存在）
+    if (currentValue && departments.some(d => d.id === parseInt(currentValue))) {
+        select.value = currentValue;
+    }
+}
+
+// 更新部門篩選器
+function updateDepartmentFilter() {
+    const deptFilter = document.getElementById('departmentFilter');
+    if (!deptFilter) return;
+
+    // 保存當前選中的值
+    const currentValue = deptFilter.value;
+
+    // 清空選項
+    deptFilter.innerHTML = '<option value="all">所有部門</option>';
+
+    // 添加部門選項
+    departments.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = dept.id;
+        option.textContent = `🏢 ${dept.name}`;
+        deptFilter.appendChild(option);
+    });
+
+    // 嘗試恢復之前的選擇
+    const options = Array.from(deptFilter.options).map(opt => opt.value);
+    if (options.includes(currentValue)) {
+        deptFilter.value = currentValue;
+    } else {
+        deptFilter.value = 'all';
     }
 }
 
