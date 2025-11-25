@@ -6199,8 +6199,22 @@ function deleteTaskTemplate(id) {
     const template = taskTemplates.find(t => t.id === id);
     if (!template) return;
 
-    if (!confirm(`確定要刪除這個每日任務嗎？\n「${template.name}」將不再每天自動出現`)) {
+    // 計算有多少個由此模板生成的任務
+    const relatedTasks = tasks.filter(t => t.fromTemplate === true && t.templateId === id);
+    const relatedTaskCount = relatedTasks.length;
+
+    let confirmMsg = `確定要刪除這個每日任務嗎？\n「${template.name}」將不再每天自動出現`;
+    if (relatedTaskCount > 0) {
+        confirmMsg += `\n\n⚠️ 同時會刪除已生成的 ${relatedTaskCount} 個相關任務`;
+    }
+
+    if (!confirm(confirmMsg)) {
         return;
+    }
+
+    // 刪除所有由此模板生成的任務
+    if (relatedTaskCount > 0) {
+        tasks = tasks.filter(t => !(t.fromTemplate === true && t.templateId === id));
     }
 
     const index = taskTemplates.findIndex(t => t.id === id);
@@ -6209,7 +6223,8 @@ function deleteTaskTemplate(id) {
         saveData();
         renderTaskTemplateList();
         updateTaskTemplateCounts();
-        addHistory(`刪除每日任務模板：${template.name}`);
+        updateDisplay(); // 更新主畫面
+        addHistory(`刪除每日任務模板：${template.name}（含 ${relatedTaskCount} 個已生成任務）`);
     }
 }
 
