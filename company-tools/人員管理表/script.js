@@ -6199,8 +6199,11 @@ function deleteTaskTemplate(id) {
     const template = taskTemplates.find(t => t.id === id);
     if (!template) return;
 
-    // 計算有多少個由此模板生成的任務
-    const relatedTasks = tasks.filter(t => t.fromTemplate === true && t.templateId === id);
+    // 計算有多少個由此模板生成的任務（用 templateId 或名稱+時間匹配）
+    const relatedTasks = tasks.filter(t =>
+        (t.fromTemplate === true && t.templateId === id) ||
+        (t.fromTemplate === true && t.name === template.name && t.startHour === template.startHour && t.endHour === template.endHour)
+    );
     const relatedTaskCount = relatedTasks.length;
 
     let confirmMsg = `確定要刪除這個每日任務嗎？\n「${template.name}」將不再每天自動出現`;
@@ -6212,10 +6215,11 @@ function deleteTaskTemplate(id) {
         return;
     }
 
-    // 刪除所有由此模板生成的任務
-    if (relatedTaskCount > 0) {
-        tasks = tasks.filter(t => !(t.fromTemplate === true && t.templateId === id));
-    }
+    // 刪除所有由此模板生成的任務（用 templateId 或名稱+時間匹配）
+    tasks = tasks.filter(t => !(
+        (t.fromTemplate === true && t.templateId === id) ||
+        (t.fromTemplate === true && t.name === template.name && t.startHour === template.startHour && t.endHour === template.endHour)
+    ));
 
     const index = taskTemplates.findIndex(t => t.id === id);
     if (index !== -1) {
@@ -6224,6 +6228,7 @@ function deleteTaskTemplate(id) {
         renderTaskTemplateList();
         updateTaskTemplateCounts();
         updateDisplay(); // 更新主畫面
+        updateScheduleOverview(); // 更新快速切換日期的任務數量
         addHistory(`刪除每日任務模板：${template.name}（含 ${relatedTaskCount} 個已生成任務）`);
     }
 }
