@@ -6180,10 +6180,10 @@ function saveTaskTemplate() {
             requiredPeople,
             description,
             assignees: [],
+            type: type, // 任務分類（daily/important/urgent）
             priority: type === 'urgent' ? 'high' : (type === 'important' ? 'medium' : 'normal'),
             fromTemplate: true,
-            templateId: newId,
-            templateType: type // 記錄模板類型
+            templateId: newId
         });
     }
 
@@ -6274,10 +6274,10 @@ function generateTasksFromTemplates(dateString) {
                 requiredPeople: template.requiredPeople,
                 description: template.description || '',
                 assignees: [],
+                type: template.type, // 任務分類（daily/important/urgent）
                 priority: template.type === 'urgent' ? 'high' : (template.type === 'important' ? 'medium' : 'normal'),
                 fromTemplate: true, // 標記為來自模板
-                templateId: template.id,
-                templateType: template.type // 記錄模板類型
+                templateId: template.id
             });
             generatedCount++;
         }
