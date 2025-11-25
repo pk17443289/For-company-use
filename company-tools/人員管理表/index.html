@@ -29,12 +29,12 @@
                 </div>
                 <div id="dateContent" class="collapsible-content">
                 <div class="date-quick-btns">
-                    <button class="date-btn active" data-offset="0">📅 今天</button>
-                    <button class="date-btn" data-offset="1">➡️ 明天</button>
-                    <button class="date-btn" data-mode="custom">🗓️ 選擇日期</button>
+                    <button class="date-btn active" data-offset="0" onclick="switchDate(0)">📅 今天</button>
+                    <button class="date-btn" data-offset="1" onclick="switchDate(1)">➡️ 明天</button>
+                    <button class="date-btn" data-mode="custom" onclick="openDatePicker()">🗓️ 選擇日期</button>
                 </div>
                 <!-- 隱藏的日期選擇器，用於觸發系統日曆 -->
-                <input type="date" id="customDate" class="cyber-date-input" style="position: absolute; opacity: 0; pointer-events: none;">
+                <input type="date" id="customDate" class="cyber-date-input" style="position: absolute; opacity: 0;" onchange="onCustomDateChange(this.value)">
                 <div class="current-date-display">
                     <span class="date-label">查詢日期：</span>
                     <span id="currentDateDisplay" class="date-value">2025-01-18 (今天)</span>
@@ -121,13 +121,13 @@
                     </button>
                     <div id="actionMenuDropdown" class="action-dropdown-content hidden">
                         <div class="dropdown-category-title">📝 新增與編輯</div>
-                        <button id="addPersonBtn" class="action-dropdown-item">👤 新增人員</button>
                         <button id="importPersonListBtn" class="action-dropdown-item">📋 批量匯入人員</button>
-                        <button id="addTaskBtn" class="action-dropdown-item">📋 新增任務</button>
+                        <button id="addTaskBtn" class="action-dropdown-item">📋 新增單次任務</button>
 
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-category-title">⚙️ 設定管理</div>
-                        <button id="manageDepartmentBtn" class="action-dropdown-item">🏢 部門管理</button>
+                        <button id="manageDepartmentBtn" class="action-dropdown-item">🏢 部門與人員管理</button>
+                        <button id="manageTaskTemplateBtn" class="action-dropdown-item">📋 每日任務管理</button>
                         <button id="manageRankLabelBtn" class="action-dropdown-item">🏅 階級名稱管理</button>
                         <button id="manageCompLeaveBtn" class="action-dropdown-item">⏰ 補休管理</button>
                         <button id="manageWorkCategoryBtn" class="action-dropdown-item">⚙️ 工作性質管理</button>
@@ -227,14 +227,12 @@
                     <input type="text" id="personName" class="cyber-input" placeholder="請輸入姓名">
                 </div>
                 <div class="form-group-cyber">
-                    <label id="personRankLabel">職位等級 (1-10)</label>
-                    <div class="rank-selector">
-                        <input type="range" id="personRank" min="1" max="10" value="3" class="rank-slider">
-                        <div class="rank-display">
-                            <span class="rank-number" id="rankNumber">3</span>
-                            <span class="rank-label" id="rankLabel">基層</span>
-                        </div>
-                    </div>
+                    <label id="personRankLabel">職位等級</label>
+                    <select id="personRankSelect" class="cyber-select">
+                        <!-- 選項由 JavaScript 動態生成 -->
+                    </select>
+                    <input type="hidden" id="personRank" value="3">
+                    <input type="hidden" id="personIsSpecial" value="false">
                 </div>
                 <div class="form-group-cyber">
                     <label>所屬部門</label>
@@ -245,12 +243,6 @@
                 <div class="form-group-cyber">
                     <label>聯絡方式</label>
                     <input type="text" id="personContact" class="cyber-input" placeholder="分機或手機">
-                </div>
-                <div class="form-group-cyber">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" id="personIsSpecial" class="cyber-checkbox">
-                        <span>🔸 特殊人員（標記為特殊職務或技能人員）</span>
-                    </label>
                 </div>
             </div>
             <div class="modal-footer-cyber">
@@ -453,61 +445,176 @@
 
     <!-- 部門管理 Modal -->
     <div id="departmentModal" class="modal hidden">
-        <div class="modal-content-cyber modal-content-wide">
+        <div class="modal-content-cyber modal-content-extra-wide">
             <div class="modal-header-cyber">
-                <h2 class="modal-title-cyber">🏢 部門管理</h2>
+                <h2 class="modal-title-cyber">🏢 部門與人員管理</h2>
                 <button class="close-btn-cyber" onclick="closeModal('departmentModal')">✕</button>
             </div>
             <div class="modal-body-cyber">
-                <div style="margin-bottom: 20px; padding: 15px; background: rgba(0, 212, 255, 0.1); border: 1px solid rgba(0, 212, 255, 0.3); border-radius: 8px;">
-                    <div style="color: var(--gaming-cyan); font-weight: bold; margin-bottom: 10px;">💡 使用說明</div>
-                    <div style="color: var(--gaming-white); font-size: 0.9rem; line-height: 1.6;">
-                        • 部門是組織人員的基本單位，每位人員必須隸屬於一個部門<br>
-                        • 新增人員前請先建立所需的部門<br>
-                        • 刪除部門前，請先將該部門的人員轉移至其他部門<br>
-                        • 部門顏色用於在介面中區分不同部門的人員
-                    </div>
-                </div>
+                <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; min-height: 500px;">
+                    <!-- 左側：部門列表 -->
+                    <div style="border-right: 1px solid rgba(0,255,255,0.2); padding-right: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="color: var(--gaming-cyan); margin: 0; font-size: 1rem;">📋 部門列表</h3>
+                            <button onclick="showAddDepartmentForm()" class="cyber-btn-small" style="padding: 5px 10px; font-size: 0.85rem;">➕ 新增</button>
+                        </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
-                    <!-- 新增/編輯部門 -->
-                    <div>
-                        <h3 style="color: var(--gaming-cyan); margin-bottom: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); padding-bottom: 8px;" id="deptFormTitle">➕ 新增部門</h3>
-                        <div class="form-group-cyber">
-                            <label>部門名稱</label>
-                            <input type="text" id="deptName" class="cyber-input" placeholder="例如: 業務部" maxlength="20">
-                        </div>
-                        <div class="form-group-cyber">
-                            <label>部門描述</label>
-                            <input type="text" id="deptDescription" class="cyber-input" placeholder="例如: 負責業務開發與客戶服務" maxlength="50">
-                        </div>
-                        <div class="form-group-cyber">
-                            <label>部門顏色</label>
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <input type="color" id="deptColor" class="cyber-input" value="#4ECDC4" style="width: 60px; height: 40px; padding: 2px; cursor: pointer;">
-                                <span id="deptColorPreview" style="flex: 1; padding: 8px; background: #4ECDC4; border-radius: 5px; text-align: center; color: white; font-weight: bold;">預覽顏色</span>
+                        <!-- 無部門人員選項 -->
+                        <div id="noDeptOption" class="dept-list-item" onclick="selectDepartment(null)" style="margin-bottom: 10px; padding: 10px; background: rgba(255,107,107,0.1); border: 1px solid rgba(255,107,107,0.3); border-radius: 8px; cursor: pointer;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: #ff6b6b; font-weight: bold;">⚠️ 無部門</span>
+                                <span id="noDeptCount" style="background: #ff6b6b; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">0</span>
                             </div>
                         </div>
-                        <input type="hidden" id="editingDeptId">
-                        <div style="display: flex; gap: 10px;">
-                            <button onclick="saveDepartment()" class="cyber-btn-primary" style="flex: 1;">
-                                💾 儲存部門
-                            </button>
-                            <button onclick="cancelEditDepartment()" class="btn-secondary-cyber" id="cancelEditDeptBtn" style="display: none;">
-                                取消編輯
-                            </button>
+
+                        <div id="departmentListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+                    </div>
+
+                    <!-- 右側：部門詳情與人員管理 -->
+                    <div id="deptDetailPanel">
+                        <div id="deptDetailContent" style="color: var(--gaming-white); text-align: center; padding: 50px 20px;">
+                            <div style="font-size: 3rem; margin-bottom: 15px;">👈</div>
+                            <div style="color: var(--gaming-cyan);">請從左側選擇一個部門</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯部門 Modal -->
+    <div id="deptEditModal" class="modal hidden">
+        <div class="modal-content-cyber">
+            <div class="modal-header-cyber">
+                <h2 id="deptEditModalTitle" class="modal-title-cyber">➕ 新增部門</h2>
+                <button class="close-btn-cyber" onclick="closeModal('deptEditModal')">✕</button>
+            </div>
+            <div class="modal-body-cyber">
+                <div class="form-group-cyber">
+                    <label>部門名稱</label>
+                    <input type="text" id="deptName" class="cyber-input" placeholder="例如: 業務部" maxlength="20">
+                </div>
+                <div class="form-group-cyber">
+                    <label>部門描述</label>
+                    <input type="text" id="deptDescription" class="cyber-input" placeholder="例如: 負責業務開發與客戶服務" maxlength="50">
+                </div>
+                <div class="form-group-cyber">
+                    <label>部門顏色</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="color" id="deptColor" class="cyber-input" value="#4ECDC4" style="width: 60px; height: 40px; padding: 2px; cursor: pointer;">
+                        <span id="deptColorPreview" style="flex: 1; padding: 8px; background: #4ECDC4; border-radius: 5px; text-align: center; color: white; font-weight: bold;">預覽顏色</span>
+                    </div>
+                </div>
+                <input type="hidden" id="editingDeptId">
+            </div>
+            <div class="modal-footer-cyber">
+                <button class="btn-secondary-cyber" onclick="closeModal('deptEditModal')">取消</button>
+                <button class="btn-primary-cyber" onclick="saveDepartment()">💾 儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 每日任務管理 Modal -->
+    <div id="taskTemplateModal" class="modal hidden">
+        <div class="modal-content-cyber modal-content-extra-wide">
+            <div class="modal-header-cyber">
+                <h2 class="modal-title-cyber">📋 每日任務管理</h2>
+                <button class="close-btn-cyber" onclick="closeModal('taskTemplateModal')">✕</button>
+            </div>
+            <div class="modal-body-cyber">
+                <div style="margin-bottom: 20px; padding: 15px; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 8px;">
+                    <div style="color: var(--neon-green); font-weight: bold; margin-bottom: 10px;">💡 使用說明</div>
+                    <div style="color: var(--gaming-white); font-size: 0.9rem; line-height: 1.6;">
+                        • 在這裡設定的任務會<strong style="color: var(--gaming-yellow);">每天自動出現</strong>在任務池中<br>
+                        • 分為「日常」、「重要」、「臨時」三種類型<br>
+                        • 每日任務不需要指定日期，系統會自動套用到每一天<br>
+                        • 若需要新增只出現一次的任務，請使用「新增單次任務」
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 250px 1fr; gap: 20px; min-height: 450px;">
+                    <!-- 左側：任務類型選擇 -->
+                    <div style="border-right: 1px solid rgba(0,255,255,0.2); padding-right: 20px;">
+                        <div style="margin-bottom: 15px;">
+                            <h3 style="color: var(--gaming-cyan); margin: 0 0 15px 0; font-size: 1rem;">📁 任務類型</h3>
+                        </div>
+
+                        <div id="taskTypeDaily" class="task-type-item selected" onclick="selectTaskType('daily')" style="padding: 12px; background: rgba(0, 255, 136, 0.2); border: 1px solid var(--status-free); border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--status-free); font-weight: bold;">📅 日常任務</span>
+                                <span id="dailyTaskCount" style="background: var(--status-free); color: black; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">0</span>
+                            </div>
+                            <div style="color: var(--gaming-white); font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">每天例行的工作</div>
+                        </div>
+
+                        <div id="taskTypeImportant" class="task-type-item" onclick="selectTaskType('important')" style="padding: 12px; background: rgba(255, 0, 128, 0.1); border: 1px solid rgba(255, 0, 128, 0.3); border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--status-busy); font-weight: bold;">⭐ 重要任務</span>
+                                <span id="importantTaskCount" style="background: var(--status-busy); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">0</span>
+                            </div>
+                            <div style="color: var(--gaming-white); font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">重要的每日工作</div>
+                        </div>
+
+                        <div id="taskTypeUrgent" class="task-type-item" onclick="selectTaskType('urgent')" style="padding: 12px; background: rgba(255, 107, 0, 0.1); border: 1px solid rgba(255, 107, 0, 0.3); border-radius: 8px; margin-bottom: 8px; cursor: pointer;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="color: var(--status-partial); font-weight: bold;">⚡ 臨時任務</span>
+                                <span id="urgentTaskCount" style="background: var(--status-partial); color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">0</span>
+                            </div>
+                            <div style="color: var(--gaming-white); font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">每日固定的臨時性工作</div>
                         </div>
                     </div>
 
-                    <!-- 已有部門列表 -->
+                    <!-- 右側：任務列表與管理 -->
                     <div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid rgba(0,255,255,0.3); padding-bottom: 8px;">
-                            <h3 style="color: var(--gaming-cyan); margin: 0;">📋 現有部門</h3>
-                            <span id="deptCountDisplay" style="color: var(--gaming-cyan); font-size: 0.9rem;">共 0 個部門</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 id="taskListTitle" style="color: var(--gaming-white); margin: 0;">📅 日常任務</h3>
+                            <button onclick="showAddTaskTemplate()" class="cyber-btn-primary" style="padding: 8px 15px;">➕ 新增任務</button>
                         </div>
-                        <div id="departmentListContainer" style="max-height: 400px; overflow-y: auto;"></div>
+                        <div id="taskTemplateListContainer" style="max-height: 400px; overflow-y: auto;">
+                            <!-- 任務列表會動態插入這裡 -->
+                        </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新增/編輯任務模板 Modal -->
+    <div id="taskTemplateEditModal" class="modal hidden">
+        <div class="modal-content-cyber">
+            <div class="modal-header-cyber">
+                <h2 id="taskTemplateEditTitle" class="modal-title-cyber">➕ 新增每日任務</h2>
+                <button class="close-btn-cyber" onclick="closeModal('taskTemplateEditModal')">✕</button>
+            </div>
+            <div class="modal-body-cyber">
+                <div class="form-group-cyber">
+                    <label>任務名稱</label>
+                    <input type="text" id="templateTaskName" class="cyber-input" placeholder="請輸入任務名稱">
+                </div>
+                <div class="form-row-cyber">
+                    <div class="form-group-cyber">
+                        <label>開始時間</label>
+                        <input type="number" id="templateStartHour" min="0" max="23" class="cyber-input" placeholder="0-23">
+                    </div>
+                    <div class="form-group-cyber">
+                        <label>結束時間</label>
+                        <input type="number" id="templateEndHour" min="1" max="24" class="cyber-input" placeholder="1-24">
+                    </div>
+                </div>
+                <div class="form-group-cyber">
+                    <label>需求人數</label>
+                    <input type="number" id="templateRequiredPeople" min="1" max="99" class="cyber-input" value="1">
+                </div>
+                <div class="form-group-cyber">
+                    <label>任務說明</label>
+                    <textarea id="templateDescription" rows="2" class="cyber-textarea" placeholder="選填"></textarea>
+                </div>
+                <input type="hidden" id="editingTemplateId">
+                <input type="hidden" id="editingTemplateType">
+            </div>
+            <div class="modal-footer-cyber">
+                <button class="btn-secondary-cyber" onclick="closeModal('taskTemplateEditModal')">取消</button>
+                <button class="btn-primary-cyber" onclick="saveTaskTemplate()">💾 儲存</button>
             </div>
         </div>
     </div>
@@ -635,12 +742,11 @@
                     <table class="import-table">
                         <thead>
                             <tr>
-                                <th style="width: 20%;">姓名 *</th>
-                                <th style="width: 15%;">等級 *</th>
-                                <th style="width: 15%;">部門 *</th>
+                                <th style="width: 25%;">姓名 *</th>
+                                <th style="width: 25%;">職位等級 *</th>
+                                <th style="width: 20%;">部門</th>
                                 <th style="width: 20%;">聯絡方式</th>
-                                <th style="width: 15%;">特殊人員</th>
-                                <th style="width: 15%;">操作</th>
+                                <th style="width: 10%;">操作</th>
                             </tr>
                         </thead>
                         <tbody id="importTableBody">

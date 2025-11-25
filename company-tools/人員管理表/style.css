@@ -3624,3 +3624,83 @@ select.cyber-select option,
         transform: none !important;
     }
 }
+
+/* ===== 部門管理新增樣式 ===== */
+.cyber-btn-small {
+    padding: 6px 12px;
+    background: rgba(0, 212, 255, 0.2);
+    border: 1px solid var(--gaming-cyan);
+    border-radius: 5px;
+    color: var(--gaming-cyan);
+    cursor: pointer;
+    font-weight: bold;
+    font-family: 'Consolas', monospace;
+    transition: all 0.3s;
+}
+
+.cyber-btn-small:hover {
+    background: rgba(0, 212, 255, 0.4);
+    box-shadow: 0 0 10px var(--gaming-cyan);
+}
+
+.cyber-btn-danger {
+    background: rgba(255, 0, 128, 0.2) !important;
+    border-color: var(--status-busy) !important;
+    color: var(--status-busy) !important;
+}
+
+.cyber-btn-danger:hover {
+    background: rgba(255, 0, 128, 0.4) !important;
+    box-shadow: 0 0 10px var(--status-busy) !important;
+}
+
+.cyber-btn-primary {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-green-dark) 100%);
+    border: none;
+    border-radius: 5px;
+    color: var(--gaming-black);
+    cursor: pointer;
+    font-weight: bold;
+    font-family: 'Consolas', monospace;
+    transition: all 0.3s;
+}
+
+.cyber-btn-primary:hover {
+    box-shadow: 0 0 15px var(--neon-green);
+    transform: translateY(-1px);
+}
+
+.cyber-select-small {
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--gaming-cyan);
+    border-radius: 5px;
+    color: var(--gaming-white);
+    font-family: 'Consolas', monospace;
+    cursor: pointer;
+}
+
+.cyber-select-small:focus {
+    outline: none;
+    border-color: var(--neon-green);
+    box-shadow: 0 0 5px var(--neon-green);
+}
+
+.dept-list-item:hover {
+    background: rgba(0, 212, 255, 0.15) !important;
+}
+
+.dept-person-item:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+#noDeptOption:hover {
+    background: rgba(255, 107, 107, 0.2) !important;
+}
+
+#noDeptOption.selected {
+    background: rgba(255, 107, 107, 0.3) !important;
+    border-color: #ff6b6b !important;
+}

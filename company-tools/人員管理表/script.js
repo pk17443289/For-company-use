@@ -4,6 +4,7 @@ let tasks = [];
 let history = [];
 let compensatoryLeaves = []; // 補休記錄
 let departments = []; // 部門列表
+let taskTemplates = []; // 每日任務模板
 
 // 工作性質分類（可自訂）
 let WORK_CATEGORIES = {};
@@ -91,6 +92,7 @@ let currentTaskFilter = 'all';
 // 編輯狀態
 let editingPersonId = null;
 let editingTaskId = null;
+let currentTemplateType = 'daily'; // 當前選擇的任務模板類型
 
 // 拖拉狀態
 let draggedTask = null;
@@ -106,6 +108,7 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('初始化人員管理系統...');
     initializeDate();
     loadData();
+    generateTasksFromTemplates(currentDateString); // 從模板生成當日任務
     setupEventListeners();
     initializeRankSliders(); // 初始化階級滑動條
     updateRankFilterOptions(); // 初始化階級篩選下拉選單
@@ -115,15 +118,61 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 初始化階級滑動條的最大值
 function initializeRankSliders() {
-    const rankSlider = document.getElementById('personRank');
-    if (rankSlider) {
-        rankSlider.max = MAX_RANK;
+    updatePersonRankSelect();
+}
+
+// 更新人員新增/編輯介面的階級下拉選單
+function updatePersonRankSelect() {
+    const rankSelect = document.getElementById('personRankSelect');
+    if (!rankSelect) return;
+
+    // 保存當前選中的值
+    const currentValue = rankSelect.value;
+
+    // 清空選項
+    rankSelect.innerHTML = '';
+
+    // 添加「特殊人員」選項（最高職位）
+    const specialOption = document.createElement('option');
+    specialOption.value = 'special';
+    specialOption.textContent = '🔸 特殊人員（最高職位）';
+    rankSelect.appendChild(specialOption);
+
+    // 動態生成階級選項（從高到低）
+    for (let i = MAX_RANK; i >= 1; i--) {
+        const option = document.createElement('option');
+        option.value = i;
+        const rankLabel = getRankLabel(i);
+        option.textContent = `LV${i} - ${rankLabel}`;
+        rankSelect.appendChild(option);
     }
 
-    // 更新標籤顯示範圍
-    const personRankLabel = document.getElementById('personRankLabel');
-    if (personRankLabel) {
-        personRankLabel.textContent = `職位等級 (1-${MAX_RANK})`;
+    // 嘗試恢復之前的選擇
+    if (currentValue) {
+        rankSelect.value = currentValue;
+    } else {
+        rankSelect.value = '3'; // 預設選擇 LV3
+    }
+
+    // 同步更新隱藏欄位
+    syncRankHiddenFields();
+}
+
+// 同步階級選擇到隱藏欄位
+function syncRankHiddenFields() {
+    const rankSelect = document.getElementById('personRankSelect');
+    const personRank = document.getElementById('personRank');
+    const personIsSpecial = document.getElementById('personIsSpecial');
+
+    if (!rankSelect || !personRank || !personIsSpecial) return;
+
+    const value = rankSelect.value;
+    if (value === 'special') {
+        personRank.value = MAX_RANK; // 特殊人員使用最高階級
+        personIsSpecial.value = 'true';
+    } else {
+        personRank.value = value;
+        personIsSpecial.value = 'false';
     }
 }
 
@@ -144,40 +193,6 @@ function formatDate(date) {
 
 // ===== 事件監聽器設定 =====
 function setupEventListeners() {
-    // 日期選擇按鈕
-    document.querySelectorAll('.date-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-            const mode = this.dataset.mode;
-            const offset = this.dataset.offset;
-
-            if (mode === 'custom') {
-                // 直接觸發日期選擇器
-                const dateInput = document.getElementById('customDate');
-                dateInput.value = currentDateString; // 預設為當前選擇的日期
-                dateInput.showPicker(); // 直接打開日曆
-            } else {
-                document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                applyDateOffset(parseInt(offset));
-            }
-        });
-    });
-
-    // 日期選擇器改變時自動套用
-    document.getElementById('customDate').addEventListener('change', function() {
-        const dateInput = this.value;
-        if (dateInput) {
-            currentDate = new Date(dateInput + 'T00:00:00');
-            currentDateString = formatDate(currentDate);
-            updateDateDisplay();
-            updateDisplay();
-
-            // 更新按鈕狀態
-            document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
-            document.querySelector('.date-btn[data-mode="custom"]').classList.add('active');
-        }
-    });
-
     // 時段選擇按鈕
     document.querySelectorAll('.time-btn').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -267,16 +282,16 @@ function setupEventListeners() {
     });
 
     // 操作按鈕（點擊後關閉選單）
-    document.getElementById('addPersonBtn').addEventListener('click', () => {
-        showAddPersonModal();
-        actionMenuDropdown.classList.add('hidden');
-    });
     document.getElementById('importPersonListBtn').addEventListener('click', () => {
         showImportPersonListModal();
         actionMenuDropdown.classList.add('hidden');
     });
     document.getElementById('addTaskBtn').addEventListener('click', () => {
         showAddTaskModal();
+        actionMenuDropdown.classList.add('hidden');
+    });
+    document.getElementById('manageTaskTemplateBtn').addEventListener('click', () => {
+        showTaskTemplateModal();
         actionMenuDropdown.classList.add('hidden');
     });
     document.getElementById('manageWorkCategoryBtn').addEventListener('click', () => {
@@ -444,10 +459,13 @@ function setupEventListeners() {
     document.getElementById('savePersonBtn').addEventListener('click', savePerson);
     document.getElementById('saveTaskBtn').addEventListener('click', saveTask);
 
-    // 位階滑桿
-    document.getElementById('personRank').addEventListener('input', function(e) {
-        updateRankDisplay(parseInt(e.target.value));
-    });
+    // 階級選擇器
+    const rankSelect = document.getElementById('personRankSelect');
+    if (rankSelect) {
+        rankSelect.addEventListener('change', function() {
+            syncRankHiddenFields();
+        });
+    }
 }
 
 // ===== 資料管理 =====
@@ -465,6 +483,7 @@ function loadData() {
         history = data.history || [];
         compensatoryLeaves = data.compensatoryLeaves || []; // 載入補休記錄
         departments = data.departments || getDefaultDepartments(); // 載入部門資料
+        taskTemplates = data.taskTemplates || []; // 載入任務模板
         WORK_CATEGORIES = data.workCategories || getDefaultWorkCategories();
         MISSION_CATEGORIES = data.missionCategories || getDefaultMissionCategories();
         RANK_LABELS = data.rankLabels || getDefaultRankLabels();
@@ -519,6 +538,7 @@ function saveData() {
         history,
         compensatoryLeaves, // 儲存補休記錄
         departments, // 儲存部門資料
+        taskTemplates, // 儲存任務模板
         workCategories: WORK_CATEGORIES,
         missionCategories: MISSION_CATEGORIES,
         rankLabels: RANK_LABELS,
@@ -771,12 +791,43 @@ function importData(event) {
 }
 
 // ===== 日期管理 =====
+
+// 切換日期（供按鈕 onclick 呼叫）
+function switchDate(offset) {
+    document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.date-btn[data-offset="${offset}"]`).classList.add('active');
+    applyDateOffset(offset);
+}
+
+// 開啟日期選擇器
+function openDatePicker() {
+    const dateInput = document.getElementById('customDate');
+    dateInput.value = currentDateString;
+    dateInput.showPicker();
+}
+
+// 自訂日期變更時的處理
+function onCustomDateChange(dateInput) {
+    if (dateInput) {
+        currentDate = new Date(dateInput + 'T00:00:00');
+        currentDateString = formatDate(currentDate);
+        generateTasksFromTemplates(currentDateString); // 為該日期生成模板任務
+        updateDateDisplay();
+        updateDisplay();
+
+        // 更新按鈕狀態
+        document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.date-btn[data-mode="custom"]').classList.add('active');
+    }
+}
+
 function applyDateOffset(offset) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     currentDate = new Date(today);
     currentDate.setDate(currentDate.getDate() + offset);
     currentDateString = formatDate(currentDate);
+    generateTasksFromTemplates(currentDateString); // 為該日期生成模板任務
     updateDateDisplay();
     updateDisplay();
 }
@@ -866,11 +917,12 @@ function updateScheduleOverview() {
     // 移除舊的事件監聽器（如果有）
     overviewSelect.onchange = null;
 
-    // 添加 change 事件監聽器
+    // 添加 change 事件監聯器
     overviewSelect.addEventListener('change', function() {
         const selectedDateString = this.value;
         currentDate = new Date(selectedDateString + 'T00:00:00');
         currentDateString = selectedDateString;
+        generateTasksFromTemplates(currentDateString); // 為該日期生成模板任務
         updateDateDisplay();
         updateDisplay();
 
@@ -974,7 +1026,12 @@ function filterPersonnel() {
 
         // 部門過濾
         if (currentDepartmentFilter !== 'all') {
-            if (person.departmentId !== parseInt(currentDepartmentFilter)) {
+            if (currentDepartmentFilter === 'none') {
+                // 篩選無部門的人員
+                if (person.departmentId !== null && person.departmentId !== undefined) {
+                    return false;
+                }
+            } else if (person.departmentId !== parseInt(currentDepartmentFilter)) {
                 return false;
             }
         }
@@ -1187,8 +1244,8 @@ function createPersonCardGrid(person) {
 
     // 取得部門資訊
     const department = departments.find(d => d.id === person.departmentId);
-    const deptName = department ? department.name : '未分配';
-    const deptColor = department ? department.color : '#999999';
+    const deptName = department ? department.name : '無部門';
+    const deptColor = department ? department.color : '#ff6b6b';
 
     // 取得該人員在當前日期的所有任務
     const allPersonTasks = tasks.filter(t => {
@@ -1389,42 +1446,23 @@ function updateRankFilterOptions() {
     allOption.textContent = '所有階級';
     rankFilter.appendChild(allOption);
 
-    // 動態生成階級分組選項（每 2 個階級一組，從高到低）
-    for (let i = MAX_RANK; i >= 1; i -= 2) {
-        const option = document.createElement('option');
-        const upperRank = i;
-        const lowerRank = Math.max(1, i - 1);
-
-        // 判斷星級
-        let stars = '';
-        if (upperRank >= 9) {
-            stars = '⭐⭐⭐ 高階';
-        } else if (upperRank >= 7) {
-            stars = '⭐⭐ 中高階';
-        } else if (upperRank >= 5) {
-            stars = '⭐ 中階';
-        } else if (upperRank >= 3) {
-            stars = '基層';
-        } else {
-            stars = '新進';
-        }
-
-        if (upperRank === lowerRank) {
-            option.value = `${upperRank}-${upperRank}`;
-            option.textContent = `${stars} (${upperRank})`;
-        } else {
-            option.value = `${lowerRank}-${upperRank}`;
-            option.textContent = `${stars} (${lowerRank}-${upperRank})`;
-        }
-
-        rankFilter.appendChild(option);
-    }
-
-    // 添加「特殊人員」選項
+    // 添加「特殊人員」選項（最高職位，放在最上面）
     const specialOption = document.createElement('option');
     specialOption.value = 'special';
     specialOption.textContent = '🔸 特殊人員';
     rankFilter.appendChild(specialOption);
+
+    // 動態生成階級選項（一階一欄，從高到低）
+    for (let i = MAX_RANK; i >= 1; i--) {
+        const option = document.createElement('option');
+        option.value = `${i}-${i}`; // 單一階級
+
+        // 取得階級名稱
+        const rankLabel = getRankLabel(i);
+        option.textContent = `LV${i} - ${rankLabel}`;
+
+        rankFilter.appendChild(option);
+    }
 
     // 嘗試恢復之前的選擇，如果無效則選擇「所有階級」
     const options = Array.from(rankFilter.options).map(opt => opt.value);
@@ -1669,8 +1707,21 @@ function createTaskCard(task, isOverdue = false) {
     // 逾時標記
     const overdueBadge = isOverdue ? '<span style="background: rgba(255, 107, 107, 0.9); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; margin-left: 8px;">⏰ 逾時</span>' : '';
 
-    // 工作性質標籤
-    const categoryName = task.workCategory ? WORK_CATEGORIES[task.workCategory] : '';
+    // 工作性質標籤（支援模板類型）
+    let categoryName = '';
+    if (task.workCategory) {
+        if (task.workCategory.startsWith('template_')) {
+            // 模板類型的工作性質
+            const templateTypes = {
+                'template_daily': '日常任務',
+                'template_important': '重要任務',
+                'template_urgent': '臨時任務'
+            };
+            categoryName = templateTypes[task.workCategory] || '';
+        } else {
+            categoryName = WORK_CATEGORIES[task.workCategory] || '';
+        }
+    }
     const categoryBadge = categoryName ? `<span class="work-category-badge">📋 ${categoryName}</span>` : '';
 
     card.innerHTML = `
@@ -2545,21 +2596,20 @@ function showAddPersonModal() {
     document.getElementById('personModalTitle').textContent = '新增人員';
     document.getElementById('personName').value = '';
 
-    // 更新階級滑動條的最大值
-    const rankSlider = document.getElementById('personRank');
-    rankSlider.max = MAX_RANK;
+    // 更新階級下拉選單
+    updatePersonRankSelect();
 
-    // 設定預設值（中階）
+    // 設定預設值（LV3）
     const defaultRank = Math.min(3, MAX_RANK);
-    rankSlider.value = defaultRank;
+    const rankSelect = document.getElementById('personRankSelect');
+    rankSelect.value = defaultRank;
+    syncRankHiddenFields();
 
     // 更新部門選項
     updatePersonDepartmentOptions();
     document.getElementById('personDepartment').value = '';
 
     document.getElementById('personContact').value = '';
-    document.getElementById('personIsSpecial').checked = false;
-    updateRankDisplay(defaultRank);
     document.getElementById('personModal').classList.remove('hidden');
 }
 
@@ -2582,14 +2632,15 @@ function addPersonRow() {
     const row = document.createElement('tr');
     row.className = 'import-row';
 
-    // 生成等級選項
-    let rankOptions = '';
-    for (let i = 1; i <= MAX_RANK; i++) {
-        rankOptions += `<option value="${i}">${i}</option>`;
+    // 生成等級選項（特殊人員在最前面，然後從高到低）
+    let rankOptions = '<option value="special">🔸 特殊人員</option>';
+    for (let i = MAX_RANK; i >= 1; i--) {
+        const rankLabel = getRankLabel(i);
+        rankOptions += `<option value="${i}">LV${i} - ${rankLabel}</option>`;
     }
 
     // 生成部門選項
-    let deptOptions = '';
+    let deptOptions = '<option value="">無部門</option>';
     departments.forEach(dept => {
         deptOptions += `<option value="${dept.id}">${dept.name}</option>`;
     });
@@ -2604,14 +2655,10 @@ function addPersonRow() {
         </td>
         <td>
             <select class="import-select dept-select">
-                <option value="">請選擇</option>
                 ${deptOptions}
             </select>
         </td>
         <td><input type="text" class="import-input" placeholder="分機或手機"></td>
-        <td style="text-align: center;">
-            <input type="checkbox" class="cyber-checkbox">
-        </td>
         <td style="text-align: center;">
             <button class="btn-delete-row" onclick="removePersonRow(this)">🗑️</button>
         </td>
@@ -2623,6 +2670,29 @@ function addPersonRow() {
 function removePersonRow(button) {
     const row = button.closest('tr');
     row.remove();
+}
+
+// 更新批量匯入表格中的部門選項
+function updateImportTableDeptSelects() {
+    const tbody = document.getElementById('importTableBody');
+    if (!tbody) return;
+
+    const deptSelects = tbody.querySelectorAll('.dept-select');
+    deptSelects.forEach(select => {
+        const currentValue = select.value;
+
+        // 重新生成部門選項
+        let deptOptions = '<option value="">無部門</option>';
+        departments.forEach(dept => {
+            deptOptions += `<option value="${dept.id}">${dept.name}</option>`;
+        });
+        select.innerHTML = deptOptions;
+
+        // 嘗試恢復之前的選擇（如果部門仍存在）
+        if (currentValue && departments.some(d => d.id === parseInt(currentValue))) {
+            select.value = currentValue;
+        }
+    });
 }
 
 function importPersonList() {
@@ -2637,16 +2707,16 @@ function importPersonList() {
         const inputs = row.querySelectorAll('.import-input');
         const rankSelect = row.querySelector('.rank-select');
         const deptSelect = row.querySelector('.dept-select');
-        const checkbox = row.querySelector('.cyber-checkbox');
 
         const name = inputs[0].value.trim();
-        const rank = parseInt(rankSelect.value);
-        const departmentId = parseInt(deptSelect.value);
+        const rankValue = rankSelect.value;
+        const isSpecial = rankValue === 'special';
+        const rank = isSpecial ? MAX_RANK : parseInt(rankValue);
+        const departmentId = deptSelect.value ? parseInt(deptSelect.value) : null; // 空值為無部門
         const contact = inputs[1].value.trim() || '未提供';
-        const isSpecial = checkbox.checked;
 
-        // 如果姓名、等級和部門都是空的，跳過這一行
-        if (!name && !rankSelect.value && !deptSelect.value) {
+        // 如果姓名和等級都是空的，跳過這一行
+        if (!name && !rankValue) {
             return;
         }
 
@@ -2656,13 +2726,8 @@ function importPersonList() {
             return;
         }
 
-        if (!rankSelect.value || isNaN(rank) || rank < 1 || rank > MAX_RANK) {
-            errors.push(`第 ${index + 1} 行：請選擇等級 (1-${MAX_RANK})`);
-            return;
-        }
-
-        if (!deptSelect.value || isNaN(departmentId)) {
-            errors.push(`第 ${index + 1} 行：請選擇部門`);
+        if (!rankValue || (!isSpecial && (isNaN(rank) || rank < 1 || rank > MAX_RANK))) {
+            errors.push(`第 ${index + 1} 行：請選擇職位等級`);
             return;
         }
 
@@ -2670,7 +2735,7 @@ function importPersonList() {
             id: Date.now() + index + Math.random() * 1000,
             name,
             rank,
-            departmentId,
+            departmentId, // 可為 null（無部門）
             contact,
             isSpecial,
             status: 'normal' // 預設為正常狀態
@@ -2715,17 +2780,13 @@ function importPersonList() {
 function savePerson() {
     const name = document.getElementById('personName').value.trim();
     const rank = parseInt(document.getElementById('personRank').value);
-    const departmentId = parseInt(document.getElementById('personDepartment').value);
+    const deptValue = document.getElementById('personDepartment').value;
+    const departmentId = deptValue ? parseInt(deptValue) : null; // 空值為無部門
     const contact = document.getElementById('personContact').value.trim();
-    const isSpecial = document.getElementById('personIsSpecial').checked;
+    const isSpecial = document.getElementById('personIsSpecial').value === 'true';
 
     if (!name) {
         alert('請輸入姓名');
-        return;
-    }
-
-    if (!departmentId) {
-        alert('請選擇所屬部門');
         return;
     }
 
@@ -2734,7 +2795,7 @@ function savePerson() {
         if (person) {
             person.name = name;
             person.rank = rank;
-            person.departmentId = departmentId;
+            person.departmentId = departmentId; // 可為 null（無部門）
             person.contact = contact;
             person.isSpecial = isSpecial;
             addHistory(`編輯人員: ${name}${isSpecial ? ' (特殊人員)' : ''}`);
@@ -2744,7 +2805,7 @@ function savePerson() {
             id: Date.now(),
             name,
             rank,
-            departmentId,
+            departmentId, // 可為 null（無部門）
             contact,
             isSpecial,
             status: 'normal' // 預設為正常狀態
@@ -2756,6 +2817,14 @@ function savePerson() {
     saveData();
     updateDisplay();
     closeModal('personModal');
+
+    // 如果部門管理視窗開著，更新它
+    if (!document.getElementById('departmentModal').classList.contains('hidden')) {
+        renderDepartmentList();
+        if (selectedDeptId !== undefined) {
+            renderDeptDetail(selectedDeptId);
+        }
+    }
 }
 
 function editPerson(personId) {
@@ -2766,22 +2835,24 @@ function editPerson(personId) {
     document.getElementById('personModalTitle').textContent = '編輯人員';
     document.getElementById('personName').value = person.name;
 
-    // 更新階級滑動條的最大值
-    const rankSlider = document.getElementById('personRank');
-    rankSlider.max = MAX_RANK;
+    // 更新階級下拉選單
+    updatePersonRankSelect();
 
-    // 設定人員階級（如果超過最大值則調整）
-    const adjustedRank = Math.min(person.rank, MAX_RANK);
-    rankSlider.value = adjustedRank;
-
-    updateRankDisplay(adjustedRank);
+    // 設定階級選擇器的值
+    const rankSelect = document.getElementById('personRankSelect');
+    if (person.isSpecial) {
+        rankSelect.value = 'special';
+    } else {
+        const adjustedRank = Math.min(person.rank, MAX_RANK);
+        rankSelect.value = adjustedRank;
+    }
+    syncRankHiddenFields();
 
     // 更新部門選項並設定當前部門
     updatePersonDepartmentOptions();
     document.getElementById('personDepartment').value = person.departmentId || '';
 
     document.getElementById('personContact').value = person.contact || '';
-    document.getElementById('personIsSpecial').checked = person.isSpecial || false;
     document.getElementById('personModal').classList.remove('hidden');
 
     // 關閉人員詳細資訊面板/彈窗
@@ -2901,11 +2972,6 @@ function removePersonFromTask(personId, taskId) {
         document.body.appendChild(toast);
         setTimeout(() => toast.remove(), 2500);
     }
-}
-
-function updateRankDisplay(rank) {
-    document.getElementById('rankNumber').textContent = rank;
-    document.getElementById('rankLabel').textContent = getRankLabel(rank);
 }
 
 // ===== 任務管理 =====
@@ -3400,7 +3466,13 @@ function addHistory(action) {
 
 // ===== 工具函數 =====
 function closeModal(modalId) {
-    document.getElementById(modalId).classList.add('hidden');
+    const modal = document.getElementById(modalId);
+    modal.classList.add('hidden');
+
+    // 重設 z-index（如果有被修改過）
+    if (modalId === 'personModal') {
+        modal.style.zIndex = '';
+    }
 
     // 手機版：關閉 statusTimeRangeModal 時，恢復 personDetailModal 的顯示
     if (modalId === 'statusTimeRangeModal') {
@@ -4457,12 +4529,8 @@ function setMaxRank() {
         }
     }
 
-    // 如果新增人員 modal 當前打開，確保滑動條當前值不超過新的最大值
-    const rankSlider = document.getElementById('personRank');
-    if (rankSlider && parseInt(rankSlider.value) > MAX_RANK) {
-        rankSlider.value = MAX_RANK;
-        updateRankDisplay(MAX_RANK);
-    }
+    // 如果新增人員 modal 當前打開，更新階級下拉選單
+    updatePersonRankSelect();
 
     // 更新顯示
     document.getElementById('currentMaxRankDisplay').textContent = `目前最高階級：LV${MAX_RANK}`;
@@ -4487,58 +4555,282 @@ function showDepartmentModal() {
     updateColorPreview();
 }
 
+// 當前選中的部門ID（null 表示無部門）
+let selectedDeptId = undefined;
+
 function renderDepartmentList() {
     const container = document.getElementById('departmentListContainer');
     container.innerHTML = '';
 
-    // 更新部門數量
-    document.getElementById('deptCountDisplay').textContent = `共 ${departments.length} 個部門`;
+    // 更新無部門人數
+    const noDeptCount = personnel.filter(p => !p.departmentId).length;
+    document.getElementById('noDeptCount').textContent = noDeptCount;
 
     if (departments.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gaming-cyan); opacity: 0.6;">尚未建立任何部門</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--gaming-cyan); opacity: 0.6;">尚未建立任何部門<br><br>點擊上方「➕ 新增」按鈕建立部門</div>';
         return;
     }
 
     departments.forEach(dept => {
-        // 計算該部門的人數
         const deptPersonnelCount = personnel.filter(p => p.departmentId === dept.id).length;
+        const isSelected = selectedDeptId === dept.id;
 
         const item = document.createElement('div');
+        item.className = 'dept-list-item';
+        item.onclick = () => selectDepartment(dept.id);
         item.style.cssText = `
-            padding: 15px;
-            background: rgba(0, 212, 255, 0.05);
-            border: 1px solid rgba(0, 212, 255, 0.2);
+            padding: 12px;
+            background: ${isSelected ? 'rgba(0, 212, 255, 0.2)' : 'rgba(0, 212, 255, 0.05)'};
+            border: 1px solid ${isSelected ? 'var(--gaming-cyan)' : 'rgba(0, 212, 255, 0.2)'};
             border-left: 4px solid ${dept.color};
             border-radius: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
             transition: all 0.3s;
         `;
 
         item.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
-                <div style="flex: 1;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
-                        <div style="width: 20px; height: 20px; background: ${dept.color}; border-radius: 4px;"></div>
-                        <span style="font-size: 1.1rem; font-weight: bold; color: var(--gaming-white);">${dept.name}</span>
-                    </div>
-                    <div style="color: var(--gaming-cyan); font-size: 0.9rem; opacity: 0.8; margin-left: 30px;">${dept.description || '無描述'}</div>
-                    <div style="color: var(--gaming-yellow); font-size: 0.85rem; margin-top: 8px; margin-left: 30px;">
-                        👥 ${deptPersonnelCount} 人
-                    </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 16px; height: 16px; background: ${dept.color}; border-radius: 3px;"></div>
+                    <span style="font-weight: bold; color: var(--gaming-white); font-size: 0.95rem;">${dept.name}</span>
                 </div>
-                <div style="display: flex; gap: 8px;">
-                    <button onclick="editDepartment(${dept.id})" style="padding: 6px 12px; background: rgba(0, 212, 255, 0.2); border: 1px solid var(--gaming-cyan); border-radius: 5px; color: var(--gaming-cyan); cursor: pointer; font-weight: bold; transition: all 0.3s;">
-                        ✏️ 編輯
-                    </button>
-                    <button onclick="deleteDepartment(${dept.id})" style="padding: 6px 12px; background: rgba(255, 0, 128, 0.2); border: 1px solid var(--status-busy); border-radius: 5px; color: var(--status-busy); cursor: pointer; font-weight: bold; transition: all 0.3s;">
-                        🗑️ 刪除
-                    </button>
-                </div>
+                <span style="background: ${dept.color}; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.8rem;">${deptPersonnelCount}</span>
             </div>
         `;
 
         container.appendChild(item);
     });
+}
+
+// 選擇部門，顯示詳細資訊
+function selectDepartment(deptId) {
+    selectedDeptId = deptId;
+    renderDepartmentList(); // 更新左側列表的選中狀態
+    renderDeptDetail(deptId);
+}
+
+// 渲染部門詳細資訊與人員列表
+function renderDeptDetail(deptId) {
+    const content = document.getElementById('deptDetailContent');
+
+    if (deptId === null) {
+        // 無部門人員
+        const noDeptPersonnel = personnel.filter(p => !p.departmentId);
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3 style="color: #ff6b6b; margin: 0;">⚠️ 無部門人員</h3>
+                    <button onclick="showAddPersonToDept(null)" class="cyber-btn-small" style="padding: 5px 10px; font-size: 0.85rem;">👤 新增人員</button>
+                </div>
+                <p style="color: var(--gaming-cyan); font-size: 0.9rem; margin-bottom: 15px;">
+                    這些人員尚未分配到任何部門，請將他們移動到適當的部門。
+                </p>
+            </div>
+            ${renderDeptPersonnelList(noDeptPersonnel, null)}
+        `;
+    } else {
+        const dept = departments.find(d => d.id === deptId);
+        if (!dept) return;
+
+        const deptPersonnel = personnel.filter(p => p.departmentId === deptId);
+
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 24px; height: 24px; background: ${dept.color}; border-radius: 5px;"></div>
+                        <h3 style="color: var(--gaming-white); margin: 0;">${dept.name}</h3>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="showAddPersonToDept(${dept.id})" class="cyber-btn-small" style="padding: 5px 10px; font-size: 0.85rem;">👤 新增人員</button>
+                        <button onclick="showEditDepartmentForm(${dept.id})" class="cyber-btn-small" style="padding: 5px 10px; font-size: 0.85rem;">✏️ 編輯</button>
+                        <button onclick="deleteDepartment(${dept.id})" class="cyber-btn-small cyber-btn-danger" style="padding: 5px 10px; font-size: 0.85rem;">🗑️ 刪除</button>
+                    </div>
+                </div>
+                <p style="color: var(--gaming-cyan); font-size: 0.9rem; margin-bottom: 5px;">${dept.description || '無描述'}</p>
+                <p style="color: var(--gaming-yellow); font-size: 0.9rem;">👥 共 ${deptPersonnel.length} 人</p>
+            </div>
+            ${renderDeptPersonnelList(deptPersonnel, deptId)}
+        `;
+    }
+}
+
+// 渲染部門內的人員列表
+function renderDeptPersonnelList(personnelList, currentDeptId) {
+    if (personnelList.length === 0) {
+        return '<div style="text-align: center; padding: 30px; color: var(--gaming-cyan); opacity: 0.6;">此部門目前沒有人員</div>';
+    }
+
+    // 生成其他部門的選項
+    let deptOptions = '<option value="">-- 選擇目標部門 --</option>';
+    deptOptions += '<option value="none">⚠️ 無部門</option>';
+    departments.forEach(dept => {
+        if (dept.id !== currentDeptId) {
+            deptOptions += `<option value="${dept.id}">${dept.name}</option>`;
+        }
+    });
+
+    let html = `
+        <div style="margin-bottom: 15px; padding: 12px; background: rgba(0,255,255,0.1); border-radius: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <label style="color: var(--gaming-cyan); font-weight: bold;">批量移動選中人員到：</label>
+            <select id="batchMoveDept" class="cyber-select" style="flex: 1; min-width: 150px;">
+                ${deptOptions}
+            </select>
+            <button onclick="batchMovePersonnel()" class="cyber-btn-primary" style="padding: 8px 15px;">📦 移動</button>
+            <button onclick="toggleSelectAll()" class="cyber-btn-small" style="padding: 8px 12px;">☑️ 全選</button>
+        </div>
+        <div style="max-height: 350px; overflow-y: auto;">
+    `;
+
+    personnelList.forEach(person => {
+        const rankLabel = getRankLabel(person.rank);
+        const specialBadge = person.isSpecial ? '<span style="color: #FFD700; margin-left: 5px;">🔸</span>' : '';
+
+        html += `
+            <div class="dept-person-item" style="display: flex; align-items: center; gap: 12px; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; margin-bottom: 8px;">
+                <input type="checkbox" class="person-checkbox cyber-checkbox" data-person-id="${person.id}">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: var(--gaming-white); font-weight: bold;">${person.name}</span>
+                        ${specialBadge}
+                        <span style="color: var(--gaming-cyan); font-size: 0.85rem;">LV${person.rank} - ${rankLabel}</span>
+                    </div>
+                    <div style="color: var(--gaming-white); font-size: 0.8rem; opacity: 0.6; margin-top: 3px;">${person.contact || '未提供聯絡方式'}</div>
+                </div>
+                <select class="cyber-select-small" onchange="movePersonToDept(${person.id}, this.value)" style="width: auto; padding: 5px 8px; font-size: 0.85rem;">
+                    <option value="">移動到...</option>
+                    <option value="none">⚠️ 無部門</option>
+                    ${departments.filter(d => d.id !== currentDeptId).map(d => `<option value="${d.id}">${d.name}</option>`).join('')}
+                </select>
+            </div>
+        `;
+    });
+
+    html += '</div>';
+    return html;
+}
+
+// 移動單一人員到其他部門
+function movePersonToDept(personId, targetDeptId) {
+    if (!targetDeptId) return;
+
+    const person = personnel.find(p => p.id === personId);
+    if (!person) return;
+
+    const oldDept = departments.find(d => d.id === person.departmentId);
+    const newDeptId = targetDeptId === 'none' ? null : parseInt(targetDeptId);
+    const newDept = departments.find(d => d.id === newDeptId);
+
+    person.departmentId = newDeptId;
+
+    const oldDeptName = oldDept ? oldDept.name : '無部門';
+    const newDeptName = newDept ? newDept.name : '無部門';
+    addHistory(`移動人員 ${person.name}：${oldDeptName} → ${newDeptName}`);
+
+    saveData();
+    renderDepartmentList();
+    renderDeptDetail(selectedDeptId);
+    updateDisplay();
+}
+
+// 批量移動人員
+function batchMovePersonnel() {
+    const targetDeptId = document.getElementById('batchMoveDept').value;
+    if (!targetDeptId) {
+        alert('請選擇目標部門');
+        return;
+    }
+
+    const checkboxes = document.querySelectorAll('.person-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('請先勾選要移動的人員');
+        return;
+    }
+
+    const newDeptId = targetDeptId === 'none' ? null : parseInt(targetDeptId);
+    const newDept = departments.find(d => d.id === newDeptId);
+    const newDeptName = newDept ? newDept.name : '無部門';
+
+    if (!confirm(`確定要將 ${checkboxes.length} 位人員移動到「${newDeptName}」嗎？`)) {
+        return;
+    }
+
+    checkboxes.forEach(cb => {
+        const personId = parseInt(cb.dataset.personId);
+        const person = personnel.find(p => p.id === personId);
+        if (person) {
+            person.departmentId = newDeptId;
+        }
+    });
+
+    addHistory(`批量移動 ${checkboxes.length} 位人員到「${newDeptName}」`);
+    saveData();
+    renderDepartmentList();
+    renderDeptDetail(selectedDeptId);
+    updateDisplay();
+}
+
+// 全選/取消全選
+function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('.person-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+    checkboxes.forEach(cb => {
+        cb.checked = !allChecked;
+    });
+}
+
+// 在部門管理中新增人員
+function showAddPersonToDept(deptId) {
+    editingPersonId = null;
+    document.getElementById('personModalTitle').textContent = '新增人員';
+    document.getElementById('personName').value = '';
+
+    // 更新階級下拉選單
+    updatePersonRankSelect();
+
+    // 設定預設值（LV3）
+    const defaultRank = Math.min(3, MAX_RANK);
+    const rankSelect = document.getElementById('personRankSelect');
+    rankSelect.value = defaultRank;
+    syncRankHiddenFields();
+
+    // 更新部門選項並預設選中當前部門
+    updatePersonDepartmentOptions();
+    document.getElementById('personDepartment').value = deptId || '';
+
+    document.getElementById('personContact').value = '';
+
+    // 設定較高的 z-index 讓 personModal 顯示在 departmentModal 之上
+    const personModal = document.getElementById('personModal');
+    personModal.style.zIndex = '10001';
+    personModal.classList.remove('hidden');
+}
+
+// 顯示新增部門表單
+function showAddDepartmentForm() {
+    document.getElementById('deptEditModalTitle').textContent = '➕ 新增部門';
+    document.getElementById('deptName').value = '';
+    document.getElementById('deptDescription').value = '';
+    document.getElementById('deptColor').value = '#4ECDC4';
+    document.getElementById('editingDeptId').value = '';
+    updateColorPreview();
+    document.getElementById('deptEditModal').classList.remove('hidden');
+}
+
+// 顯示編輯部門表單
+function showEditDepartmentForm(deptId) {
+    const dept = departments.find(d => d.id === deptId);
+    if (!dept) return;
+
+    document.getElementById('deptEditModalTitle').textContent = '✏️ 編輯部門';
+    document.getElementById('deptName').value = dept.name;
+    document.getElementById('deptDescription').value = dept.description || '';
+    document.getElementById('deptColor').value = dept.color;
+    document.getElementById('editingDeptId').value = dept.id;
+    updateColorPreview();
+    document.getElementById('deptEditModal').classList.remove('hidden');
 }
 
 function saveDepartment() {
@@ -4552,6 +4844,7 @@ function saveDepartment() {
         return;
     }
 
+    let savedDeptId;
     if (editingId) {
         // 編輯模式
         const dept = departments.find(d => d.id === parseInt(editingId));
@@ -4560,6 +4853,7 @@ function saveDepartment() {
             dept.description = description;
             dept.color = color;
             addHistory(`編輯部門：${name}`);
+            savedDeptId = dept.id;
         }
     } else {
         // 新增模式
@@ -4571,40 +4865,20 @@ function saveDepartment() {
         };
         departments.push(newDept);
         addHistory(`新增部門：${name}`);
+        savedDeptId = newDept.id;
     }
 
     saveData();
+    closeModal('deptEditModal');
     renderDepartmentList();
     updatePersonDepartmentOptions(); // 更新人員新增介面的部門選項
     updateDepartmentFilter(); // 更新部門篩選器
-    clearDepartmentForm();
-}
+    updateImportTableDeptSelects(); // 更新批量匯入表格的部門選項
 
-function editDepartment(id) {
-    const dept = departments.find(d => d.id === id);
-    if (!dept) return;
-
-    document.getElementById('deptFormTitle').textContent = '✏️ 編輯部門';
-    document.getElementById('deptName').value = dept.name;
-    document.getElementById('deptDescription').value = dept.description || '';
-    document.getElementById('deptColor').value = dept.color;
-    document.getElementById('editingDeptId').value = dept.id;
-    document.getElementById('cancelEditDeptBtn').style.display = 'block';
-    updateColorPreview();
-}
-
-function cancelEditDepartment() {
-    clearDepartmentForm();
-}
-
-function clearDepartmentForm() {
-    document.getElementById('deptFormTitle').textContent = '➕ 新增部門';
-    document.getElementById('deptName').value = '';
-    document.getElementById('deptDescription').value = '';
-    document.getElementById('deptColor').value = '#4ECDC4';
-    document.getElementById('editingDeptId').value = '';
-    document.getElementById('cancelEditDeptBtn').style.display = 'none';
-    updateColorPreview();
+    // 如果有選中的部門，更新詳情面板
+    if (selectedDeptId !== undefined) {
+        renderDeptDetail(selectedDeptId);
+    }
 }
 
 function deleteDepartment(id) {
@@ -4613,21 +4887,43 @@ function deleteDepartment(id) {
 
     // 檢查是否有人員屬於這個部門
     const deptPersonnel = personnel.filter(p => p.departmentId === id);
+    let confirmMessage = `確定要刪除部門「${dept.name}」嗎？`;
+
     if (deptPersonnel.length > 0) {
-        alert(`⚠️ 無法刪除部門「${dept.name}」\n\n該部門還有 ${deptPersonnel.length} 位人員。\n請先將這些人員轉移至其他部門或刪除後再試。`);
+        confirmMessage = `⚠️ 部門「${dept.name}」還有 ${deptPersonnel.length} 位人員。\n\n刪除後，這些人員將變成「無部門」狀態。\n確定要刪除嗎？`;
+    }
+
+    if (!confirm(confirmMessage)) {
         return;
     }
 
-    if (!confirm(`確定要刪除部門「${dept.name}」嗎？`)) {
-        return;
-    }
+    // 將該部門的人員設為無部門
+    personnel.forEach(person => {
+        if (person.departmentId === id) {
+            person.departmentId = null;
+        }
+    });
 
     departments = departments.filter(d => d.id !== id);
-    addHistory(`刪除部門：${dept.name}`);
+    addHistory(`刪除部門：${dept.name}` + (deptPersonnel.length > 0 ? `（${deptPersonnel.length} 位人員已移除部門）` : ''));
     saveData();
+
+    // 如果刪除的是當前選中的部門，清除選中狀態
+    if (selectedDeptId === id) {
+        selectedDeptId = undefined;
+        document.getElementById('deptDetailContent').innerHTML = `
+            <div style="color: var(--gaming-white); text-align: center; padding: 50px 20px;">
+                <div style="font-size: 3rem; margin-bottom: 15px;">👈</div>
+                <div style="color: var(--gaming-cyan);">請從左側選擇一個部門</div>
+            </div>
+        `;
+    }
+
     renderDepartmentList();
     updatePersonDepartmentOptions(); // 更新人員新增介面的部門選項
     updateDepartmentFilter(); // 更新部門篩選器
+    updateImportTableDeptSelects(); // 更新批量匯入表格的部門選項
+    renderPersonnelGrid(); // 重新渲染人員網格
 }
 
 function updateColorPreview() {
@@ -4653,7 +4949,7 @@ function updatePersonDepartmentOptions() {
     const currentValue = select.value;
 
     // 清空選項
-    select.innerHTML = '<option value="">請選擇部門</option>';
+    select.innerHTML = '<option value="">無部門</option>';
 
     // 添加部門選項
     departments.forEach(dept => {
@@ -4688,6 +4984,12 @@ function updateDepartmentFilter() {
         option.textContent = `🏢 ${dept.name}`;
         deptFilter.appendChild(option);
     });
+
+    // 添加「無部門」選項
+    const noDeptOption = document.createElement('option');
+    noDeptOption.value = 'none';
+    noDeptOption.textContent = '⚠️ 無部門';
+    deptFilter.appendChild(noDeptOption);
 
     // 嘗試恢復之前的選擇
     const options = Array.from(deptFilter.options).map(opt => opt.value);
@@ -5627,5 +5929,341 @@ function deleteCompensatoryLeave(id) {
         saveData();
         renderCompensatoryLeaveList();
         addHistory(`刪除補休：${cl.personName} - ${cl.reason}`);
+    }
+}
+
+// ===== 每日任務模板管理 =====
+
+// 顯示任務模板管理 Modal
+function showTaskTemplateModal() {
+    currentTemplateType = 'daily';
+    updateTaskTypeSelection();
+    renderTaskTemplateList();
+    updateTaskTemplateCounts();
+    document.getElementById('taskTemplateModal').classList.remove('hidden');
+}
+
+// 選擇任務類型
+function selectTaskType(type) {
+    currentTemplateType = type;
+    updateTaskTypeSelection();
+    renderTaskTemplateList();
+}
+
+// 更新任務類型選擇的視覺狀態
+function updateTaskTypeSelection() {
+    const types = ['daily', 'important', 'urgent'];
+    const colors = {
+        daily: { bg: 'rgba(0, 255, 136, 0.2)', border: 'var(--status-free)' },
+        important: { bg: 'rgba(255, 0, 128, 0.2)', border: 'var(--status-busy)' },
+        urgent: { bg: 'rgba(255, 107, 0, 0.2)', border: 'var(--status-partial)' }
+    };
+    const titles = {
+        daily: '📅 日常任務',
+        important: '⭐ 重要任務',
+        urgent: '⚡ 臨時任務'
+    };
+
+    types.forEach(type => {
+        const el = document.getElementById(`taskType${type.charAt(0).toUpperCase() + type.slice(1)}`);
+        if (type === currentTemplateType) {
+            el.classList.add('selected');
+            el.style.background = colors[type].bg;
+            el.style.borderColor = colors[type].border;
+        } else {
+            el.classList.remove('selected');
+            el.style.background = colors[type].bg.replace('0.2', '0.1');
+            el.style.borderColor = colors[type].border.replace(')', ', 0.3)').replace('var(', 'rgba(');
+            // 簡化為直接設定透明度較低的版本
+            if (type === 'daily') {
+                el.style.background = 'rgba(0, 255, 136, 0.1)';
+                el.style.borderColor = 'rgba(0, 255, 136, 0.3)';
+            } else if (type === 'important') {
+                el.style.background = 'rgba(255, 0, 128, 0.1)';
+                el.style.borderColor = 'rgba(255, 0, 128, 0.3)';
+            } else {
+                el.style.background = 'rgba(255, 107, 0, 0.1)';
+                el.style.borderColor = 'rgba(255, 107, 0, 0.3)';
+            }
+        }
+    });
+
+    // 更新標題
+    document.getElementById('taskListTitle').textContent = titles[currentTemplateType];
+}
+
+// 更新任務模板計數
+function updateTaskTemplateCounts() {
+    const counts = {
+        daily: taskTemplates.filter(t => t.type === 'daily').length,
+        important: taskTemplates.filter(t => t.type === 'important').length,
+        urgent: taskTemplates.filter(t => t.type === 'urgent').length
+    };
+
+    document.getElementById('dailyTaskCount').textContent = counts.daily;
+    document.getElementById('importantTaskCount').textContent = counts.important;
+    document.getElementById('urgentTaskCount').textContent = counts.urgent;
+}
+
+// 渲染任務模板列表
+function renderTaskTemplateList() {
+    const container = document.getElementById('taskTemplateListContainer');
+    const templates = taskTemplates.filter(t => t.type === currentTemplateType);
+
+    if (templates.length === 0) {
+        const typeNames = { daily: '日常', important: '重要', urgent: '臨時' };
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: var(--gaming-white); opacity: 0.6;">
+                <div style="font-size: 3rem; margin-bottom: 15px;">📭</div>
+                <div>尚未設定${typeNames[currentTemplateType]}任務</div>
+                <div style="font-size: 0.9rem; margin-top: 10px;">點擊「新增任務」來添加每日任務</div>
+            </div>
+        `;
+        return;
+    }
+
+    const typeColors = {
+        daily: 'var(--status-free)',
+        important: 'var(--status-busy)',
+        urgent: 'var(--status-partial)'
+    };
+
+    container.innerHTML = templates.map(template => {
+        return `
+            <div class="task-template-item" style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 12px 15px;
+                background: rgba(0, 0, 0, 0.3);
+                border: 1px solid rgba(0, 255, 255, 0.2);
+                border-radius: 8px;
+                margin-bottom: 8px;
+            ">
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span style="color: ${typeColors[currentTemplateType]}; font-weight: bold;">${template.name}</span>
+                        <span style="background: rgba(0, 255, 255, 0.2); color: var(--gaming-cyan); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            ${String(template.startHour).padStart(2, '0')}:00 - ${String(template.endHour).padStart(2, '0')}:00
+                        </span>
+                        <span style="background: rgba(255, 255, 255, 0.1); color: var(--gaming-white); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">
+                            👥 ${template.requiredPeople}人
+                        </span>
+                    </div>
+                    ${template.description ? `<div style="font-size: 0.85rem; color: var(--gaming-white); opacity: 0.7;">📝 ${template.description}</div>` : ''}
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <button onclick="editTaskTemplate(${template.id})" class="cyber-btn-small" style="padding: 6px 12px; font-size: 0.85rem;">✏️ 編輯</button>
+                    <button onclick="deleteTaskTemplate(${template.id})" class="cyber-btn-small cyber-btn-danger" style="padding: 6px 12px; font-size: 0.85rem;">🗑️ 刪除</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// 顯示新增任務模板 Modal
+function showAddTaskTemplate() {
+    document.getElementById('taskTemplateEditTitle').textContent = '➕ 新增每日任務';
+    document.getElementById('templateTaskName').value = '';
+    document.getElementById('templateStartHour').value = '8';
+    document.getElementById('templateEndHour').value = '17';
+    document.getElementById('templateRequiredPeople').value = '1';
+    document.getElementById('templateDescription').value = '';
+    document.getElementById('editingTemplateId').value = '';
+    document.getElementById('editingTemplateType').value = currentTemplateType;
+
+    document.getElementById('taskTemplateEditModal').classList.remove('hidden');
+}
+
+// 編輯任務模板
+function editTaskTemplate(id) {
+    const template = taskTemplates.find(t => t.id === id);
+    if (!template) return;
+
+    document.getElementById('taskTemplateEditTitle').textContent = '✏️ 編輯每日任務';
+    document.getElementById('templateTaskName').value = template.name;
+    document.getElementById('templateStartHour').value = template.startHour;
+    document.getElementById('templateEndHour').value = template.endHour;
+    document.getElementById('templateRequiredPeople').value = template.requiredPeople;
+    document.getElementById('templateDescription').value = template.description || '';
+    document.getElementById('editingTemplateId').value = id;
+    document.getElementById('editingTemplateType').value = template.type;
+
+    document.getElementById('taskTemplateEditModal').classList.remove('hidden');
+}
+
+// 取得模板類型對應的工作性質
+function getTemplateTypeCategory(type) {
+    const typeCategories = {
+        'daily': 'template_daily',
+        'important': 'template_important',
+        'urgent': 'template_urgent'
+    };
+    return typeCategories[type] || 'template_daily';
+}
+
+// 取得模板類型的顯示名稱
+function getTemplateTypeName(type) {
+    const typeNames = {
+        'daily': '日常任務',
+        'important': '重要任務',
+        'urgent': '臨時任務'
+    };
+    return typeNames[type] || '日常任務';
+}
+
+// 儲存任務模板
+function saveTaskTemplate() {
+    const name = document.getElementById('templateTaskName').value.trim();
+    const startHour = parseInt(document.getElementById('templateStartHour').value);
+    const endHour = parseInt(document.getElementById('templateEndHour').value);
+    const requiredPeople = parseInt(document.getElementById('templateRequiredPeople').value) || 1;
+    const description = document.getElementById('templateDescription').value.trim();
+    const editingId = document.getElementById('editingTemplateId').value;
+    const type = document.getElementById('editingTemplateType').value || currentTemplateType;
+
+    // 驗證
+    if (!name) {
+        alert('請輸入任務名稱！');
+        return;
+    }
+    if (isNaN(startHour) || startHour < 0 || startHour > 23) {
+        alert('開始時間必須在 0-23 之間！');
+        return;
+    }
+    if (isNaN(endHour) || endHour < 1 || endHour > 24) {
+        alert('結束時間必須在 1-24 之間！');
+        return;
+    }
+    if (endHour <= startHour) {
+        alert('結束時間必須大於開始時間！');
+        return;
+    }
+
+    // 根據模板類型自動設定工作性質
+    const workCategory = getTemplateTypeCategory(type);
+
+    if (editingId) {
+        // 編輯現有模板
+        const template = taskTemplates.find(t => t.id === parseInt(editingId));
+        if (template) {
+            template.name = name;
+            template.startHour = startHour;
+            template.endHour = endHour;
+            template.requiredPeople = requiredPeople;
+            template.description = description;
+            addHistory(`編輯每日任務模板：${name}`);
+        }
+    } else {
+        // 新增模板
+        const newId = taskTemplates.length > 0 ? Math.max(...taskTemplates.map(t => t.id)) + 1 : 1;
+        taskTemplates.push({
+            id: newId,
+            name,
+            type,
+            startHour,
+            endHour,
+            requiredPeople,
+            description
+        });
+        addHistory(`新增每日任務模板：${name}（${getTemplateTypeName(type)}）`);
+
+        // 新增模板後，立即為當前日期生成該任務
+        const newTaskId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+        tasks.push({
+            id: newTaskId,
+            name,
+            date: currentDateString,
+            startHour,
+            endHour,
+            workCategory, // 使用自動設定的工作性質
+            requiredPeople,
+            description,
+            assignees: [],
+            priority: type === 'urgent' ? 'high' : (type === 'important' ? 'medium' : 'normal'),
+            fromTemplate: true,
+            templateId: newId,
+            templateType: type // 記錄模板類型
+        });
+    }
+
+    saveData();
+    closeModal('taskTemplateEditModal');
+    renderTaskTemplateList();
+    updateTaskTemplateCounts();
+    updateDisplay(); // 更新主畫面顯示新任務
+}
+
+// 刪除任務模板
+function deleteTaskTemplate(id) {
+    const template = taskTemplates.find(t => t.id === id);
+    if (!template) return;
+
+    if (!confirm(`確定要刪除這個每日任務嗎？\n「${template.name}」將不再每天自動出現`)) {
+        return;
+    }
+
+    const index = taskTemplates.findIndex(t => t.id === id);
+    if (index !== -1) {
+        taskTemplates.splice(index, 1);
+        saveData();
+        renderTaskTemplateList();
+        updateTaskTemplateCounts();
+        addHistory(`刪除每日任務模板：${template.name}`);
+    }
+}
+
+// 從模板生成指定日期的任務（應在每天初始化或切換日期時呼叫）
+function generateTasksFromTemplates(dateString) {
+    if (!dateString) {
+        dateString = formatDate(new Date());
+    }
+
+    // 如果沒有模板，直接返回
+    if (taskTemplates.length === 0) {
+        return;
+    }
+
+    // 為每個模板建立任務（如果該日期還沒有對應的任務）
+    let generatedCount = 0;
+    taskTemplates.forEach(template => {
+        // 檢查該模板是否已在該日期生成過任務（根據 templateId 判斷）
+        const existsByTemplateId = tasks.some(t =>
+            t.date === dateString &&
+            t.fromTemplate === true &&
+            t.templateId === template.id
+        );
+
+        // 也檢查是否有相同名稱和時間的任務（避免重複）
+        const existsByContent = tasks.some(t =>
+            t.date === dateString &&
+            t.name === template.name &&
+            t.startHour === template.startHour &&
+            t.endHour === template.endHour
+        );
+
+        if (!existsByTemplateId && !existsByContent) {
+            const newTaskId = tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1;
+            tasks.push({
+                id: newTaskId,
+                name: template.name,
+                date: dateString,
+                startHour: template.startHour,
+                endHour: template.endHour,
+                workCategory: getTemplateTypeCategory(template.type), // 根據模板類型自動設定工作性質
+                requiredPeople: template.requiredPeople,
+                description: template.description || '',
+                assignees: [],
+                priority: template.type === 'urgent' ? 'high' : (template.type === 'important' ? 'medium' : 'normal'),
+                fromTemplate: true, // 標記為來自模板
+                templateId: template.id,
+                templateType: template.type // 記錄模板類型
+            });
+            generatedCount++;
+        }
+    });
+
+    if (generatedCount > 0) {
+        saveData();
     }
 }
