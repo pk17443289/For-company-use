@@ -41,6 +41,12 @@ function getDefaultMissionCategories() {
         'support': '支援協助',
         'meeting': '外部會議',
         'emergency': '緊急任務',
+        'overnight': '外宿',
+        'external_training': '受訓',
+        'relocation': '移地',
+        'stationed': '駐場',
+        'factory_stationed': '駐廠',
+        'business_trip': '公出',
         'other': '其他任務'
     };
 }
@@ -449,6 +455,7 @@ function setupEventListeners() {
 
     // 排班預覽匯出按鈕
     document.getElementById('exportScheduleTextBtn').addEventListener('click', exportScheduleAsText);
+    document.getElementById('exportMilitaryReportBtn').addEventListener('click', exportMilitaryReport);
     document.getElementById('exportScheduleImageBtn').addEventListener('click', exportScheduleAsImage);
 
     // 批量匯入人員
@@ -4079,6 +4086,155 @@ function exportScheduleAsText() {
         document.execCommand('copy');
         document.body.removeChild(textarea);
         alert('✅ 排班表已複製到剪貼簿！');
+    });
+}
+
+// 匯出為教勤連報告格式
+function exportMilitaryReport() {
+    // 取得月份和日期
+    const month = currentDate.getMonth() + 1;
+    const day = currentDate.getDate();
+
+    // 判斷是夜間報告還是日間報告（18:00 後為夜間）
+    const currentHour = new Date().getHours();
+    const isNightReport = currentHour >= 18;
+
+    // 取得當前日期的所有任務
+    const dayTasks = tasks.filter(t => {
+        const taskDate = t.date || formatDate(new Date());
+        return taskDate === currentDateString;
+    });
+
+    // 統計各類人員數量
+    const totalPersonnel = personnel.length; // 應到人數
+
+    // 初始化各類別計數
+    const stats = {
+        leave: new Set(),      // 休假
+        overnight: new Set(),   // 外宿
+        training: new Set(),    // 受訓
+        relocation: new Set(),  // 移地
+        stationed: new Set(),   // 駐場
+        factory: new Set(),     // 駐廠
+        support: new Set(),     // 支援
+        business: new Set()     // 公出
+    };
+
+    // 從任務中收集各類人員
+    dayTasks.forEach(task => {
+        const assignees = task.assignees || [];
+        assignees.forEach(personId => {
+            const person = personnel.find(p => p.id === personId);
+            if (!person) return;
+
+            // 根據任務類型和出任務類別分類
+            if (task.type === 'leave') {
+                stats.leave.add(person.name);
+            } else if (task.type === 'mission') {
+                // 根據出任務類型細分
+                const missionCategory = task.missionCategory || 'other';
+                switch(missionCategory) {
+                    case 'overnight':
+                        stats.overnight.add(person.name);
+                        break;
+                    case 'external_training':
+                    case 'training':
+                        stats.training.add(person.name);
+                        break;
+                    case 'relocation':
+                        stats.relocation.add(person.name);
+                        break;
+                    case 'stationed':
+                        stats.stationed.add(person.name);
+                        break;
+                    case 'factory_stationed':
+                        stats.factory.add(person.name);
+                        break;
+                    case 'support':
+                        stats.support.add(person.name);
+                        break;
+                    case 'business_trip':
+                        stats.business.add(person.name);
+                        break;
+                }
+            }
+        });
+    });
+
+    // 計算各類人數
+    const leaveCount = stats.leave.size;
+    const overnightCount = stats.overnight.size;
+    const trainingCount = stats.training.size;
+    const relocationCount = stats.relocation.size;
+    const stationedCount = stats.stationed.size;
+    const factoryCount = stats.factory.size;
+    const supportCount = stats.support.size;
+    const businessCount = stats.business.size;
+
+    // 計算實到人數（總人數減去不在營區的人）
+    const absentCount = leaveCount + overnightCount + trainingCount +
+                        relocationCount + stationedCount + factoryCount +
+                        supportCount + businessCount;
+    const presentCount = totalPersonnel - absentCount;
+
+    // 生成報告文字
+    let text = '';
+
+    if (isNightReport) {
+        // 夜間人數報告格式
+        text += `${month}月${day}日夜間人數\n`;
+    } else {
+        // 日間在營人數報告格式
+        text += `教勤連報告：\n`;
+        text += `${month}月${day}日在營人數\n`;
+    }
+
+    text += `應到：${totalPersonnel}員\n`;
+
+    if (leaveCount > 0) {
+        text += `休假：${leaveCount}員\n`;
+    }
+    if (overnightCount > 0) {
+        text += `外宿：${overnightCount}員\n`;
+    }
+    if (trainingCount > 0) {
+        text += `受訓：${trainingCount}員\n`;
+    }
+    if (relocationCount > 0) {
+        text += `移地：${relocationCount}員\n`;
+    }
+    if (stationedCount > 0) {
+        text += `駐場：${stationedCount}員\n`;
+    }
+    if (factoryCount > 0) {
+        text += `駐廠：${factoryCount}員\n`;
+    }
+    if (supportCount > 0) {
+        text += `支援：${supportCount}員\n`;
+    }
+    if (businessCount > 0) {
+        text += `公出：${businessCount}員\n`;
+    }
+
+    text += `實到：${presentCount}員\n`;
+
+    if (!isNightReport) {
+        text += `\n水電管制情況良好`;
+    }
+
+    // 複製到剪貼簿
+    navigator.clipboard.writeText(text).then(() => {
+        alert('教勤連報告已複製到剪貼簿！');
+    }).catch(err => {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('✅ 教勤連報告已複製到剪貼簿！');
     });
 }
 
