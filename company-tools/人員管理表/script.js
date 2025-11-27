@@ -3316,7 +3316,7 @@ function parseTaskContent(text) {
     remainingText = remainingText.replace(/^[\s,，:：\-\|]+/, '').trim();
 
     // 檢測任務類型關鍵字
-    // 請假相關
+    // 請假相關 - 使用 leave 類型
     if (/請假|休假|特休|年假|病假|事假|喪假|婚假|產假|陪產/.test(remainingText)) {
         taskType = 'leave';
         taskName = '請假';
@@ -3324,76 +3324,61 @@ function parseTaskContent(text) {
         startHour = 0;
         endHour = 24;
     }
-    // 出任務相關
+    // 以下都使用 work 類型，只是任務名稱不同
+    // 駐場
+    else if (/駐場/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '駐場';
+    }
+    // 駐廠
+    else if (/駐廠/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '駐廠';
+    }
+    // 受訓/教勤
+    else if (/受訓|訓練|培訓|教育訓練|教勤/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '受訓';
+    }
+    // 移地
+    else if (/移地/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '移地';
+    }
+    // 外宿
+    else if (/外宿/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '外宿';
+    }
+    // 支援
+    else if (/支援/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '支援';
+    }
+    // 繳彈
+    else if (/繳彈/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '繳彈';
+    }
+    // 送彈/領彈
+    else if (/送彈|領彈|彈藥/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '彈藥任務';
+    }
+    // 出任務相關 - 明確說「出任務」才用 mission 類型
     else if (/出任務|外出|外派|出差|公出|洽公/.test(remainingText)) {
         taskType = 'mission';
         missionCategory = 'business_trip';
         taskName = remainingText || '出任務';
     }
-    // 駐場
-    else if (/駐場/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'stationed';
-        taskName = remainingText || '駐場';
-    }
-    // 駐廠
-    else if (/駐廠/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'factory_stationed';
-        taskName = remainingText || '駐廠';
-    }
-    // 受訓
-    else if (/受訓|訓練|培訓|教育訓練/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'training';
-        taskName = remainingText || '受訓';
-    }
-    // 移地
-    else if (/移地/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'relocation';
-        taskName = remainingText || '移地';
-    }
-    // 外宿
-    else if (/外宿/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'overnight';
-        taskName = remainingText || '外宿';
-    }
-    // 支援
-    else if (/支援/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'support';
-        taskName = remainingText || '支援';
-    }
-    // 教勤
-    else if (/教勤/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'training';
-        taskName = remainingText || '教勤';
-    }
-    // 繳彈
-    else if (/繳彈/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'other';
-        taskName = remainingText || '繳彈';
-    }
-    // 送彈/領彈
-    else if (/送彈|領彈|彈藥/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'other';
-        taskName = remainingText || '彈藥任務';
-    }
     // 送試裝
     else if (/送試裝|試裝|送裝備/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'other';
+        taskType = 'work';
         taskName = remainingText || '送試裝';
     }
     // 預演/演習/演練
     else if (/預演|演習|演練/.test(remainingText)) {
-        taskType = 'mission';
-        missionCategory = 'other';
+        taskType = 'work';
         taskName = remainingText || '演練';
     }
     // 上哨/站哨
@@ -3415,7 +3400,7 @@ function parseTaskContent(text) {
         taskType = 'comp_leave';
         taskName = '補休';
     }
-    // 一般工作
+    // 一般工作（預設）
     else {
         taskType = 'work';
         taskName = remainingText || '工作';
@@ -3570,18 +3555,22 @@ function confirmImportTasks() {
 
         // 為新人員建立任務
         const task = item.parsedTask;
-        // 統一將所有類型改為 work，讓任務顯示在任務池中
-        // 但保留任務名稱（如「教勤」、「駐廠」、「請假」等）
+        // 保持原本解析的任務類型
         const newTask = {
             id: Date.now() + Math.random() * 10000,
             name: task.name,
             date: currentDateString,
             startHour: task.startHour,
             endHour: task.endHour,
-            type: 'work', // 統一使用 work 類型
+            type: task.type, // 保持原本的任務類型
             assignees: [newPersonId],
             requiredPeople: 1
         };
+
+        // 如果有出任務分類，保留它
+        if (task.missionCategory) {
+            newTask.missionCategory = task.missionCategory;
+        }
 
         tasks.push(newTask);
         addedTaskCount++;
@@ -3589,17 +3578,22 @@ function confirmImportTasks() {
 
     // 2. 處理現有人員的任務
     parsedImportTasks.forEach(task => {
-        // 統一將所有類型改為 work，讓任務顯示在任務池中
+        // 保持原本解析的任務類型
         const newTask = {
             id: Date.now() + Math.random() * 10000,
             name: task.name,
             date: currentDateString,
             startHour: task.startHour,
             endHour: task.endHour,
-            type: 'work', // 統一使用 work 類型
+            type: task.type, // 保持原本的任務類型
             assignees: [task.personId],
             requiredPeople: 1
         };
+
+        // 如果有出任務分類，保留它
+        if (task.missionCategory) {
+            newTask.missionCategory = task.missionCategory;
+        }
 
         tasks.push(newTask);
         addedTaskCount++;
