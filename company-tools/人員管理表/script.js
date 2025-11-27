@@ -2818,6 +2818,8 @@ function showImportTaskListModal() {
     document.getElementById('importTaskListModal').classList.remove('hidden');
 }
 
+let pendingNewPersonnel = []; // 儲存待新增的人員
+
 function parseImportTaskText() {
     const text = document.getElementById('importTaskText').value.trim();
 
@@ -2828,6 +2830,7 @@ function parseImportTaskText() {
 
     const lines = text.split('\n').filter(line => line.trim());
     parsedImportTasks = [];
+    pendingNewPersonnel = [];
     const failedLines = [];
 
     // 建立人員名稱對照表（支援部分匹配）
@@ -2840,6 +2843,15 @@ function parseImportTaskText() {
         const result = parseTaskLine(line, personnelMap);
         if (result.success) {
             parsedImportTasks.push(result.task);
+        } else if (result.canAddNew && result.extractedName) {
+            // 可以新增人員的情況
+            pendingNewPersonnel.push({
+                lineNum: index + 1,
+                text: line,
+                extractedName: result.extractedName,
+                parsedTask: result.parsedTask,
+                willAdd: true // 預設勾選新增
+            });
         } else {
             failedLines.push({
                 lineNum: index + 1,
@@ -2850,15 +2862,34 @@ function parseImportTaskText() {
     });
 
     // 顯示預覽
-    renderImportTaskPreview(parsedImportTasks, failedLines);
+    renderImportTaskPreview(parsedImportTasks, pendingNewPersonnel, failedLines);
 
     // 更新統計
+    const totalSuccess = parsedImportTasks.length + pendingNewPersonnel.filter(p => p.willAdd).length;
     document.getElementById('importTaskSuccessCount').textContent = parsedImportTasks.length;
-    document.getElementById('importTaskFailCount').textContent = failedLines.length;
+    document.getElementById('importTaskFailCount').textContent = pendingNewPersonnel.length + failedLines.length;
     document.getElementById('importTaskStats').style.display = 'block';
 
-    // 啟用/禁用匯入按鈕
-    document.getElementById('confirmImportTaskList').disabled = parsedImportTasks.length === 0;
+    // 啟用/禁用匯入按鈕（有成功解析的或有要新增的人員就可以匯入）
+    updateImportTaskButton();
+}
+
+function updateImportTaskButton() {
+    const hasSuccessTasks = parsedImportTasks.length > 0;
+    const hasNewPersonnel = pendingNewPersonnel.some(p => p.willAdd);
+    document.getElementById('confirmImportTaskList').disabled = !hasSuccessTasks && !hasNewPersonnel;
+}
+
+function toggleNewPersonnel(index) {
+    pendingNewPersonnel[index].willAdd = !pendingNewPersonnel[index].willAdd;
+    updateImportTaskButton();
+
+    // 更新顯示
+    const checkbox = document.getElementById(`newPersonCheckbox_${index}`);
+    const row = document.getElementById(`newPersonRow_${index}`);
+    if (checkbox && row) {
+        row.style.opacity = pendingNewPersonnel[index].willAdd ? '1' : '0.5';
+    }
 }
 
 function parseTaskLine(line, personnelMap) {
@@ -2868,32 +2899,94 @@ function parseTaskLine(line, personnelMap) {
     // 嘗試找出人員名稱
     let matchedPerson = null;
     let remainingText = line;
+    let matchedName = '';
 
-    // 方法1：直接從開頭匹配人員名稱
+    // 方法1：完全匹配 - 從開頭匹配完整人員名稱
     for (const [name, person] of personnelMap) {
         if (line.startsWith(name)) {
             matchedPerson = person;
+            matchedName = name;
             remainingText = line.substring(name.length).trim();
             break;
         }
     }
 
-    // 方法2：如果開頭沒找到，嘗試在整行中尋找人員名稱
+    // 方法2：完全匹配 - 在整行中尋找完整人員名稱
     if (!matchedPerson) {
         for (const [name, person] of personnelMap) {
             if (line.includes(name)) {
                 matchedPerson = person;
+                matchedName = name;
                 remainingText = line.replace(name, '').trim();
                 break;
             }
         }
     }
 
+    // 方法3：模糊匹配 - 嘗試用部分名稱匹配（2個字以上）
     if (!matchedPerson) {
-        return { success: false, reason: '找不到對應的人員' };
+        // 從行首提取可能的名稱（取前2-4個中文字）
+        const nameMatch = line.match(/^[\u4e00-\u9fa5]{2,4}/);
+        if (nameMatch) {
+            const possibleName = nameMatch[0];
+
+            // 嘗試找到包含這些字的人員，或這些字包含在人員名稱中
+            for (const [name, person] of personnelMap) {
+                // 檢查是否部分匹配（輸入包含名字的一部分，或名字包含輸入）
+                if (name.includes(possibleName) || possibleName.includes(name)) {
+                    matchedPerson = person;
+                    matchedName = possibleName;
+                    remainingText = line.substring(possibleName.length).trim();
+                    break;
+                }
+                // 檢查是否有2個字以上連續匹配
+                for (let i = 0; i <= name.length - 2; i++) {
+                    const namePart = name.substring(i, i + 2);
+                    if (possibleName.includes(namePart)) {
+                        matchedPerson = person;
+                        matchedName = possibleName;
+                        remainingText = line.substring(possibleName.length).trim();
+                        break;
+                    }
+                }
+                if (matchedPerson) break;
+            }
+        }
     }
 
-    // 解析時間和任務類型
+    // 如果還是找不到，嘗試提取名稱供新增使用
+    if (!matchedPerson) {
+        const nameMatch = line.match(/^[\u4e00-\u9fa5]{2,4}/);
+        if (nameMatch) {
+            const extractedName = nameMatch[0];
+            remainingText = line.substring(extractedName.length).trim();
+            return {
+                success: false,
+                reason: '找不到對應的人員',
+                extractedName: extractedName,
+                canAddNew: true,
+                parsedTask: parseTaskContent(remainingText)
+            };
+        }
+        return { success: false, reason: '無法辨識人員名稱' };
+    }
+
+    // 解析任務內容
+    const taskContent = parseTaskContent(remainingText);
+
+    return {
+        success: true,
+        task: {
+            personId: matchedPerson.id,
+            personName: matchedPerson.name,
+            ...taskContent
+        }
+    };
+}
+
+// 解析任務內容（時間、類型、名稱）
+function parseTaskContent(text) {
+    let remainingText = text;
     let startHour = 8;
     let endHour = 17;
     let taskType = 'work';
@@ -2917,8 +3010,6 @@ function parseTaskLine(line, personnelMap) {
     remainingText = remainingText.replace(/^[\s,，:：\-\|]+/, '').trim();
 
     // 檢測任務類型關鍵字
-    const lowerText = remainingText.toLowerCase();
-
     // 請假相關
     if (/請假|休假|特休|年假|病假|事假|喪假|婚假|產假|陪產/.test(remainingText)) {
         taskType = 'leave';
@@ -2990,35 +3081,32 @@ function parseTaskLine(line, personnelMap) {
     }
 
     return {
-        success: true,
-        task: {
-            personId: matchedPerson.id,
-            personName: matchedPerson.name,
-            startHour,
-            endHour,
-            type: taskType,
-            name: taskName,
-            missionCategory
-        }
+        startHour,
+        endHour,
+        type: taskType,
+        name: taskName,
+        missionCategory
     };
 }
 
-function renderImportTaskPreview(successTasks, failedLines) {
+function renderImportTaskPreview(successTasks, newPersonnelList, failedLines) {
     const preview = document.getElementById('importTaskPreview');
     let html = '';
 
+    const typeLabels = {
+        'work': '🔧 工作',
+        'leave': '🏖️ 請假',
+        'mission': '🚀 出任務',
+        'lunch': '🍱 午休',
+        'comp_leave': '⏰ 補休'
+    };
+
+    // 已匹配人員的任務
     if (successTasks.length > 0) {
         html += `<div style="color: var(--neon-green); font-weight: bold; margin-bottom: 10px;">✓ 成功解析 (${successTasks.length})</div>`;
         html += `<div style="margin-bottom: 20px;">`;
 
         successTasks.forEach((task, index) => {
-            const typeLabels = {
-                'work': '🔧 工作',
-                'leave': '🏖️ 請假',
-                'mission': '🚀 出任務',
-                'lunch': '🍱 午休',
-                'comp_leave': '⏰ 補休'
-            };
             const typeLabel = typeLabels[task.type] || task.type;
             const timeStr = `${String(task.startHour).padStart(2, '0')}:00-${task.endHour === 24 ? '24:00' : String(task.endHour).padStart(2, '0') + ':00'}`;
 
@@ -3039,6 +3127,42 @@ function renderImportTaskPreview(successTasks, failedLines) {
         html += `</div>`;
     }
 
+    // 需要新增人員的任務
+    if (newPersonnelList.length > 0) {
+        html += `<div style="color: var(--gaming-yellow); font-weight: bold; margin-bottom: 10px;">⚠️ 新人員 - 勾選以新增 (${newPersonnelList.length})</div>`;
+        html += `<div style="margin-bottom: 20px;">`;
+
+        newPersonnelList.forEach((item, index) => {
+            const task = item.parsedTask;
+            const typeLabel = typeLabels[task.type] || task.type;
+            const timeStr = `${String(task.startHour).padStart(2, '0')}:00-${task.endHour === 24 ? '24:00' : String(task.endHour).padStart(2, '0') + ':00'}`;
+
+            html += `
+                <div id="newPersonRow_${index}" style="padding: 8px 12px; margin-bottom: 5px; background: rgba(255, 215, 0, 0.1); border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 5px; opacity: ${item.willAdd ? '1' : '0.5'};">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="newPersonCheckbox_${index}" ${item.willAdd ? 'checked' : ''} onchange="toggleNewPersonnel(${index})" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="color: var(--gaming-yellow);">
+                                <strong>➕ ${item.extractedName}</strong>
+                                <span style="color: var(--gaming-white); font-size: 0.8rem; margin-left: 5px;">(新增人員)</span>
+                            </span>
+                        </label>
+                        <span style="color: var(--gaming-cyan);">${timeStr}</span>
+                    </div>
+                    <div style="margin-top: 5px; padding-left: 26px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--gaming-white); font-size: 0.85rem;">${item.text}</span>
+                        <span>
+                            <span style="background: rgba(0,255,255,0.2); padding: 2px 8px; border-radius: 3px; font-size: 0.8rem;">${typeLabel}</span>
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+    }
+
+    // 完全無法解析的行
     if (failedLines.length > 0) {
         html += `<div style="color: var(--gaming-red); font-weight: bold; margin-bottom: 10px;">✗ 無法解析 (${failedLines.length})</div>`;
         html += `<div>`;
@@ -3055,7 +3179,7 @@ function renderImportTaskPreview(successTasks, failedLines) {
         html += `</div>`;
     }
 
-    if (successTasks.length === 0 && failedLines.length === 0) {
+    if (successTasks.length === 0 && newPersonnelList.length === 0 && failedLines.length === 0) {
         html = `<div style="color: var(--gaming-white); opacity: 0.6; text-align: center; padding-top: 120px;">沒有可解析的內容</div>`;
     }
 
@@ -3063,16 +3187,68 @@ function renderImportTaskPreview(successTasks, failedLines) {
 }
 
 function confirmImportTasks() {
-    if (parsedImportTasks.length === 0) {
+    const newPersonnelToAdd = pendingNewPersonnel.filter(p => p.willAdd);
+    const totalTasks = parsedImportTasks.length + newPersonnelToAdd.length;
+
+    if (totalTasks === 0) {
         alert('沒有可匯入的任務');
         return;
     }
 
-    if (!confirm(`確定要匯入 ${parsedImportTasks.length} 個任務到 ${currentDateString} 嗎？`)) {
+    // 建立確認訊息
+    let confirmMsg = `確定要匯入到 ${currentDateString} 嗎？\n\n`;
+    if (parsedImportTasks.length > 0) {
+        confirmMsg += `• 現有人員任務：${parsedImportTasks.length} 個\n`;
+    }
+    if (newPersonnelToAdd.length > 0) {
+        confirmMsg += `• 新增人員並建立任務：${newPersonnelToAdd.length} 個\n`;
+        confirmMsg += `  (${newPersonnelToAdd.map(p => p.extractedName).join('、')})\n`;
+    }
+
+    if (!confirm(confirmMsg)) {
         return;
     }
 
-    // 將解析的任務轉換為系統任務格式並新增
+    let addedTaskCount = 0;
+    let addedPersonCount = 0;
+
+    // 1. 先新增人員
+    newPersonnelToAdd.forEach(item => {
+        const newPersonId = Date.now() + Math.random() * 10000;
+        const newPerson = {
+            id: newPersonId,
+            name: item.extractedName,
+            rank: 5, // 預設中階
+            departmentId: null, // 無部門
+            contact: '未提供',
+            isSpecial: false,
+            status: 'normal'
+        };
+        personnel.push(newPerson);
+        addedPersonCount++;
+
+        // 為新人員建立任務
+        const task = item.parsedTask;
+        const newTask = {
+            id: Date.now() + Math.random() * 10000,
+            name: task.name,
+            date: currentDateString,
+            startHour: task.startHour,
+            endHour: task.endHour,
+            type: task.type,
+            assignees: [newPersonId],
+            requiredPeople: 1
+        };
+
+        if (task.missionCategory) {
+            newTask.missionCategory = task.missionCategory;
+        }
+
+        tasks.push(newTask);
+        addedTaskCount++;
+    });
+
+    // 2. 處理現有人員的任務
     parsedImportTasks.forEach(task => {
         const newTask = {
             id: Date.now() + Math.random() * 10000,
@@ -3090,14 +3266,25 @@ function confirmImportTasks() {
         }
 
         tasks.push(newTask);
+        addedTaskCount++;
     });
 
     saveData();
     updateDisplay();
     closeModal('importTaskListModal');
 
-    alert(`成功匯入 ${parsedImportTasks.length} 個任務！`);
-    addHistory(`批量匯入 ${parsedImportTasks.length} 個任務`);
+    // 顯示結果
+    let resultMsg = `成功匯入 ${addedTaskCount} 個任務！`;
+    if (addedPersonCount > 0) {
+        resultMsg += `\n並新增了 ${addedPersonCount} 位人員`;
+    }
+    alert(resultMsg);
+
+    if (addedPersonCount > 0) {
+        addHistory(`批量匯入 ${addedTaskCount} 個任務，新增 ${addedPersonCount} 位人員`);
+    } else {
+        addHistory(`批量匯入 ${addedTaskCount} 個任務`);
+    }
 }
 
 function savePerson() {
