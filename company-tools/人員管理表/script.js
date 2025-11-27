@@ -3521,6 +3521,9 @@ function confirmImportTasks() {
         return;
     }
 
+    // 用於生成唯一 ID 的計數器
+    let idCounter = 0;
+
     // 建立確認訊息
     let confirmMsg = `確定要匯入到 ${currentDateString} 嗎？\n\n`;
     if (parsedImportTasks.length > 0) {
@@ -3538,32 +3541,47 @@ function confirmImportTasks() {
     let addedTaskCount = 0;
     let addedPersonCount = 0;
 
-    // 1. 先新增人員
-    newPersonnelToAdd.forEach(item => {
-        const newPersonId = Date.now() + Math.random() * 10000;
-        const newPerson = {
-            id: newPersonId,
-            name: item.extractedName,
-            rank: 5, // 預設中階
-            departmentId: null, // 無部門
-            contact: '未提供',
-            isSpecial: false,
-            status: 'normal'
-        };
-        personnel.push(newPerson);
-        addedPersonCount++;
+    // 用於追蹤已新增的人員（避免重複新增同名人員）
+    const addedPersonnelMap = new Map(); // name -> personId
 
-        // 為新人員建立任務
+    // 1. 先處理需要新增的人員
+    newPersonnelToAdd.forEach(item => {
+        const personName = item.extractedName;
+        let personId;
+
+        // 檢查是否已經在這次匯入中新增過同名人員
+        if (addedPersonnelMap.has(personName)) {
+            // 已經新增過，使用已存在的 ID
+            personId = addedPersonnelMap.get(personName);
+        } else {
+            // 還沒新增過，建立新人員
+            personId = Date.now() + (++idCounter) * 1000 + Math.floor(Math.random() * 1000);
+            const newPerson = {
+                id: personId,
+                name: personName,
+                rank: 5, // 預設中階
+                departmentId: null, // 無部門
+                contact: '未提供',
+                isSpecial: false,
+                status: 'normal'
+            };
+            personnel.push(newPerson);
+            addedPersonCount++;
+
+            // 記錄已新增的人員
+            addedPersonnelMap.set(personName, personId);
+        }
+
+        // 為人員建立任務（不管是新增還是已存在的人員，都要建立任務）
         const task = item.parsedTask;
-        // 保持原本解析的任務類型
         const newTask = {
-            id: Date.now() + Math.random() * 10000,
+            id: Date.now() + (++idCounter) * 1000 + Math.floor(Math.random() * 1000),
             name: task.name,
             date: currentDateString,
             startHour: task.startHour,
             endHour: task.endHour,
-            type: task.type, // 保持原本的任務類型
-            assignees: [newPersonId],
+            type: task.type,
+            assignees: [personId],
             requiredPeople: 1
         };
 
@@ -3577,10 +3595,10 @@ function confirmImportTasks() {
     });
 
     // 2. 處理現有人員的任務
-    parsedImportTasks.forEach(task => {
+    parsedImportTasks.forEach((task, index) => {
         // 保持原本解析的任務類型
         const newTask = {
-            id: Date.now() + Math.random() * 10000,
+            id: Date.now() + (++idCounter) * 1000 + Math.floor(Math.random() * 1000),
             name: task.name,
             date: currentDateString,
             startHour: task.startHour,
