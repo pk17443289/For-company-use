@@ -3570,20 +3570,18 @@ function confirmImportTasks() {
 
         // 為新人員建立任務
         const task = item.parsedTask;
+        // 統一將所有類型改為 work，讓任務顯示在任務池中
+        // 但保留任務名稱（如「教勤」、「駐廠」、「請假」等）
         const newTask = {
             id: Date.now() + Math.random() * 10000,
             name: task.name,
             date: currentDateString,
             startHour: task.startHour,
             endHour: task.endHour,
-            type: task.type,
+            type: 'work', // 統一使用 work 類型
             assignees: [newPersonId],
             requiredPeople: 1
         };
-
-        if (task.missionCategory) {
-            newTask.missionCategory = task.missionCategory;
-        }
 
         tasks.push(newTask);
         addedTaskCount++;
@@ -3591,20 +3589,17 @@ function confirmImportTasks() {
 
     // 2. 處理現有人員的任務
     parsedImportTasks.forEach(task => {
+        // 統一將所有類型改為 work，讓任務顯示在任務池中
         const newTask = {
             id: Date.now() + Math.random() * 10000,
             name: task.name,
             date: currentDateString,
             startHour: task.startHour,
             endHour: task.endHour,
-            type: task.type,
+            type: 'work', // 統一使用 work 類型
             assignees: [task.personId],
             requiredPeople: 1
         };
-
-        if (task.missionCategory) {
-            newTask.missionCategory = task.missionCategory;
-        }
 
         tasks.push(newTask);
         addedTaskCount++;
