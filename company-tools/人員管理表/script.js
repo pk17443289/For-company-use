@@ -2896,12 +2896,13 @@ function parseTaskLine(line, personnelMap) {
     line = line.trim();
     if (!line) return { success: false, reason: '空行' };
 
-    // 嘗試找出人員名稱
+    // 嘗試找出人員名稱（支援「人物在前」和「人物在後」兩種格式）
     let matchedPerson = null;
     let remainingText = line;
     let matchedName = '';
 
-    // 方法1：完全匹配 - 從開頭匹配完整人員名稱
+    // ===== 格式1：人物在前 =====
+    // 方法1-1：完全匹配 - 從開頭匹配完整人員名稱
     for (const [name, person] of personnelMap) {
         if (line.startsWith(name)) {
             matchedPerson = person;
@@ -2911,7 +2912,20 @@ function parseTaskLine(line, personnelMap) {
         }
     }
 
-    // 方法2：完全匹配 - 在整行中尋找完整人員名稱
+    // ===== 格式2：人物在後（任務在前）=====
+    // 方法2-1：完全匹配 - 從結尾匹配完整人員名稱
+    if (!matchedPerson) {
+        for (const [name, person] of personnelMap) {
+            if (line.endsWith(name)) {
+                matchedPerson = person;
+                matchedName = name;
+                remainingText = line.substring(0, line.length - name.length).trim();
+                break;
+            }
+        }
+    }
+
+    // 方法2-2：完全匹配 - 在整行中尋找完整人員名稱
     if (!matchedPerson) {
         for (const [name, person] of personnelMap) {
             if (line.includes(name)) {
@@ -2923,23 +2937,46 @@ function parseTaskLine(line, personnelMap) {
         }
     }
 
-    // 方法3：模糊匹配 - 嘗試用部分名稱匹配（2個字以上）
+    // ===== 模糊匹配 =====
+    // 方法3-1：從行尾提取可能的名稱（人物在後的格式，優先檢查）
     if (!matchedPerson) {
-        // 從行首提取可能的名稱（取前2-4個中文字）
-        const nameMatch = line.match(/^[\u4e00-\u9fa5]{2,4}/);
-        if (nameMatch) {
-            const possibleName = nameMatch[0];
-
-            // 嘗試找到包含這些字的人員，或這些字包含在人員名稱中
+        const nameMatchEnd = line.match(/[\u4e00-\u9fa5]{2,4}$/);
+        if (nameMatchEnd) {
+            const possibleName = nameMatchEnd[0];
             for (const [name, person] of personnelMap) {
-                // 檢查是否部分匹配（輸入包含名字的一部分，或名字包含輸入）
+                if (name.includes(possibleName) || possibleName.includes(name)) {
+                    matchedPerson = person;
+                    matchedName = possibleName;
+                    remainingText = line.substring(0, line.length - possibleName.length).trim();
+                    break;
+                }
+                // 檢查是否有2個字以上連續匹配
+                for (let i = 0; i <= name.length - 2; i++) {
+                    const namePart = name.substring(i, i + 2);
+                    if (possibleName.includes(namePart)) {
+                        matchedPerson = person;
+                        matchedName = possibleName;
+                        remainingText = line.substring(0, line.length - possibleName.length).trim();
+                        break;
+                    }
+                }
+                if (matchedPerson) break;
+            }
+        }
+    }
+
+    // 方法3-2：從行首提取可能的名稱（人物在前的格式）
+    if (!matchedPerson) {
+        const nameMatchStart = line.match(/^[\u4e00-\u9fa5]{2,4}/);
+        if (nameMatchStart) {
+            const possibleName = nameMatchStart[0];
+            for (const [name, person] of personnelMap) {
                 if (name.includes(possibleName) || possibleName.includes(name)) {
                     matchedPerson = person;
                     matchedName = possibleName;
                     remainingText = line.substring(possibleName.length).trim();
                     break;
                 }
-                // 檢查是否有2個字以上連續匹配
                 for (let i = 0; i <= name.length - 2; i++) {
                     const namePart = name.substring(i, i + 2);
                     if (possibleName.includes(namePart)) {
@@ -2956,9 +2993,23 @@ function parseTaskLine(line, personnelMap) {
 
     // 如果還是找不到，嘗試提取名稱供新增使用
     if (!matchedPerson) {
-        const nameMatch = line.match(/^[\u4e00-\u9fa5]{2,4}/);
-        if (nameMatch) {
-            const extractedName = nameMatch[0];
+        // 優先從行尾提取（因為大部分格式是任務在前、人物在後）
+        let nameMatchEnd = line.match(/[\u4e00-\u9fa5]{2,4}$/);
+        let nameMatchStart = line.match(/^[\u4e00-\u9fa5]{2,4}/);
+
+        // 判斷哪個更可能是人名（行尾優先）
+        if (nameMatchEnd) {
+            const extractedName = nameMatchEnd[0];
+            remainingText = line.substring(0, line.length - extractedName.length).trim();
+            return {
+                success: false,
+                reason: '找不到對應的人員',
+                extractedName: extractedName,
+                canAddNew: true,
+                parsedTask: parseTaskContent(remainingText)
+            };
+        } else if (nameMatchStart) {
+            const extractedName = nameMatchStart[0];
             remainingText = line.substring(extractedName.length).trim();
             return {
                 success: false,

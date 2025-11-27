@@ -790,14 +790,15 @@
                 <div style="margin-bottom: 20px; padding: 15px; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 8px;">
                     <div style="color: var(--neon-green); font-weight: bold; margin-bottom: 10px;">💡 使用說明</div>
                     <div style="color: var(--gaming-white); font-size: 0.9rem; line-height: 1.8;">
-                        直接貼上文字，系統會自動辨識人員和任務。支援以下格式：<br><br>
-                        <strong style="color: var(--gaming-cyan);">格式範例：</strong><br>
+                        直接貼上文字，系統會自動辨識人員和任務。<strong style="color: var(--gaming-cyan);">人名可在前或在後！</strong><br><br>
+                        <strong style="color: var(--gaming-cyan);">格式範例（任務在前）：</strong><br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">08:00-17:00 辦公室值班 王小明</code><br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">請假 李小華</code><br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">駐場 張大雄</code><br><br>
+                        <strong style="color: var(--gaming-cyan);">格式範例（人名在前）：</strong><br>
                         <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">王小明 08:00-17:00 辦公室值班</code><br>
-                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">李小華 請假</code><br>
-                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">張大雄 09-18 外出洽公</code><br>
-                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">陳小美 休假</code><br>
-                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">林志明 出任務 駐場</code><br><br>
-                        <strong style="color: var(--gaming-yellow);">⚠️ 注意：</strong>人員姓名必須已存在於系統中才能辨識
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">李小華 請假</code><br><br>
+                        <strong style="color: var(--gaming-yellow);">✨ 新功能：</strong>找不到的人員會自動提示是否新增
                     </div>
                 </div>
 
@@ -810,12 +811,15 @@
                         </div>
                         <textarea id="importTaskText" class="cyber-textarea" style="width: 100%; height: 350px; resize: none;" placeholder="請在此貼上任務文字...
 
-範例：
+範例（任務在前、人名在後）：
+08:00-17:00 辦公室值班 王小明
+請假 李小華
+駐場 張大雄
+09-18 外出洽公 陳小美
+
+範例（人名在前）：
 王小明 08:00-17:00 辦公室值班
-李小華 請假
-張大雄 09-18 外出洽公
-陳小美 休假
-林志明 出任務 駐場"></textarea>
+李小華 請假"></textarea>
                         <button class="btn-primary-cyber" style="margin-top: 10px; width: 100%;" onclick="parseImportTaskText()">🔍 解析文字</button>
                     </div>
 
