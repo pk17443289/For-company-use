@@ -3552,6 +3552,32 @@ select.cyber-select option,
         max-width: 95%;
     }
 
+    /* 部門管理與每日任務管理 Modal 的雙欄佈局改為單欄 */
+    .modal-content-extra-wide .modal-body-cyber > div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+        min-height: auto !important;
+    }
+
+    /* 隱藏左側邊框線（改為下方分隔線） */
+    .modal-content-extra-wide .modal-body-cyber > div > div:first-child {
+        border-right: none !important;
+        border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+        padding-right: 0 !important;
+        padding-bottom: 15px !important;
+    }
+
+    /* 部門列表和任務類型選擇區塊最大高度調整 */
+    #departmentListContainer,
+    .modal-content-extra-wide [style*="max-height: 400px"] {
+        max-height: 250px !important;
+    }
+
+    /* 部門詳情區塊調整 */
+    #deptDetailPanel {
+        min-height: 200px;
+    }
+
     .comp-leave-stats {
         grid-template-columns: repeat(2, 1fr) !important;
     }

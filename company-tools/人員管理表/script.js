@@ -109,6 +109,9 @@ let lastDragY = 0; // 記錄最後的拖移 Y 座標
 let selectedTaskForAssignment = null; // 選中要分配的任務
 let longPressTimer = null; // 長按計時器
 
+// 檢視範圍設定
+let currentViewScope = 'all'; // 當前檢視範圍：'all' 全部部門、或部門 ID
+
 // ===== 初始化 =====
 document.addEventListener('DOMContentLoaded', function() {
     console.log('初始化人員管理系統...');
@@ -119,6 +122,8 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeRankSliders(); // 初始化階級滑動條
     updateRankFilterOptions(); // 初始化階級篩選下拉選單
     updateDepartmentFilter(); // 初始化部門篩選下拉選單
+    updateViewScopeSelect(); // 初始化檢視範圍選擇下拉選單
+    loadViewScopeSetting(); // 載入已儲存的檢視範圍設定
     updateDisplay();
 });
 
@@ -995,6 +1000,7 @@ function updateTimeDisplay() {
 
 // ===== 顯示更新 =====
 function updateDisplay() {
+    updateViewScopeSelect(); // 更新檢視範圍選擇（部門變動時同步）
     renderPersonnelGrid();
     renderTaskList();
     updateStats();
@@ -1025,7 +1031,10 @@ function renderPersonnelGrid() {
 }
 
 function filterPersonnel() {
-    return personnel.filter(person => {
+    // 首先根據檢視範圍篩選人員
+    const scopeFilteredPersonnel = filterPersonnelByViewScope(personnel);
+
+    return scopeFilteredPersonnel.filter(person => {
         // 搜尋過濾
         if (currentSearchText && !person.name.toLowerCase().includes(currentSearchText)) {
             return false;
@@ -2998,42 +3007,75 @@ function showAddTaskModal() {
 }
 
 function saveTask() {
-    const name = document.getElementById('taskName').value.trim();
-    const date = document.getElementById('taskDate').value;
+    const nameInput = document.getElementById('taskName');
+    const dateInput = document.getElementById('taskDate');
+    const startHourInput = document.getElementById('taskStartHour');
+    const endHourInput = document.getElementById('taskEndHour');
+    const requiredPeopleInput = document.getElementById('taskRequiredPeople');
+
+    const name = nameInput.value.trim();
+    const date = dateInput.value;
     const type = document.getElementById('taskType').value;
     const workCategory = document.getElementById('taskWorkCategory').value;
-    const startHour = parseInt(document.getElementById('taskStartHour').value);
-    const endHour = parseInt(document.getElementById('taskEndHour').value);
-    const requiredPeople = parseInt(document.getElementById('taskRequiredPeople').value);
+    const startHour = parseInt(startHourInput.value);
+    const endHour = parseInt(endHourInput.value);
+    const requiredPeople = parseInt(requiredPeopleInput.value);
     const description = document.getElementById('taskDescription').value.trim();
+
+    // 清除之前的錯誤標示
+    [nameInput, dateInput, startHourInput, endHourInput, requiredPeopleInput].forEach(el => {
+        el.style.borderColor = '';
+    });
 
     if (!name) {
         alert('請輸入任務名稱');
+        nameInput.style.borderColor = '#FF0080';
+        nameInput.focus();
         return;
     }
 
     if (!date) {
         alert('請選擇任務日期');
+        dateInput.style.borderColor = '#FF0080';
+        dateInput.focus();
         return;
     }
 
     if (isNaN(startHour) || isNaN(endHour)) {
         alert('請輸入開始和結束時間');
+        if (isNaN(startHour)) {
+            startHourInput.style.borderColor = '#FF0080';
+            startHourInput.focus();
+        } else {
+            endHourInput.style.borderColor = '#FF0080';
+            endHourInput.focus();
+        }
         return;
     }
 
     if (startHour < 0 || startHour > 23 || endHour < 0 || endHour > 24) {
-        alert('時間必須在 0-23 之間（結束時間可以是 24）');
+        alert('開始時間必須在 0-23 之間，結束時間可以是 0-24');
+        if (startHour < 0 || startHour > 23) {
+            startHourInput.style.borderColor = '#FF0080';
+            startHourInput.focus();
+        } else {
+            endHourInput.style.borderColor = '#FF0080';
+            endHourInput.focus();
+        }
         return;
     }
 
     if (startHour >= endHour) {
         alert('結束時間必須大於開始時間');
+        endHourInput.style.borderColor = '#FF0080';
+        endHourInput.focus();
         return;
     }
 
     if (isNaN(requiredPeople) || requiredPeople < 1) {
         alert('需求人數必須至少為 1');
+        requiredPeopleInput.style.borderColor = '#FF0080';
+        requiredPeopleInput.focus();
         return;
     }
 
@@ -3736,10 +3778,17 @@ function showSchedulePreview() {
 
     dateDisplay.textContent = dateLabel;
 
-    // 取得當前日期的所有任務
+    // 根據檢視範圍篩選人員
+    const scopeFilteredPersonnel = filterPersonnelByViewScope(personnel);
+    const scopePersonnelIds = new Set(scopeFilteredPersonnel.map(p => p.id));
+
+    // 取得當前日期的所有任務（只包含檢視範圍內人員的任務）
     const dayTasks = tasks.filter(t => {
         const taskDate = t.date || formatDate(new Date());
-        return taskDate === currentDateString;
+        if (taskDate !== currentDateString) return false;
+        // 檢查任務是否有檢視範圍內的人員
+        const assignees = t.assignees || [];
+        return assignees.some(id => scopePersonnelIds.has(id)) || assignees.length === 0;
     });
 
     if (dayTasks.length === 0) {
@@ -3776,17 +3825,18 @@ function showSchedulePreview() {
         const endTime = task.endHour === 24 ? '00:00(隔日)' : `${String(task.endHour).padStart(2, '0')}:00`;
         const duration = (task.endHour === 24 ? 24 : task.endHour) - task.startHour;
 
-        // 取得分配的人員
+        // 取得分配的人員（只顯示檢視範圍內的人員）
         const assignees = task.assignees || [];
+        const scopeAssignees = assignees.filter(id => scopePersonnelIds.has(id));
         const required = task.requiredPeople || 1;
         let assigneeList = '';
 
-        if (assignees.length === 0) {
+        if (scopeAssignees.length === 0) {
             assigneeList = '<div class="preview-assignee-empty">❌ 尚未分配人員</div>';
         } else {
             assigneeList = '<div class="preview-assignee-list">';
-            assignees.forEach((personId, index) => {
-                const person = personnel.find(p => p.id === personId);
+            scopeAssignees.forEach((personId, index) => {
+                const person = scopeFilteredPersonnel.find(p => p.id === personId);
                 if (person) {
                     const rankLabel = getRankLabel(person.rank);
                     assigneeList += `
@@ -3840,19 +3890,22 @@ function showSchedulePreview() {
 
     html += '</div>';
 
-    // 統計人員狀態（從當天任務中讀取）
+    // 統計人員狀態（從當天任務中讀取，只統計檢視範圍內的人員）
     const statusStats = {
         leave: [],
         mission: [],
         lunch: []
     };
 
-    // 從當天的任務中收集請假、出任務、午休的人員
+    // 從當天的任務中收集請假、出任務、午休的人員（只收集檢視範圍內的人員）
     dayTasks.forEach(task => {
         if (task.type === 'leave' || task.type === 'mission' || task.type === 'lunch') {
             const assignees = task.assignees || [];
             assignees.forEach(personId => {
-                const person = personnel.find(p => p.id === personId);
+                // 只處理檢視範圍內的人員
+                if (!scopePersonnelIds.has(personId)) return;
+
+                const person = scopeFilteredPersonnel.find(p => p.id === personId);
                 if (person) {
                     // 避免重複加入
                     if (task.type === 'leave' && !statusStats.leave.includes(person.name)) {
@@ -3867,19 +3920,15 @@ function showSchedulePreview() {
         }
     });
 
-    // 加上人員狀態統計區塊
-    if (statusStats.leave.length > 0 || statusStats.mission.length > 0 || statusStats.lunch.length > 0 || personnel.length > 0) {
+    // 加上人員狀態統計區塊（只有在有特殊狀態時才顯示）
+    if (statusStats.leave.length > 0 || statusStats.mission.length > 0 || statusStats.lunch.length > 0) {
         html += `
             <div style="margin-top: 30px; padding: 20px; background: rgba(0, 212, 255, 0.1); border: 2px solid var(--gaming-cyan); border-radius: 10px;">
                 <div style="font-size: 1.2rem; font-weight: bold; color: var(--gaming-cyan); margin-bottom: 15px; text-align: center;">
-                    📊 人員狀態統計
+                    📊 人員狀態
                 </div>
 
                 <div style="display: grid; gap: 12px;">
-                    <div style="padding: 10px; background: rgba(0, 255, 136, 0.1); border-left: 4px solid var(--gaming-green); border-radius: 5px;">
-                        <span style="color: var(--gaming-green); font-weight: bold;">今日總人數：</span>
-                        <span style="color: var(--gaming-white); font-size: 1.1rem; font-weight: bold;">${personnel.length} 人</span>
-                    </div>
         `;
 
         if (statusStats.leave.length > 0) {
@@ -3935,10 +3984,17 @@ function exportScheduleAsText() {
     const weekday = weekdays[currentDate.getDay()];
     dateLabel += ` 星期${weekday}`;
 
-    // 取得當前日期的所有任務
+    // 根據檢視範圍篩選人員
+    const scopeFilteredPersonnel = filterPersonnelByViewScope(personnel);
+    const scopePersonnelIds = new Set(scopeFilteredPersonnel.map(p => p.id));
+
+    // 取得當前日期的所有任務（只包含檢視範圍內人員的任務）
     const dayTasks = tasks.filter(t => {
         const taskDate = t.date || formatDate(new Date());
-        return taskDate === currentDateString;
+        if (taskDate !== currentDateString) return false;
+        // 檢查任務是否有檢視範圍內的人員
+        const assignees = t.assignees || [];
+        return assignees.some(id => scopePersonnelIds.has(id)) || assignees.length === 0;
     });
 
     if (dayTasks.length === 0) {
@@ -3949,11 +4005,14 @@ function exportScheduleAsText() {
     // 建立人員時間表 (每個人 0-24 點的任務安排)
     const personnelSchedule = new Map();
 
-    // 收集所有有任務的人員
+    // 收集所有有任務的人員（只收集檢視範圍內的人員）
     dayTasks.forEach(task => {
         const assignees = task.assignees || [];
         assignees.forEach(personId => {
-            const person = personnel.find(p => p.id === personId);
+            // 只處理檢視範圍內的人員
+            if (!scopePersonnelIds.has(personId)) return;
+
+            const person = scopeFilteredPersonnel.find(p => p.id === personId);
             if (person) {
                 if (!personnelSchedule.has(personId)) {
                     personnelSchedule.set(personId, {
@@ -3976,19 +4035,22 @@ function exportScheduleAsText() {
         return;
     }
 
-    // 統計人員狀態（從當天任務中讀取）
+    // 統計人員狀態（從當天任務中讀取，只統計檢視範圍內的人員）
     const statusStats = {
         leave: [],
         mission: [],
         lunch: []
     };
 
-    // 從當天的任務中收集請假、出任務、午休的人員
+    // 從當天的任務中收集請假、出任務、午休的人員（只收集檢視範圍內的人員）
     dayTasks.forEach(task => {
         if (task.type === 'leave' || task.type === 'mission' || task.type === 'lunch') {
             const assignees = task.assignees || [];
             assignees.forEach(personId => {
-                const person = personnel.find(p => p.id === personId);
+                // 只處理檢視範圍內的人員
+                if (!scopePersonnelIds.has(personId)) return;
+
+                const person = scopeFilteredPersonnel.find(p => p.id === personId);
                 if (person) {
                     // 避免重複加入
                     if (task.type === 'leave' && !statusStats.leave.includes(person.name)) {
@@ -4053,21 +4115,18 @@ function exportScheduleAsText() {
     // 人員狀態
     if (statusStats.leave.length > 0 || statusStats.mission.length > 0 || statusStats.lunch.length > 0) {
         text += `【人員狀態】\n\n`;
-    }
 
-    // 今日總人數
-    text += `今日總人數：${personnel.length} 人\n\n`;
+        if (statusStats.leave.length > 0) {
+            text += `請假 (${statusStats.leave.length}人)：${statusStats.leave.join('、')}\n\n`;
+        }
 
-    if (statusStats.leave.length > 0) {
-        text += `請假 (${statusStats.leave.length}人)：${statusStats.leave.join('、')}\n\n`;
-    }
+        if (statusStats.mission.length > 0) {
+            text += `出任務 (${statusStats.mission.length}人)：${statusStats.mission.join('、')}\n\n`;
+        }
 
-    if (statusStats.mission.length > 0) {
-        text += `出任務 (${statusStats.mission.length}人)：${statusStats.mission.join('、')}\n\n`;
-    }
-
-    if (statusStats.lunch.length > 0) {
-        text += `午休 (${statusStats.lunch.length}人)：${statusStats.lunch.join('、')}\n\n`;
+        if (statusStats.lunch.length > 0) {
+            text += `午休 (${statusStats.lunch.length}人)：${statusStats.lunch.join('、')}\n\n`;
+        }
     }
 
     text += `━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -4099,14 +4158,15 @@ function exportMilitaryReport() {
     const currentHour = new Date().getHours();
     const isNightReport = currentHour >= 18;
 
+    // 根據檢視範圍篩選人員
+    const scopeFilteredPersonnel = filterPersonnelByViewScope(personnel);
+    const scopePersonnelIds = new Set(scopeFilteredPersonnel.map(p => p.id));
+
     // 取得當前日期的所有任務
     const dayTasks = tasks.filter(t => {
         const taskDate = t.date || formatDate(new Date());
         return taskDate === currentDateString;
     });
-
-    // 統計各類人員數量
-    const totalPersonnel = personnel.length; // 應到人數
 
     // 初始化各類別計數
     const stats = {
@@ -4120,14 +4180,17 @@ function exportMilitaryReport() {
         business: new Set()     // 公出
     };
 
-    // 從任務中收集各類人員
+    // 從任務中收集各類人員（只收集檢視範圍內的人員）
     dayTasks.forEach(task => {
         const assignees = task.assignees || [];
         assignees.forEach(personId => {
-            const person = personnel.find(p => p.id === personId);
+            // 只處理檢視範圍內的人員
+            if (!scopePersonnelIds.has(personId)) return;
+
+            const person = scopeFilteredPersonnel.find(p => p.id === personId);
             if (!person) return;
 
-            // 根據任務類型和出任務類別分類
+            // 根據任務類型和出任務類別分類（只統計不在營區的人）
             if (task.type === 'leave') {
                 stats.leave.add(person.name);
             } else if (task.type === 'mission') {
@@ -4171,10 +4234,15 @@ function exportMilitaryReport() {
     const supportCount = stats.support.size;
     const businessCount = stats.business.size;
 
-    // 計算實到人數（總人數減去不在營區的人）
+    // 應到人數 = 部門全部人數
+    const totalPersonnel = scopeFilteredPersonnel.length;
+
+    // 計算不在營區的人數（休假、外宿、受訓、移地、駐場、駐廠、支援、公出）
     const absentCount = leaveCount + overnightCount + trainingCount +
                         relocationCount + stationedCount + factoryCount +
                         supportCount + businessCount;
+
+    // 實到人數 = 應到 - 不在營區的人
     const presentCount = totalPersonnel - absentCount;
 
     // 生成報告文字
@@ -5154,6 +5222,86 @@ function updateDepartmentFilter() {
     } else {
         deptFilter.value = 'all';
     }
+}
+
+// ===== 檢視範圍管理 =====
+
+// 更新檢視範圍選擇下拉選單
+function updateViewScopeSelect() {
+    const viewScopeSelect = document.getElementById('viewScopeSelect');
+    if (!viewScopeSelect) return;
+
+    // 保存當前選中的值
+    const currentValue = viewScopeSelect.value;
+
+    // 清空選項
+    viewScopeSelect.innerHTML = '';
+
+    // 添加「全部部門」選項
+    const allOption = document.createElement('option');
+    allOption.value = 'all';
+    allOption.textContent = '🔓 全部部門';
+    viewScopeSelect.appendChild(allOption);
+
+    // 添加各部門選項
+    departments.forEach(dept => {
+        const option = document.createElement('option');
+        option.value = String(dept.id); // 轉為字串以便比較
+        option.textContent = `🏢 ${dept.name}`;
+        viewScopeSelect.appendChild(option);
+    });
+
+    // 嘗試恢復之前的選擇
+    const options = Array.from(viewScopeSelect.options).map(opt => opt.value);
+    if (options.includes(String(currentValue))) {
+        viewScopeSelect.value = currentValue;
+    } else {
+        viewScopeSelect.value = 'all';
+        currentViewScope = 'all';
+    }
+}
+
+// 檢視範圍變更事件
+function onViewScopeChange() {
+    const viewScopeSelect = document.getElementById('viewScopeSelect');
+    currentViewScope = viewScopeSelect.value;
+
+    // 儲存檢視範圍設定
+    localStorage.setItem('personnel_viewScope', currentViewScope);
+
+    // 重新渲染畫面
+    updateDisplay();
+}
+
+// 載入已儲存的檢視範圍設定
+function loadViewScopeSetting() {
+    const savedScope = localStorage.getItem('personnel_viewScope');
+    if (savedScope) {
+        currentViewScope = savedScope;
+        const viewScopeSelect = document.getElementById('viewScopeSelect');
+        if (viewScopeSelect) {
+            const options = Array.from(viewScopeSelect.options).map(opt => opt.value);
+            if (options.includes(savedScope)) {
+                viewScopeSelect.value = savedScope;
+            } else {
+                // 如果已儲存的部門不存在，重置為全部
+                currentViewScope = 'all';
+                viewScopeSelect.value = 'all';
+            }
+        }
+    }
+}
+
+// 根據檢視範圍篩選人員
+function filterPersonnelByViewScope(personnelList) {
+    // 全部部門：顯示所有人
+    if (currentViewScope === 'all') {
+        return personnelList;
+    }
+
+    // 特定部門：只顯示該部門的人
+    const deptId = parseInt(currentViewScope);
+    return personnelList.filter(p => p.departmentId === deptId);
 }
 
 // ===== 階級名稱管理 =====
