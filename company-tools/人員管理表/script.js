@@ -2819,6 +2819,7 @@ function showImportTaskListModal() {
 }
 
 let pendingNewPersonnel = []; // 儲存待新增的人員
+let lastTaskContext = null; // 儲存上一個任務的上下文（用於處理人名單獨一行的情況）
 
 function parseImportTaskText() {
     const text = document.getElementById('importTaskText').value.trim();
@@ -2828,49 +2829,62 @@ function parseImportTaskText() {
         return;
     }
 
-    const lines = text.split('\n').filter(line => line.trim());
+    const lines = text.split('\n');
     parsedImportTasks = [];
     pendingNewPersonnel = [];
     const failedLines = [];
+    lastTaskContext = null;
 
-    // 建立人員名稱對照表（支援部分匹配）
+    // 建立人員名稱對照表
     const personnelMap = new Map();
     personnel.forEach(p => {
         personnelMap.set(p.name, p);
     });
 
     lines.forEach((line, index) => {
-        const result = parseTaskLine(line, personnelMap);
-        if (result.success) {
-            parsedImportTasks.push(result.task);
-        } else if (result.canAddNew && result.extractedName) {
-            // 可以新增人員的情況
-            pendingNewPersonnel.push({
-                lineNum: index + 1,
-                text: line,
-                extractedName: result.extractedName,
-                parsedTask: result.parsedTask,
-                willAdd: true // 預設勾選新增
-            });
-        } else {
-            failedLines.push({
-                lineNum: index + 1,
-                text: line,
-                reason: result.reason
-            });
-        }
+        line = line.trim();
+        if (!line) return; // 跳過空行
+
+        const results = parseTaskLineV2(line, personnelMap, index);
+
+        results.forEach(result => {
+            if (result.success) {
+                // 可能會有多個任務（多人的情況）
+                if (Array.isArray(result.tasks)) {
+                    result.tasks.forEach(task => parsedImportTasks.push(task));
+                } else {
+                    parsedImportTasks.push(result.task);
+                }
+            } else if (result.canAddNew && result.newPersonnel) {
+                // 可以新增人員的情況
+                result.newPersonnel.forEach(item => {
+                    pendingNewPersonnel.push({
+                        lineNum: index + 1,
+                        text: line,
+                        extractedName: item.name,
+                        parsedTask: item.task,
+                        willAdd: true
+                    });
+                });
+            } else if (result.reason && result.reason !== '跳過') {
+                failedLines.push({
+                    lineNum: index + 1,
+                    text: line,
+                    reason: result.reason
+                });
+            }
+        });
     });
 
     // 顯示預覽
     renderImportTaskPreview(parsedImportTasks, pendingNewPersonnel, failedLines);
 
     // 更新統計
-    const totalSuccess = parsedImportTasks.length + pendingNewPersonnel.filter(p => p.willAdd).length;
     document.getElementById('importTaskSuccessCount').textContent = parsedImportTasks.length;
     document.getElementById('importTaskFailCount').textContent = pendingNewPersonnel.length + failedLines.length;
     document.getElementById('importTaskStats').style.display = 'block';
 
-    // 啟用/禁用匯入按鈕（有成功解析的或有要新增的人員就可以匯入）
+    // 啟用/禁用匯入按鈕
     updateImportTaskButton();
 }
 
@@ -2878,6 +2892,247 @@ function updateImportTaskButton() {
     const hasSuccessTasks = parsedImportTasks.length > 0;
     const hasNewPersonnel = pendingNewPersonnel.some(p => p.willAdd);
     document.getElementById('confirmImportTaskList').disabled = !hasSuccessTasks && !hasNewPersonnel;
+}
+
+// 新版解析函數 - 支援「任務：人名」格式
+function parseTaskLineV2(line, personnelMap, lineIndex) {
+    line = line.trim();
+    if (!line) return [{ success: false, reason: '跳過' }];
+
+    // 跳過標題行（日期標題、大標題等）
+    // 匹配：11/27、11/24-28、（一）、(一)、中高空排...：等
+    if (/^[\d\/\-]+$/.test(line) ||                           // 純日期 11/27 或 11/24-28
+        /^\d{1,2}\/\d{1,2}\s*[-~]\s*\d{1,2}(\/\d{1,2})?$/.test(line) || // 日期範圍 11/24-28
+        /^（[一二三四五六日]）/.test(line) ||                  // （一）開頭
+        /^\([一二三四五六日]\)/.test(line) ||                  // (一) 開頭
+        /^[（(][一二三四五六日][）)]$/.test(line) ||           // 純（一）
+        /^下週/.test(line) ||                                  // 下週開頭
+        /^本週/.test(line) ||                                  // 本週開頭
+        /排[：:]$/.test(line) ||                               // XX排：結尾（如「中高空排：」）
+        /班[：:]$/.test(line) ||                               // XX班：結尾
+        /組[：:]$/.test(line) ||                               // XX組：結尾
+        /連[：:]$/.test(line) ||                               // XX連：結尾
+        /^[\u4e00-\u9fa5]+排$/.test(line) ||                   // XX排（無冒號）
+        /^[\u4e00-\u9fa5]+班$/.test(line) ||                   // XX班（無冒號）
+        /^=+$/.test(line) ||                                   // 分隔線 ====
+        /^-+$/.test(line) ||                                   // 分隔線 ----
+        (/：\s*$/.test(line) && !/^.+：.+$/.test(line))) {    // 冒號結尾但後面沒內容
+        // 這是標題行，檢查是否有上下文資訊
+        const dateMatch = line.match(/(\d{1,2}\/\d{1,2})(?:-(\d{1,2}\/?\d{0,2}))?/);
+        if (dateMatch) {
+            // 儲存日期上下文供後續使用（暫不實作）
+        }
+        return [{ success: false, reason: '跳過' }];
+    }
+
+    // 檢測「任務：人名」格式
+    const colonMatch = line.match(/^(.+?)：(.+)$/);
+    if (colonMatch) {
+        const taskPart = colonMatch[1].trim();
+        const namePart = colonMatch[2].trim();
+
+        // 解析任務內容
+        const taskContent = parseTaskContent(taskPart);
+
+        // 解析人名（可能有多人，用頓號分隔）
+        const names = namePart.split(/[、,，]/).map(n => n.trim()).filter(n => n);
+
+        const results = [];
+        const matchedTasks = [];
+        const newPersonnelList = [];
+
+        names.forEach(name => {
+            // 嘗試匹配人員
+            let matchedPerson = findPersonByName(name, personnelMap);
+
+            if (matchedPerson) {
+                matchedTasks.push({
+                    personId: matchedPerson.id,
+                    personName: matchedPerson.name,
+                    ...taskContent
+                });
+            } else {
+                // 無法匹配，加入待新增列表
+                newPersonnelList.push({
+                    name: name,
+                    task: taskContent
+                });
+            }
+        });
+
+        if (matchedTasks.length > 0) {
+            results.push({ success: true, tasks: matchedTasks });
+        }
+        if (newPersonnelList.length > 0) {
+            results.push({ canAddNew: true, newPersonnel: newPersonnelList });
+        }
+
+        // 儲存任務上下文（用於處理人名單獨一行的情況）
+        lastTaskContext = taskContent;
+
+        return results.length > 0 ? results : [{ success: false, reason: '無法解析人員' }];
+    }
+
+    // 檢測純人名行（可能是上一行任務的延續）
+    // 例如「功政」或「建添、毓歆」
+    const pureNamesMatch = line.match(/^[\u4e00-\u9fa5]{2,4}([、,，][\u4e00-\u9fa5]{2,4})*$/);
+    if (pureNamesMatch && lastTaskContext) {
+        const names = line.split(/[、,，]/).map(n => n.trim()).filter(n => n);
+
+        const results = [];
+        const matchedTasks = [];
+        const newPersonnelList = [];
+
+        names.forEach(name => {
+            let matchedPerson = findPersonByName(name, personnelMap);
+
+            if (matchedPerson) {
+                matchedTasks.push({
+                    personId: matchedPerson.id,
+                    personName: matchedPerson.name,
+                    ...lastTaskContext
+                });
+            } else {
+                newPersonnelList.push({
+                    name: name,
+                    task: lastTaskContext
+                });
+            }
+        });
+
+        if (matchedTasks.length > 0) {
+            results.push({ success: true, tasks: matchedTasks });
+        }
+        if (newPersonnelList.length > 0) {
+            results.push({ canAddNew: true, newPersonnel: newPersonnelList });
+        }
+
+        return results.length > 0 ? results : [{ success: false, reason: '無法解析人員' }];
+    }
+
+    // 檢測「時間 任務描述」格式，人名可能在下一行
+    // 例如「上午08-12至一聯隊送試裝」
+    const timeTaskMatch = line.match(/^(上午|下午|晚上|凌晨)?(\d{1,2})[:-](\d{1,2})(.*)$/);
+    if (timeTaskMatch) {
+        const period = timeTaskMatch[1] || '';
+        let startHour = parseInt(timeTaskMatch[2]);
+        let endHour = parseInt(timeTaskMatch[3]);
+        const taskDesc = timeTaskMatch[4].trim();
+
+        // 調整時間（上午、下午等）
+        if (period === '下午' && startHour < 12) startHour += 12;
+        if (period === '晚上' && startHour < 12) startHour += 12;
+
+        const taskContent = {
+            startHour: startHour,
+            endHour: endHour,
+            type: 'work',
+            name: taskDesc || '工作',
+            missionCategory: null
+        };
+
+        // 檢查行尾是否有人名
+        const nameAtEnd = taskDesc.match(/[\u4e00-\u9fa5]{2,4}$/);
+        if (nameAtEnd) {
+            const name = nameAtEnd[0];
+            const matchedPerson = findPersonByName(name, personnelMap);
+
+            if (matchedPerson) {
+                taskContent.name = taskDesc.replace(name, '').trim() || '工作';
+                return [{
+                    success: true,
+                    task: {
+                        personId: matchedPerson.id,
+                        personName: matchedPerson.name,
+                        ...taskContent
+                    }
+                }];
+            }
+        }
+
+        // 儲存任務上下文，等待下一行的人名
+        lastTaskContext = taskContent;
+        return [{ success: false, reason: '跳過' }]; // 等待下一行人名
+    }
+
+    // 嘗試舊版解析邏輯（相容性）
+    return [parseTaskLine(line, personnelMap)];
+}
+
+// 根據名稱查找人員（支援模糊匹配）
+function findPersonByName(name, personnelMap) {
+    // 移除常見的前綴/後綴符號
+    name = name.replace(/^[\s、,，:：\-\|]+|[\s、,，:：\-\|]+$/g, '').trim();
+
+    if (!name || name.length < 2) return null;
+
+    // 完全匹配
+    if (personnelMap.has(name)) {
+        return personnelMap.get(name);
+    }
+
+    // 模糊匹配優先級：
+    // 1. 輸入名字完全包含在全名中（例如輸入「毓歆」匹配「陳毓歆」）
+    // 2. 全名完全包含輸入（例如輸入「陳毓歆」匹配「毓歆」）
+    // 3. 最後兩個字匹配（最常見：輸入「建信」匹配「王建信」）
+
+    let bestMatch = null;
+    let bestScore = 0;
+
+    for (const [fullName, person] of personnelMap) {
+        let score = 0;
+
+        // 輸入完全包含在全名中
+        if (fullName.includes(name)) {
+            score = 100 - (fullName.length - name.length); // 越短的匹配分數越高
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = person;
+            }
+            continue;
+        }
+
+        // 全名完全包含輸入
+        if (name.includes(fullName)) {
+            score = 90 - (name.length - fullName.length);
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = person;
+            }
+            continue;
+        }
+
+        // 檢查最後兩個字是否匹配（常見：只打名不打姓）
+        if (name.length >= 2 && fullName.length >= 2) {
+            const nameLast2 = name.slice(-2);
+            const fullNameLast2 = fullName.slice(-2);
+            if (nameLast2 === fullNameLast2) {
+                score = 80;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = person;
+                }
+                continue;
+            }
+        }
+
+        // 檢查是否有2個連續字元匹配
+        if (name.length >= 2) {
+            for (let i = 0; i <= fullName.length - 2; i++) {
+                const segment = fullName.substring(i, i + 2);
+                if (name.includes(segment)) {
+                    score = 70;
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestMatch = person;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    return bestMatch;
 }
 
 function toggleNewPersonnel(index) {
@@ -3110,6 +3365,41 @@ function parseTaskContent(text) {
         taskType = 'mission';
         missionCategory = 'support';
         taskName = remainingText || '支援';
+    }
+    // 教勤
+    else if (/教勤/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'training';
+        taskName = remainingText || '教勤';
+    }
+    // 繳彈
+    else if (/繳彈/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'other';
+        taskName = remainingText || '繳彈';
+    }
+    // 送彈/領彈
+    else if (/送彈|領彈|彈藥/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'other';
+        taskName = remainingText || '彈藥任務';
+    }
+    // 送試裝
+    else if (/送試裝|試裝|送裝備/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'other';
+        taskName = remainingText || '送試裝';
+    }
+    // 預演/演習/演練
+    else if (/預演|演習|演練/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'other';
+        taskName = remainingText || '演練';
+    }
+    // 上哨/站哨
+    else if (/上哨|站哨|崗哨/.test(remainingText)) {
+        taskType = 'work';
+        taskName = remainingText || '站哨';
     }
     // 午休
     else if (/午休|午餐|用餐/.test(remainingText)) {
