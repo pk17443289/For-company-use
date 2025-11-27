@@ -301,6 +301,10 @@ function setupEventListeners() {
         showAddTaskModal();
         actionMenuDropdown.classList.add('hidden');
     });
+    document.getElementById('importTaskListBtn').addEventListener('click', () => {
+        showImportTaskListModal();
+        actionMenuDropdown.classList.add('hidden');
+    });
     document.getElementById('manageTaskTemplateBtn').addEventListener('click', () => {
         showTaskTemplateModal();
         actionMenuDropdown.classList.add('hidden');
@@ -2793,6 +2797,309 @@ function importPersonList() {
     alert(`成功匯入 ${newPersonnel.length} 個人員！`);
 }
 
+// ===== 批量匯入任務 =====
+let parsedImportTasks = []; // 儲存解析後的任務
+
+function showImportTaskListModal() {
+    // 清空之前的資料
+    document.getElementById('importTaskText').value = '';
+    document.getElementById('importTaskPreview').innerHTML = `
+        <div style="color: var(--gaming-white); opacity: 0.6; text-align: center; padding-top: 120px;">
+            請先在左側輸入文字後點擊「解析文字」
+        </div>
+    `;
+    document.getElementById('importTaskStats').style.display = 'none';
+    document.getElementById('confirmImportTaskList').disabled = true;
+    parsedImportTasks = [];
+
+    // 顯示當前日期
+    document.getElementById('importTaskDate').textContent = `匯入日期：${currentDateString}`;
+
+    document.getElementById('importTaskListModal').classList.remove('hidden');
+}
+
+function parseImportTaskText() {
+    const text = document.getElementById('importTaskText').value.trim();
+
+    if (!text) {
+        alert('請先輸入任務文字');
+        return;
+    }
+
+    const lines = text.split('\n').filter(line => line.trim());
+    parsedImportTasks = [];
+    const failedLines = [];
+
+    // 建立人員名稱對照表（支援部分匹配）
+    const personnelMap = new Map();
+    personnel.forEach(p => {
+        personnelMap.set(p.name, p);
+    });
+
+    lines.forEach((line, index) => {
+        const result = parseTaskLine(line, personnelMap);
+        if (result.success) {
+            parsedImportTasks.push(result.task);
+        } else {
+            failedLines.push({
+                lineNum: index + 1,
+                text: line,
+                reason: result.reason
+            });
+        }
+    });
+
+    // 顯示預覽
+    renderImportTaskPreview(parsedImportTasks, failedLines);
+
+    // 更新統計
+    document.getElementById('importTaskSuccessCount').textContent = parsedImportTasks.length;
+    document.getElementById('importTaskFailCount').textContent = failedLines.length;
+    document.getElementById('importTaskStats').style.display = 'block';
+
+    // 啟用/禁用匯入按鈕
+    document.getElementById('confirmImportTaskList').disabled = parsedImportTasks.length === 0;
+}
+
+function parseTaskLine(line, personnelMap) {
+    line = line.trim();
+    if (!line) return { success: false, reason: '空行' };
+
+    // 嘗試找出人員名稱
+    let matchedPerson = null;
+    let remainingText = line;
+
+    // 方法1：直接從開頭匹配人員名稱
+    for (const [name, person] of personnelMap) {
+        if (line.startsWith(name)) {
+            matchedPerson = person;
+            remainingText = line.substring(name.length).trim();
+            break;
+        }
+    }
+
+    // 方法2：如果開頭沒找到，嘗試在整行中尋找人員名稱
+    if (!matchedPerson) {
+        for (const [name, person] of personnelMap) {
+            if (line.includes(name)) {
+                matchedPerson = person;
+                remainingText = line.replace(name, '').trim();
+                break;
+            }
+        }
+    }
+
+    if (!matchedPerson) {
+        return { success: false, reason: '找不到對應的人員' };
+    }
+
+    // 解析時間和任務類型
+    let startHour = 8;
+    let endHour = 17;
+    let taskType = 'work';
+    let taskName = '';
+    let missionCategory = null;
+
+    // 檢測時間格式：08:00-17:00 或 8-17 或 08-17
+    const timePattern1 = /(\d{1,2}):?(\d{0,2})\s*[-~到至]\s*(\d{1,2}):?(\d{0,2})/;
+    const timeMatch = remainingText.match(timePattern1);
+
+    if (timeMatch) {
+        startHour = parseInt(timeMatch[1]);
+        endHour = parseInt(timeMatch[3]);
+        // 處理 24:00 的情況
+        if (endHour === 0 && startHour > 0) endHour = 24;
+        if (endHour < startHour) endHour = 24; // 如果結束時間小於開始時間，假設是到隔天
+        remainingText = remainingText.replace(timeMatch[0], '').trim();
+    }
+
+    // 移除常見的分隔符號
+    remainingText = remainingText.replace(/^[\s,，:：\-\|]+/, '').trim();
+
+    // 檢測任務類型關鍵字
+    const lowerText = remainingText.toLowerCase();
+
+    // 請假相關
+    if (/請假|休假|特休|年假|病假|事假|喪假|婚假|產假|陪產/.test(remainingText)) {
+        taskType = 'leave';
+        taskName = '請假';
+        // 全天請假
+        startHour = 0;
+        endHour = 24;
+    }
+    // 出任務相關
+    else if (/出任務|外出|外派|出差|公出|洽公/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'business_trip';
+        taskName = remainingText || '出任務';
+    }
+    // 駐場
+    else if (/駐場/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'stationed';
+        taskName = remainingText || '駐場';
+    }
+    // 駐廠
+    else if (/駐廠/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'factory_stationed';
+        taskName = remainingText || '駐廠';
+    }
+    // 受訓
+    else if (/受訓|訓練|培訓|教育訓練/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'training';
+        taskName = remainingText || '受訓';
+    }
+    // 移地
+    else if (/移地/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'relocation';
+        taskName = remainingText || '移地';
+    }
+    // 外宿
+    else if (/外宿/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'overnight';
+        taskName = remainingText || '外宿';
+    }
+    // 支援
+    else if (/支援/.test(remainingText)) {
+        taskType = 'mission';
+        missionCategory = 'support';
+        taskName = remainingText || '支援';
+    }
+    // 午休
+    else if (/午休|午餐|用餐/.test(remainingText)) {
+        taskType = 'lunch';
+        taskName = '午休';
+        if (!timeMatch) {
+            startHour = 12;
+            endHour = 13;
+        }
+    }
+    // 補休
+    else if (/補休/.test(remainingText)) {
+        taskType = 'comp_leave';
+        taskName = '補休';
+    }
+    // 一般工作
+    else {
+        taskType = 'work';
+        taskName = remainingText || '工作';
+    }
+
+    return {
+        success: true,
+        task: {
+            personId: matchedPerson.id,
+            personName: matchedPerson.name,
+            startHour,
+            endHour,
+            type: taskType,
+            name: taskName,
+            missionCategory
+        }
+    };
+}
+
+function renderImportTaskPreview(successTasks, failedLines) {
+    const preview = document.getElementById('importTaskPreview');
+    let html = '';
+
+    if (successTasks.length > 0) {
+        html += `<div style="color: var(--neon-green); font-weight: bold; margin-bottom: 10px;">✓ 成功解析 (${successTasks.length})</div>`;
+        html += `<div style="margin-bottom: 20px;">`;
+
+        successTasks.forEach((task, index) => {
+            const typeLabels = {
+                'work': '🔧 工作',
+                'leave': '🏖️ 請假',
+                'mission': '🚀 出任務',
+                'lunch': '🍱 午休',
+                'comp_leave': '⏰ 補休'
+            };
+            const typeLabel = typeLabels[task.type] || task.type;
+            const timeStr = `${String(task.startHour).padStart(2, '0')}:00-${task.endHour === 24 ? '24:00' : String(task.endHour).padStart(2, '0') + ':00'}`;
+
+            html += `
+                <div style="padding: 8px 12px; margin-bottom: 5px; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="color: var(--gaming-white);">
+                        <strong>${task.personName}</strong>
+                        <span style="color: var(--gaming-cyan); margin-left: 10px;">${timeStr}</span>
+                    </span>
+                    <span>
+                        <span style="background: rgba(0,255,255,0.2); padding: 2px 8px; border-radius: 3px; font-size: 0.85rem;">${typeLabel}</span>
+                        <span style="color: var(--gaming-white); margin-left: 8px; font-size: 0.9rem;">${task.name}</span>
+                    </span>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+    }
+
+    if (failedLines.length > 0) {
+        html += `<div style="color: var(--gaming-red); font-weight: bold; margin-bottom: 10px;">✗ 無法解析 (${failedLines.length})</div>`;
+        html += `<div>`;
+
+        failedLines.forEach(item => {
+            html += `
+                <div style="padding: 8px 12px; margin-bottom: 5px; background: rgba(255, 0, 0, 0.1); border: 1px solid rgba(255, 0, 0, 0.3); border-radius: 5px;">
+                    <div style="color: var(--gaming-white); font-size: 0.9rem;">第 ${item.lineNum} 行：${item.text}</div>
+                    <div style="color: var(--gaming-red); font-size: 0.8rem; margin-top: 3px;">原因：${item.reason}</div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+    }
+
+    if (successTasks.length === 0 && failedLines.length === 0) {
+        html = `<div style="color: var(--gaming-white); opacity: 0.6; text-align: center; padding-top: 120px;">沒有可解析的內容</div>`;
+    }
+
+    preview.innerHTML = html;
+}
+
+function confirmImportTasks() {
+    if (parsedImportTasks.length === 0) {
+        alert('沒有可匯入的任務');
+        return;
+    }
+
+    if (!confirm(`確定要匯入 ${parsedImportTasks.length} 個任務到 ${currentDateString} 嗎？`)) {
+        return;
+    }
+
+    // 將解析的任務轉換為系統任務格式並新增
+    parsedImportTasks.forEach(task => {
+        const newTask = {
+            id: Date.now() + Math.random() * 10000,
+            name: task.name,
+            date: currentDateString,
+            startHour: task.startHour,
+            endHour: task.endHour,
+            type: task.type,
+            assignees: [task.personId],
+            requiredPeople: 1
+        };
+
+        if (task.missionCategory) {
+            newTask.missionCategory = task.missionCategory;
+        }
+
+        tasks.push(newTask);
+    });
+
+    saveData();
+    updateDisplay();
+    closeModal('importTaskListModal');
+
+    alert(`成功匯入 ${parsedImportTasks.length} 個任務！`);
+    addHistory(`批量匯入 ${parsedImportTasks.length} 個任務`);
+}
+
 function savePerson() {
     const name = document.getElementById('personName').value.trim();
     const rank = parseInt(document.getElementById('personRank').value);
@@ -3761,31 +4068,50 @@ function checkUnassignedPersonnel() {
         return taskDate === currentDateString;
     });
 
-    // 收集所有有任務的人員 ID
+    // 收集所有有任務的人員 ID 和他們的部門
     const assignedPersonIds = new Set();
+    const assignedDepartments = new Set();
     dayTasks.forEach(task => {
         const assignees = task.assignees || [];
         assignees.forEach(personId => {
             assignedPersonIds.add(personId);
+            // 找出這個人的部門
+            const person = personnel.find(p => p.id === personId);
+            if (person && person.department) {
+                assignedDepartments.add(person.department);
+            }
         });
     });
-
-    // 找出沒有被排到任務的人員（在檢視範圍內）
-    const unassignedPersonnel = scopeFilteredPersonnel.filter(p => !assignedPersonIds.has(p.id));
-
-    // 如果所有人都有任務，直接繼續
-    if (unassignedPersonnel.length === 0) {
-        return true;
-    }
 
     // 如果有任務的人數為 0，表示今天完全沒排班
     if (assignedPersonIds.size === 0) {
         return true; // 沒有任何排班，不需要提醒
     }
 
+    // 智慧篩選：只檢查有被排班的部門中的人員
+    // 如果某個部門完全沒有人被排班，就不檢查那個部門
+    let personnelToCheck = scopeFilteredPersonnel;
+
+    if (assignedDepartments.size > 0) {
+        // 只檢查有被排班的部門
+        personnelToCheck = scopeFilteredPersonnel.filter(p => {
+            const personDept = p.department || 'none';
+            // 如果這個人的部門有人被排班，就需要檢查
+            return assignedDepartments.has(personDept);
+        });
+    }
+
+    // 找出沒有被排到任務的人員
+    const unassignedPersonnel = personnelToCheck.filter(p => !assignedPersonIds.has(p.id));
+
+    // 如果所有需要檢查的人都有任務，直接繼續
+    if (unassignedPersonnel.length === 0) {
+        return true;
+    }
+
     // 計算有任務的人數比例
-    const assignedCount = scopeFilteredPersonnel.length - unassignedPersonnel.length;
-    const totalCount = scopeFilteredPersonnel.length;
+    const assignedCount = personnelToCheck.length - unassignedPersonnel.length;
+    const totalCount = personnelToCheck.length;
 
     // 按部門分組未排班人員
     const unassignedByDept = {};

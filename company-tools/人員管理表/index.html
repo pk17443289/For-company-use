@@ -131,6 +131,7 @@
                         <div class="dropdown-category-title">📝 新增與編輯</div>
                         <button id="importPersonListBtn" class="action-dropdown-item">📋 批量匯入人員</button>
                         <button id="addTaskBtn" class="action-dropdown-item">📋 新增單次任務</button>
+                        <button id="importTaskListBtn" class="action-dropdown-item">📝 批量匯入任務</button>
 
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-category-title">⚙️ 設定管理</div>
@@ -774,6 +775,70 @@
             <div class="modal-footer-cyber">
                 <button class="btn-secondary-cyber" onclick="closeModal('importPersonListModal')">取消</button>
                 <button class="btn-primary-cyber" id="confirmImportPersonList">開始匯入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 批量匯入任務 Modal -->
+    <div id="importTaskListModal" class="modal hidden">
+        <div class="modal-content-cyber modal-content-extra-wide">
+            <div class="modal-header-cyber">
+                <h2 class="modal-title-cyber">📝 批量匯入任務</h2>
+                <button class="close-btn-cyber" onclick="closeModal('importTaskListModal')">✕</button>
+            </div>
+            <div class="modal-body-cyber">
+                <div style="margin-bottom: 20px; padding: 15px; background: rgba(0, 255, 136, 0.1); border: 1px solid rgba(0, 255, 136, 0.3); border-radius: 8px;">
+                    <div style="color: var(--neon-green); font-weight: bold; margin-bottom: 10px;">💡 使用說明</div>
+                    <div style="color: var(--gaming-white); font-size: 0.9rem; line-height: 1.8;">
+                        直接貼上文字，系統會自動辨識人員和任務。支援以下格式：<br><br>
+                        <strong style="color: var(--gaming-cyan);">格式範例：</strong><br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">王小明 08:00-17:00 辦公室值班</code><br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">李小華 請假</code><br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">張大雄 09-18 外出洽公</code><br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">陳小美 休假</code><br>
+                        <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">林志明 出任務 駐場</code><br><br>
+                        <strong style="color: var(--gaming-yellow);">⚠️ 注意：</strong>人員姓名必須已存在於系統中才能辨識
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <!-- 左側：輸入區 -->
+                    <div>
+                        <div style="margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <label style="color: var(--gaming-cyan); font-weight: bold;">📋 貼上任務文字</label>
+                            <span id="importTaskDate" style="color: var(--gaming-yellow); font-size: 0.9rem;"></span>
+                        </div>
+                        <textarea id="importTaskText" class="cyber-textarea" style="width: 100%; height: 350px; resize: none;" placeholder="請在此貼上任務文字...
+
+範例：
+王小明 08:00-17:00 辦公室值班
+李小華 請假
+張大雄 09-18 外出洽公
+陳小美 休假
+林志明 出任務 駐場"></textarea>
+                        <button class="btn-primary-cyber" style="margin-top: 10px; width: 100%;" onclick="parseImportTaskText()">🔍 解析文字</button>
+                    </div>
+
+                    <!-- 右側：預覽區 -->
+                    <div>
+                        <div style="margin-bottom: 10px;">
+                            <label style="color: var(--gaming-cyan); font-weight: bold;">📊 解析結果預覽</label>
+                        </div>
+                        <div id="importTaskPreview" style="height: 350px; overflow-y: auto; background: rgba(0,0,0,0.3); border: 1px solid rgba(0,255,255,0.2); border-radius: 8px; padding: 15px;">
+                            <div style="color: var(--gaming-white); opacity: 0.6; text-align: center; padding-top: 120px;">
+                                請先在左側輸入文字後點擊「解析文字」
+                            </div>
+                        </div>
+                        <div id="importTaskStats" style="margin-top: 10px; padding: 10px; background: rgba(0,255,255,0.05); border-radius: 5px; display: none;">
+                            <span style="color: var(--neon-green);">✓ 成功辨識：<strong id="importTaskSuccessCount">0</strong> 筆</span>
+                            <span style="color: var(--gaming-red); margin-left: 15px;">✗ 無法辨識：<strong id="importTaskFailCount">0</strong> 筆</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer-cyber">
+                <button class="btn-secondary-cyber" onclick="closeModal('importTaskListModal')">取消</button>
+                <button class="btn-primary-cyber" id="confirmImportTaskList" onclick="confirmImportTasks()" disabled>確認匯入</button>
             </div>
         </div>
     </div>
