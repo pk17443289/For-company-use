@@ -3745,8 +3745,83 @@ function handleTaskListDrop(e) {
 // 初始化時套用預設時段
 applyTimeMode('now');
 
+// ===== 檢查未排班人員功能 =====
+// 檢查是否有人沒被排到任務，返回 true 表示可以繼續，false 表示使用者取消
+function checkUnassignedPersonnel() {
+    // 根據檢視範圍篩選人員
+    const scopeFilteredPersonnel = filterPersonnelByViewScope(personnel);
+
+    if (scopeFilteredPersonnel.length === 0) {
+        return true; // 沒有人員，直接繼續
+    }
+
+    // 取得當前日期的所有任務
+    const dayTasks = tasks.filter(t => {
+        const taskDate = t.date || formatDate(new Date());
+        return taskDate === currentDateString;
+    });
+
+    // 收集所有有任務的人員 ID
+    const assignedPersonIds = new Set();
+    dayTasks.forEach(task => {
+        const assignees = task.assignees || [];
+        assignees.forEach(personId => {
+            assignedPersonIds.add(personId);
+        });
+    });
+
+    // 找出沒有被排到任務的人員（在檢視範圍內）
+    const unassignedPersonnel = scopeFilteredPersonnel.filter(p => !assignedPersonIds.has(p.id));
+
+    // 如果所有人都有任務，直接繼續
+    if (unassignedPersonnel.length === 0) {
+        return true;
+    }
+
+    // 如果有任務的人數為 0，表示今天完全沒排班
+    if (assignedPersonIds.size === 0) {
+        return true; // 沒有任何排班，不需要提醒
+    }
+
+    // 計算有任務的人數比例
+    const assignedCount = scopeFilteredPersonnel.length - unassignedPersonnel.length;
+    const totalCount = scopeFilteredPersonnel.length;
+
+    // 按部門分組未排班人員
+    const unassignedByDept = {};
+    unassignedPersonnel.forEach(person => {
+        const deptId = person.department || 'none';
+        const dept = departments.find(d => d.id === deptId);
+        const deptName = dept ? dept.name : '無部門';
+
+        if (!unassignedByDept[deptName]) {
+            unassignedByDept[deptName] = [];
+        }
+        unassignedByDept[deptName].push(person.name);
+    });
+
+    // 建立提示訊息
+    let message = `⚠️ 以下人員尚未排班（${unassignedPersonnel.length}/${totalCount} 人）：\n\n`;
+
+    for (const [deptName, names] of Object.entries(unassignedByDept)) {
+        message += `【${deptName}】\n`;
+        message += names.join('、') + '\n\n';
+    }
+
+    message += `已排班：${assignedCount} 人\n`;
+    message += `未排班：${unassignedPersonnel.length} 人\n\n`;
+    message += `是否仍要繼續？`;
+
+    return confirm(message);
+}
+
 // ===== 排班預覽功能 =====
 function showSchedulePreview() {
+    // 檢查是否有未排班人員
+    if (!checkUnassignedPersonnel()) {
+        return; // 使用者取消
+    }
+
     const modal = document.getElementById('schedulePreviewModal');
     const content = document.getElementById('schedulePreviewContent');
     const dateDisplay = document.getElementById('previewDate');
@@ -3970,6 +4045,11 @@ function showSchedulePreview() {
 
 // 匯出為文字格式
 function exportScheduleAsText() {
+    // 檢查是否有未排班人員
+    if (!checkUnassignedPersonnel()) {
+        return; // 使用者取消
+    }
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const daysDiff = Math.round((currentDate - today) / (1000 * 60 * 60 * 24));
@@ -4086,7 +4166,18 @@ function exportScheduleAsText() {
         sortedTasks.forEach(task => {
             const startTime = `${String(task.startHour).padStart(2, '0')}:00`;
             const endTime = task.endHour === 24 ? '24:00' : `${String(task.endHour).padStart(2, '0')}:00`;
-            text += `   ${startTime}-${endTime}  ${task.name}\n`;
+            // 對於請假、出任務、午休等類型，只顯示類型名稱避免人名重複
+            let taskDisplayName = task.name;
+            if (task.type === 'leave') {
+                taskDisplayName = '請假';
+            } else if (task.type === 'mission') {
+                taskDisplayName = '出任務';
+            } else if (task.type === 'lunch') {
+                taskDisplayName = '午休';
+            } else if (task.type === 'comp_leave') {
+                taskDisplayName = '補休';
+            }
+            text += `   ${startTime}-${endTime}  ${taskDisplayName}\n`;
         });
 
         text += `\n`;
@@ -4150,6 +4241,11 @@ function exportScheduleAsText() {
 
 // 匯出為教勤連報告格式
 function exportMilitaryReport() {
+    // 檢查是否有未排班人員
+    if (!checkUnassignedPersonnel()) {
+        return; // 使用者取消
+    }
+
     // 取得月份和日期
     const month = currentDate.getMonth() + 1;
     const day = currentDate.getDate();
@@ -4308,6 +4404,11 @@ function exportMilitaryReport() {
 
 // 匯出為圖片
 function exportScheduleAsImage() {
+    // 檢查是否有未排班人員
+    if (!checkUnassignedPersonnel()) {
+        return; // 使用者取消
+    }
+
     const content = document.getElementById('schedulePreviewContent');
     const dateLabel = document.getElementById('previewDate').textContent;
 
