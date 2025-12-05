@@ -3788,20 +3788,27 @@ function deletePerson(personId) {
     setTimeout(() => toast.remove(), 2000);
 }
 
-function removePersonFromTask(personId, taskId) {
+window.removePersonFromTask = function(personId, taskId) {
+    // 確保 ID 類型一致
+    personId = Number(personId);
+    taskId = Number(taskId);
+
     const person = personnel.find(p => p.id === personId);
     const task = tasks.find(t => t.id === taskId);
 
-    if (!person || !task) return;
+    if (!person || !task) {
+        alert('錯誤：找不到人員或任務，請重新整理頁面後再試');
+        return;
+    }
 
     // 確認是否要移除
     if (!confirm(`確定要將 ${person.name} 從任務「${task.name}」中移除嗎？\n\n移除後該任務將回到任務池中，可重新分配給其他人。`)) {
         return;
     }
 
-    // 從任務的 assignees 中移除該人員
-    if (task.assignees && task.assignees.includes(personId)) {
-        task.assignees = task.assignees.filter(id => id !== personId);
+    // 從任務的 assignees 中移除該人員（處理類型不一致問題）
+    if (task.assignees && task.assignees.some(id => Number(id) === personId)) {
+        task.assignees = task.assignees.filter(id => Number(id) !== personId);
 
         addHistory(`移除任務分配: ${person.name} 的「${task.name}」任務已回到任務池`);
 
@@ -3842,7 +3849,9 @@ function showAddTaskModal() {
     updateTaskWorkCategoryOptions();
     document.getElementById('taskWorkCategory').value = Object.keys(WORK_CATEGORIES)[0] || '';
     document.getElementById('taskStartHour').value = '';
+    document.getElementById('taskStartMinute').value = '0';
     document.getElementById('taskEndHour').value = '';
+    document.getElementById('taskEndMinute').value = '0';
     document.getElementById('taskRequiredPeople').value = '1';
     document.getElementById('taskDescription').value = '';
     document.getElementById('taskModal').classList.remove('hidden');
@@ -3852,7 +3861,9 @@ function saveTask() {
     const nameInput = document.getElementById('taskName');
     const dateInput = document.getElementById('taskDate');
     const startHourInput = document.getElementById('taskStartHour');
+    const startMinuteInput = document.getElementById('taskStartMinute');
     const endHourInput = document.getElementById('taskEndHour');
+    const endMinuteInput = document.getElementById('taskEndMinute');
     const requiredPeopleInput = document.getElementById('taskRequiredPeople');
 
     const name = nameInput.value.trim();
@@ -3860,7 +3871,9 @@ function saveTask() {
     const type = document.getElementById('taskType').value;
     const workCategory = document.getElementById('taskWorkCategory').value;
     const startHour = parseInt(startHourInput.value);
+    const startMinute = parseInt(startMinuteInput.value) || 0;
     const endHour = parseInt(endHourInput.value);
+    const endMinute = parseInt(endMinuteInput.value) || 0;
     const requiredPeople = parseInt(requiredPeopleInput.value);
     const description = document.getElementById('taskDescription').value.trim();
 
@@ -3907,7 +3920,10 @@ function saveTask() {
         return;
     }
 
-    if (startHour >= endHour) {
+    // 使用總分鐘數比較時間
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    if (endTotalMinutes <= startTotalMinutes) {
         alert('結束時間必須大於開始時間');
         endHourInput.style.borderColor = '#FF0080';
         endHourInput.focus();
@@ -3929,7 +3945,9 @@ function saveTask() {
             task.type = type;
             task.workCategory = workCategory;
             task.startHour = startHour;
+            task.startMinute = startMinute;
             task.endHour = endHour;
+            task.endMinute = endMinute;
             task.requiredPeople = requiredPeople;
             task.description = description;
             // 保留現有的 assignees
@@ -3943,13 +3961,15 @@ function saveTask() {
             type,
             workCategory,
             startHour,
+            startMinute,
             endHour,
+            endMinute,
             assignees: [],
             requiredPeople,
             description
         };
         tasks.push(newTask);
-        addHistory(`新增任務: ${name} (${date}, 需要${requiredPeople}人, ${startHour}:00-${endHour}:00)`);
+        addHistory(`新增任務: ${name} (${date}, 需要${requiredPeople}人, ${String(startHour).padStart(2,'0')}:${String(startMinute).padStart(2,'0')}-${String(endHour).padStart(2,'0')}:${String(endMinute).padStart(2,'0')})`);
     }
 
     saveData();
@@ -3969,7 +3989,9 @@ function editTask(taskId) {
     updateTaskWorkCategoryOptions();
     document.getElementById('taskWorkCategory').value = task.workCategory || Object.keys(WORK_CATEGORIES)[0] || '';
     document.getElementById('taskStartHour').value = task.startHour;
+    document.getElementById('taskStartMinute').value = task.startMinute || 0;
     document.getElementById('taskEndHour').value = task.endHour;
+    document.getElementById('taskEndMinute').value = task.endMinute || 0;
     document.getElementById('taskRequiredPeople').value = task.requiredPeople || 1;
     document.getElementById('taskDescription').value = task.description || '';
     document.getElementById('taskModal').classList.remove('hidden');
@@ -3996,8 +4018,12 @@ function showPersonDetail(personId) {
     // 檢測是否為手機版
     const isMobile = window.innerWidth <= 768;
 
-    // 取得該人員的所有任務
-    const personTasks = tasks.filter(t => t.assignees && t.assignees.includes(person.id));
+    // 取得該人員在當前查詢日期的任務
+    const personTasks = tasks.filter(t =>
+        t.assignees &&
+        t.assignees.includes(person.id) &&
+        t.date === currentDateString
+    );
 
     const rankLabel = getRankLabel(person.rank);
     const status = getPersonStatus(person);
@@ -4135,7 +4161,7 @@ function showPersonDetail(personId) {
                             <div style="font-size: ${isMobile ? '0.75rem' : '0.8rem'}; color: var(--gaming-cyan);">${typeText[task.type]}任務</div>
                             ${task.description ? `<div style="font-size: ${isMobile ? '0.75rem' : '0.8rem'}; color: var(--gaming-white); margin-top: 5px; opacity: 0.8; line-height: 1.4;">${task.description}</div>` : ''}
                         </div>
-                        <button onclick="removePersonFromTask(${person.id}, ${task.id})" style="
+                        <button onclick="event.stopPropagation(); removePersonFromTask(${person.id}, ${task.id})" style="
                             padding: ${isMobile ? '6px 10px' : '8px 12px'};
                             background: rgba(255, 107, 107, 0.8);
                             color: white;
@@ -4474,7 +4500,7 @@ function showTaskDetail(taskId) {
                         </div>
                         <div style="font-size: 0.85rem; color: var(--gaming-cyan);">${person.contact}</div>
                     </div>
-                    <button onclick="removePersonFromTask(${task.id}, ${personId})"
+                    <button onclick="event.stopPropagation(); removePersonFromTask(${personId}, ${task.id})"
                             class="task-member-remove-btn"
                             onmouseover="this.style.background='rgba(255,0,0,0.4)'"
                             onmouseout="this.style.background='rgba(255,0,0,0.2)'">
@@ -6463,17 +6489,23 @@ function showStatusTimeRangeModal(personId, statusType) {
         // 午休預設按小時模式 12:00-13:00
         switchStatusTimeMode('hourly');
         document.getElementById('statusStartHour').value = 12;
+        document.getElementById('statusStartMinute').value = 0;
         document.getElementById('statusEndHour').value = 13;
+        document.getElementById('statusEndMinute').value = 0;
     } else if (statusType === 'mission') {
         // 出任務預設按小時模式 8:00-17:00
         switchStatusTimeMode('hourly');
         document.getElementById('statusStartHour').value = 8;
+        document.getElementById('statusStartMinute').value = 0;
         document.getElementById('statusEndHour').value = 17;
+        document.getElementById('statusEndMinute').value = 0;
     } else {
         // 請假預設按天數模式
         switchStatusTimeMode('daily');
         document.getElementById('statusStartHour').value = 0;
+        document.getElementById('statusStartMinute').value = 0;
         document.getElementById('statusEndHour').value = 24;
+        document.getElementById('statusEndMinute').value = 0;
     }
 
     document.getElementById('statusDescription').value = '';
@@ -6527,6 +6559,8 @@ function confirmStatusTimeRange(personId, statusType) {
 
     let startDate, endDate, startHour, endHour;
 
+    let startMinute, endMinute;
+
     if (isHourlyMode) {
         // 按小時模式：同一天，不同時間
         const singleDate = document.getElementById('statusSingleDate').value;
@@ -6538,7 +6572,9 @@ function confirmStatusTimeRange(personId, statusType) {
         startDate = singleDate;
         endDate = singleDate;
         startHour = parseInt(document.getElementById('statusStartHour').value);
+        startMinute = parseInt(document.getElementById('statusStartMinute').value) || 0;
         endHour = parseInt(document.getElementById('statusEndHour').value);
+        endMinute = parseInt(document.getElementById('statusEndMinute').value) || 0;
 
         // 驗證時間
         if (isNaN(startHour) || startHour < 0 || startHour > 23) {
@@ -6546,12 +6582,16 @@ function confirmStatusTimeRange(personId, statusType) {
             return;
         }
 
-        if (isNaN(endHour) || endHour < 1 || endHour > 24) {
-            alert('結束時間必須在 1-24 之間');
+        if (isNaN(endHour) || endHour < 0 || endHour > 24) {
+            alert('結束時間必須在 0-24 之間');
             return;
         }
 
-        if (endHour <= startHour) {
+        // 計算總分鐘數進行比較
+        const startTotalMinutes = startHour * 60 + startMinute;
+        const endTotalMinutes = endHour * 60 + endMinute;
+
+        if (endTotalMinutes <= startTotalMinutes) {
             alert('結束時間必須大於開始時間');
             return;
         }
@@ -6572,7 +6612,9 @@ function confirmStatusTimeRange(personId, statusType) {
 
         // 按天數固定為全天
         startHour = 0;
+        startMinute = 0;
         endHour = 24;
+        endMinute = 0;
     }
 
     const statusNames = {
@@ -6616,12 +6658,14 @@ function confirmStatusTimeRange(personId, statusType) {
     // 如果有衝突的工作，先詢問用戶
     if (conflictingTasks.length > 0) {
         const conflictList = conflictingTasks.map(t => {
-            const timeStr = `${String(t.startHour).padStart(2, '0')}:00-${String(t.endHour).padStart(2, '0')}:00`;
+            const tStartMin = t.startMinute || 0;
+            const tEndMin = t.endMinute || 0;
+            const timeStr = `${String(t.startHour).padStart(2, '0')}:${String(tStartMin).padStart(2, '0')}-${String(t.endHour).padStart(2, '0')}:${String(tEndMin).padStart(2, '0')}`;
             return `• ${t.date} ${timeStr} - ${t.name}`;
         }).join('\n');
 
         const timeDesc = isHourlyMode
-            ? `${startDate} ${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00`
+            ? `${startDate} ${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')} - ${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`
             : startDate === endDate
                 ? `${startDate} 全天`
                 : `${startDate} ~ ${endDate}`;
@@ -6663,7 +6707,9 @@ function confirmStatusTimeRange(personId, statusType) {
             type: statusType,
             date: startDate,
             startHour: startHour,
+            startMinute: startMinute,
             endHour: endHour,
+            endMinute: endMinute,
             assignees: [personId],
             requiredPeople: 1,
             description: description,
@@ -6688,7 +6734,9 @@ function confirmStatusTimeRange(personId, statusType) {
                 type: statusType,
                 date: dateStr,
                 startHour: isFirst && isHourlyMode ? startHour : 0,
+                startMinute: isFirst && isHourlyMode ? startMinute : 0,
                 endHour: isLast && isHourlyMode ? endHour : 24,
+                endMinute: isLast && isHourlyMode ? endMinute : 0,
                 assignees: [personId],
                 requiredPeople: 1,
                 description: description,
@@ -6708,7 +6756,7 @@ function confirmStatusTimeRange(personId, statusType) {
 
     // 記錄歷史
     const timeDesc = isHourlyMode
-        ? `${startDate} ${String(startHour).padStart(2, '0')}:00 - ${String(endHour).padStart(2, '0')}:00`
+        ? `${startDate} ${String(startHour).padStart(2, '0')}:${String(startMinute).padStart(2, '0')} - ${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`
         : startDate === endDate
             ? `${startDate} 全天`
             : `${startDate} ~ ${endDate} (共 ${createdTasks.length} 天)`;
@@ -6956,28 +7004,43 @@ function renderCompensatoryLeaveList() {
 
     container.innerHTML = '';
 
-    // 更新統計資訊
-    const totalLeaves = compensatoryLeaves.length;
-    const scheduledLeaves = compensatoryLeaves.filter(cl => cl.status === 'scheduled').length;
-    const totalHours = compensatoryLeaves.reduce((sum, cl) => sum + cl.remainingHours, 0);
+    // 計算日期範圍（昨天、今天、未來）
+    const now = new Date();
+    const today = formatDate(now);
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = formatDate(yesterday);
+
+    // 過濾：只保留昨天、今天和未來的補休記錄
+    const filteredLeaves = compensatoryLeaves.filter(cl => {
+        const schedDate = cl.scheduledDate || cl.date;
+        // 保留昨天、今天或未來的記錄
+        return schedDate >= yesterdayStr;
+    });
+
+    // 更新統計資訊（基於過濾後的資料）
+    const totalLeaves = filteredLeaves.length;
+    const scheduledLeaves = filteredLeaves.filter(cl => cl.status === 'scheduled').length;
+    const totalHours = filteredLeaves.reduce((sum, cl) => sum + cl.remainingHours, 0);
 
     // 統計今天有補休的人數
-    const today = formatDate(new Date());
-    const todayCompLeaves = compensatoryLeaves.filter(cl => cl.scheduledDate === today).length;
+    const todayCompLeaves = filteredLeaves.filter(cl => cl.scheduledDate === today).length;
 
     document.getElementById('totalCompLeaves').textContent = totalLeaves;
     document.getElementById('pendingCompLeaves').textContent = todayCompLeaves;
     document.getElementById('approvedCompLeaves').textContent = scheduledLeaves;
     document.getElementById('totalCompHours').textContent = totalHours + 'h';
 
-    if (compensatoryLeaves.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gaming-cyan);">目前沒有補休記錄</div>';
+    if (filteredLeaves.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--gaming-cyan);">目前沒有補休記錄（只顯示昨天、今天及未來的記錄）</div>';
         return;
     }
 
     // 按日期和人員分組
-    const sortedLeaves = [...compensatoryLeaves].sort((a, b) => {
-        if (a.date !== b.date) return b.date.localeCompare(a.date);
+    const sortedLeaves = [...filteredLeaves].sort((a, b) => {
+        const dateA = a.scheduledDate || a.date;
+        const dateB = b.scheduledDate || b.date;
+        if (dateA !== dateB) return dateB.localeCompare(dateA);
         return a.personName.localeCompare(b.personName);
     });
 

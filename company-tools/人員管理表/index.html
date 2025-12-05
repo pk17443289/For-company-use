@@ -299,11 +299,33 @@
                 <div class="form-row-cyber">
                     <div class="form-group-cyber">
                         <label>開始時間</label>
-                        <input type="number" id="taskStartHour" min="0" max="23" class="cyber-input" placeholder="0-23">
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <input type="number" id="taskStartHour" min="0" max="23" class="cyber-input" placeholder="時" style="width: 70px;">
+                            <span style="color: var(--gaming-cyan);">:</span>
+                            <select id="taskStartMinute" class="cyber-select" style="width: 80px;">
+                                <option value="0">00</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="40">40</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group-cyber">
                         <label>結束時間</label>
-                        <input type="number" id="taskEndHour" min="0" max="23" class="cyber-input" placeholder="0-23">
+                        <div style="display: flex; gap: 5px; align-items: center;">
+                            <input type="number" id="taskEndHour" min="0" max="24" class="cyber-input" placeholder="時" style="width: 70px;">
+                            <span style="color: var(--gaming-cyan);">:</span>
+                            <select id="taskEndMinute" class="cyber-select" style="width: 80px;">
+                                <option value="0">00</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="30">30</option>
+                                <option value="40">40</option>
+                                <option value="50">50</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group-cyber">
@@ -687,11 +709,33 @@
                     <div class="form-row-cyber">
                         <div class="form-group-cyber">
                             <label>開始時間</label>
-                            <input type="number" id="statusStartHour" class="cyber-input" min="0" max="23" value="8" placeholder="小時 (0-23)">
+                            <div style="display: flex; gap: 5px; align-items: center;">
+                                <input type="number" id="statusStartHour" class="cyber-input" min="0" max="23" value="8" placeholder="時" style="width: 70px;">
+                                <span style="color: var(--gaming-cyan);">:</span>
+                                <select id="statusStartMinute" class="cyber-input" style="width: 80px;">
+                                    <option value="0">00</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="30">30</option>
+                                    <option value="40">40</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
                         </div>
                         <div class="form-group-cyber">
                             <label>結束時間</label>
-                            <input type="number" id="statusEndHour" class="cyber-input" min="1" max="24" value="17" placeholder="小時 (1-24)">
+                            <div style="display: flex; gap: 5px; align-items: center;">
+                                <input type="number" id="statusEndHour" class="cyber-input" min="0" max="24" value="17" placeholder="時" style="width: 70px;">
+                                <span style="color: var(--gaming-cyan);">:</span>
+                                <select id="statusEndMinute" class="cyber-input" style="width: 80px;">
+                                    <option value="0">00</option>
+                                    <option value="10">10</option>
+                                    <option value="20">20</option>
+                                    <option value="30">30</option>
+                                    <option value="40">40</option>
+                                    <option value="50">50</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
