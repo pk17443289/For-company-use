@@ -990,7 +990,7 @@ function closeSuccessModal() {
     modal.classList.remove('show');
 
     // 自動重新載入上次盤點資料，更新畫面狀態
-    fetchLastInventory();
+    loadLastInventory();
 }
 
 // 提交資料
