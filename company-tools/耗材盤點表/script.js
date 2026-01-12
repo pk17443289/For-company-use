@@ -1,5 +1,5 @@
 // Google Sheets API 設定（稍後填入）
-const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyGOfy0Vm6W6nm81wemlEo5RCInmV7X6WAgnPDFlCLRqfFVl19sUEg1h47LUl-2L1aQ/exec'; // 這裡填入你的 Google Apps Script 網址
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrVsJRSAtuLWsjoTGakg7OSoeNgUnZOZDtGtFRdFuLTCs4_kUkvvfr2BqxJ4EAl6U/exec'; // 這裡填入你的 Google Apps Script 網址
 
 // ===== 多語言設定 =====
 let currentLang = localStorage.getItem('inventoryLang') || 'zh';
