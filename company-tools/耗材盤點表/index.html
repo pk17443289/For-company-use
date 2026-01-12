@@ -858,6 +858,89 @@
             gap: 10px;
             justify-content: flex-end;
         }
+
+        /* 成功提交彈窗 */
+        .success-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .success-modal.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .success-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounceIn 0.5s ease 0.2s both;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .success-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: #2e7d32;
+            margin-bottom: 12px;
+        }
+
+        .success-message {
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .success-btn {
+            background: linear-gradient(135deg, #43a047, #2e7d32);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .success-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(46, 125, 50, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -1045,6 +1128,16 @@
                 <button class="btn btn-secondary" onclick="closeModal()" data-i18n="close">關閉</button>
                 <button class="btn btn-primary" onclick="copyOrderList()" data-i18n="copyList">📋 複製清單</button>
             </div>
+        </div>
+    </div>
+
+    <!-- 成功提交彈窗 -->
+    <div id="successModal" class="success-modal">
+        <div class="success-modal-content">
+            <div class="success-icon">✅</div>
+            <div class="success-title" id="successTitle">提交成功！</div>
+            <div class="success-message" id="successMessage">盤點表已成功提交到 Google Sheets</div>
+            <button class="success-btn" onclick="closeSuccessModal()">確定</button>
         </div>
     </div>
 

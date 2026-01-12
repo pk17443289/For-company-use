@@ -66,6 +66,8 @@ const i18n = {
         statusChangedWarning: '\n\n⚠️ 注意：以下項目狀態與上次盤點不同：\n{items}',
         submitting: '⏳ 提交中...',
         submitSuccess: '✅ 盤點表已完成！資料已上傳至 Google Sheets 並自動匯出，請記得通知採購人員！',
+        submitSuccessTitle: '提交成功！',
+        submitSuccessMessage: '盤點表已成功上傳到 Google Sheets\n並自動匯出 CSV 檔案',
         submitFailed: '❌ 提交到 Google Sheets 失敗，但 CSV 已匯出。錯誤：',
         dataSaved: '資料已儲存！',
         dataExported: '資料已匯出！',
@@ -242,6 +244,8 @@ const i18n = {
         statusChangedWarning: '\n\n⚠️ Perhatian: Item berikut statusnya berbeda dari inventaris terakhir:\n{items}',
         submitting: '⏳ Mengirim...',
         submitSuccess: '✅ Inventaris selesai! Data telah diunggah ke Google Sheets dan diekspor, harap beritahu bagian pembelian!',
+        submitSuccessTitle: 'Berhasil Dikirim!',
+        submitSuccessMessage: 'Inventaris berhasil diunggah ke Google Sheets\ndan CSV diekspor otomatis',
         submitFailed: '❌ Gagal mengirim ke Google Sheets, tetapi CSV telah diekspor. Error:',
         dataSaved: 'Data tersimpan!',
         dataExported: 'Data diekspor!',
@@ -963,6 +967,32 @@ function closeModal() {
     document.getElementById('orderModal').classList.remove('show');
 }
 
+// 顯示成功彈窗
+function showSuccessModal(title, message) {
+    const modal = document.getElementById('successModal');
+    const titleEl = document.getElementById('successTitle');
+    const messageEl = document.getElementById('successMessage');
+
+    titleEl.textContent = title || t('submitSuccessTitle');
+    messageEl.textContent = message || t('submitSuccessMessage');
+
+    modal.classList.add('show');
+
+    // 震動反饋（手機）
+    if (navigator.vibrate) {
+        navigator.vibrate([100, 50, 100]);
+    }
+}
+
+// 關閉成功彈窗
+function closeSuccessModal() {
+    const modal = document.getElementById('successModal');
+    modal.classList.remove('show');
+
+    // 自動重新載入上次盤點資料，更新畫面狀態
+    fetchLastInventory();
+}
+
 // 提交資料
 async function submitData() {
     const person = document.getElementById('inventoryPerson').value;
@@ -1053,10 +1083,9 @@ async function submitData() {
             // 自動匯出 CSV 檔案
             exportData();
 
-            showAlert(t('submitSuccess'), 'success');
+            // 顯示成功彈窗（明顯的提示）
+            showSuccessModal(t('submitSuccessTitle'), t('submitSuccessMessage'));
 
-            // 清空表單（可選）
-            // clearForm();
         } catch (error) {
             console.error('提交失敗：', error);
             showAlert(t('submitFailed') + error.message, 'danger');
