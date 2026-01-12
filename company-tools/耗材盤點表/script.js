@@ -986,11 +986,8 @@ function showSuccessModal(title, message) {
 
 // 關閉成功彈窗
 function closeSuccessModal() {
-    const modal = document.getElementById('successModal');
-    modal.classList.remove('show');
-
-    // 自動重新載入上次盤點資料，更新畫面狀態
-    loadLastInventory();
+    // 直接重新整理頁面，確保所有狀態都更新
+    location.reload();
 }
 
 // 提交資料
