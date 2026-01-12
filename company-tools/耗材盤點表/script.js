@@ -114,6 +114,7 @@ const i18n = {
         item_碳粉: '碳粉',
         item_衛生紙: '衛生紙',
         item_桶裝水: '桶裝水',
+        item_燈泡: '燈泡',
 
         // 項目名稱 - 倉庫區
         'item_MO+店貼紙': 'MO+店貼紙',
@@ -130,13 +131,22 @@ const i18n = {
         item_氣泡紙: '氣泡紙',
 
         // 項目名稱 - 倉庫貼紙盤點
-        'item_新人手冊－香蕉': '新人手冊－香蕉',
-        item_防撕貼: '防撕貼',
+        item_小防撕貼: '小防撕貼',
+        item_中防撕貼: '中防撕貼',
+        item_大防撕貼: '大防撕貼',
         item_寄倉貼紙: '寄倉貼紙',
         item_備貨貼紙: '備貨貼紙',
+        item_地球貼: '地球貼',
 
         // 項目名稱 - OPP袋子盤點
-        item_破壞袋: '破壞袋',
+        'item_破壞袋（40╳50）無光粉': '破壞袋（40╳50）無光粉',
+        'item_破壞袋（32╳40）薄荷綠': '破壞袋（32╳40）薄荷綠',
+        'item_破壞袋（35╳45）藍色': '破壞袋（35╳45）藍色',
+        'item_破壞袋（20╳30）杏色': '破壞袋（20╳30）杏色',
+        'item_破壞袋（25╳35）全新粉': '破壞袋（25╳35）全新粉',
+        'item_破壞袋（15╳25）紫色': '破壞袋（15╳25）紫色',
+        'item_破壞袋（15╳40）白色': '破壞袋（15╳40）白色',
+        'item_破壞袋（60╳70）白色': '破壞袋（60╳70）白色',
         'item_１號 6×10 OPP袋': '１號 6×10 OPP袋',
         'item_２號 7×10 OPP袋': '２號 7×10 OPP袋',
         'item_３號 8×25 OPP袋': '３號 8×25 OPP袋',
@@ -169,34 +179,7 @@ const i18n = {
         'item_３０號 45×54 OPP袋': '３０號 45×54 OPP袋',
         'item_３１號 50×74 OPP袋': '３１號 50×74 OPP袋',
         'item_３２號 55×69 OPP袋': '３２號 55×69 OPP袋',
-        'item_３３號 74×55 OPP袋': '３３號 74×55 OPP袋',
-
-        // 補貨條件翻譯
-        threshold_剩兩台就要叫: '剩兩台就要叫',
-        threshold_剩兩個就要叫: '剩兩個就要叫',
-        threshold_剩十隻就要叫: '剩十隻就要叫',
-        threshold_剩兩把就要叫: '剩兩把就要叫',
-        threshold_剩一盒就要叫: '剩一盒就要叫',
-        threshold_剩五條就要買: '剩五條就要買',
-        threshold_剩三條就要買: '剩三條就要買',
-        threshold_剩三條就要叫: '剩三條就要叫',
-        threshold_剩10條就要叫: '剩10條就要叫',
-        threshold_剩三箱就要叫: '剩三箱就要叫',
-        threshold_剩五條就要叫: '剩五條就要叫',
-        threshold_剩五包就要叫: '剩五包就要叫',
-        threshold_剩兩桶就要叫: '剩兩桶就要叫',
-        threshold_剩一綑就要叫: '剩一綑就要叫',
-        'threshold_剩一點1/3就要印': '剩一點1/3就要印',
-        threshold_剩一罐就要叫: '剩一罐就要叫',
-        threshold_低於線就要叫: '低於線就要叫',
-        threshold_剩五綑就要叫: '剩五綑就要叫',
-        threshold_剩三綑就要叫: '剩三綑就要叫',
-        threshold_剩五捆就要叫: '剩五捆就要叫',
-        'threshold_剩1/3就要叫': '剩1/3就要叫',
-        threshold_剩一捆就要叫: '剩一捆就要叫',
-        threshold_剩一個就要叫: '剩一個就要叫',
-        threshold_剩一包就要叫: '剩一包就要叫',
-        threshold_剩兩包就要叫: '剩兩包就要叫'
+        'item_３３號 74×55 OPP袋': '３３號 74×55 OPP袋'
     },
     id: {
         // 頁面標題
@@ -307,6 +290,7 @@ const i18n = {
         item_碳粉: 'Toner',
         item_衛生紙: 'Tisu',
         item_桶裝水: 'Air Galon',
+        item_燈泡: 'Lampu',
 
         // 項目名稱 - 倉庫區
         'item_MO+店貼紙': 'Stiker MO+',
@@ -323,13 +307,22 @@ const i18n = {
         item_氣泡紙: 'Bubble Wrap',
 
         // 項目名稱 - 倉庫貼紙盤點
-        'item_新人手冊－香蕉': 'Buku Panduan Karyawan Baru - Pisang',
-        item_防撕貼: 'Stiker Anti-Sobek',
+        item_小防撕貼: 'Stiker Anti-Sobek Kecil',
+        item_中防撕貼: 'Stiker Anti-Sobek Sedang',
+        item_大防撕貼: 'Stiker Anti-Sobek Besar',
         item_寄倉貼紙: 'Stiker Kirim Gudang',
         item_備貨貼紙: 'Stiker Persiapan Barang',
+        item_地球貼: 'Stiker Bumi',
 
         // 項目名稱 - OPP袋子盤點
-        item_破壞袋: 'Kantong Pengaman',
+        'item_破壞袋（40╳50）無光粉': 'Kantong Pengaman (40╳50) Pink Matte',
+        'item_破壞袋（32╳40）薄荷綠': 'Kantong Pengaman (32╳40) Hijau Mint',
+        'item_破壞袋（35╳45）藍色': 'Kantong Pengaman (35╳45) Biru',
+        'item_破壞袋（20╳30）杏色': 'Kantong Pengaman (20╳30) Aprikot',
+        'item_破壞袋（25╳35）全新粉': 'Kantong Pengaman (25╳35) Pink Baru',
+        'item_破壞袋（15╳25）紫色': 'Kantong Pengaman (15╳25) Ungu',
+        'item_破壞袋（15╳40）白色': 'Kantong Pengaman (15╳40) Putih',
+        'item_破壞袋（60╳70）白色': 'Kantong Pengaman (60╳70) Putih',
         'item_１號 6×10 OPP袋': 'Kantong OPP No.1 6×10',
         'item_２號 7×10 OPP袋': 'Kantong OPP No.2 7×10',
         'item_３號 8×25 OPP袋': 'Kantong OPP No.3 8×25',
@@ -362,34 +355,7 @@ const i18n = {
         'item_３０號 45×54 OPP袋': 'Kantong OPP No.30 45×54',
         'item_３１號 50×74 OPP袋': 'Kantong OPP No.31 50×74',
         'item_３２號 55×69 OPP袋': 'Kantong OPP No.32 55×69',
-        'item_３３號 74×55 OPP袋': 'Kantong OPP No.33 74×55',
-
-        // 補貨條件翻譯
-        threshold_剩兩台就要叫: 'Pesan jika sisa 2 unit',
-        threshold_剩兩個就要叫: 'Pesan jika sisa 2 buah',
-        threshold_剩十隻就要叫: 'Pesan jika sisa 10 buah',
-        threshold_剩兩把就要叫: 'Pesan jika sisa 2 buah',
-        threshold_剩一盒就要叫: 'Pesan jika sisa 1 kotak',
-        threshold_剩五條就要買: 'Beli jika sisa 5 buah',
-        threshold_剩三條就要買: 'Beli jika sisa 3 buah',
-        threshold_剩三條就要叫: 'Pesan jika sisa 3 buah',
-        threshold_剩10條就要叫: 'Pesan jika sisa 10 buah',
-        threshold_剩三箱就要叫: 'Pesan jika sisa 3 kotak',
-        threshold_剩五條就要叫: 'Pesan jika sisa 5 buah',
-        threshold_剩五包就要叫: 'Pesan jika sisa 5 bungkus',
-        threshold_剩兩桶就要叫: 'Pesan jika sisa 2 galon',
-        threshold_剩一綑就要叫: 'Pesan jika sisa 1 ikat',
-        'threshold_剩一點1/3就要印': 'Cetak jika sisa 1/3',
-        threshold_剩一罐就要叫: 'Pesan jika sisa 1 botol',
-        threshold_低於線就要叫: 'Pesan jika di bawah garis',
-        threshold_剩五綑就要叫: 'Pesan jika sisa 5 ikat',
-        threshold_剩三綑就要叫: 'Pesan jika sisa 3 ikat',
-        threshold_剩五捆就要叫: 'Pesan jika sisa 5 ikat',
-        'threshold_剩1/3就要叫': 'Pesan jika sisa 1/3',
-        threshold_剩一捆就要叫: 'Pesan jika sisa 1 gulung',
-        threshold_剩一個就要叫: 'Pesan jika sisa 1 buah',
-        threshold_剩一包就要叫: 'Pesan jika sisa 1 bungkus',
-        threshold_剩兩包就要叫: 'Pesan jika sisa 2 bungkus'
+        'item_３３號 74×55 OPP袋': 'Kantong OPP No.33 74×55'
     }
 };
 
@@ -407,10 +373,10 @@ function getItemNameDisplay(name) {
     return t('item_' + name);
 }
 
-// 取得補貨條件翻譯（顯示用）
+// 取得補貨條件（顯示用）
 function getThresholdDisplay(threshold) {
     if (!threshold) return '';
-    return t('threshold_' + threshold);
+    return threshold;
 }
 
 // 切換語言
@@ -484,7 +450,7 @@ const inventoryData = {
         { name: '大膠帶', threshold: '剩五條就要買', unit: '條', warningValue: 5 },
         { name: '細膠帶', threshold: '剩三條就要買', unit: '條', warningValue: 3 },
         { name: '紙膠帶', threshold: '剩三條就要叫', unit: '條', warningValue: 3 },
-        { name: 'PDA 6×4條碼貼紙', threshold: '剩10條就要叫', unit: '條', warningValue: 10 },
+        { name: '燈泡', threshold: '', unit: '個', warningValue: null },
         { name: 'A4紙', threshold: '剩三箱就要叫', unit: '箱', warningValue: 3 },
         { name: '碳粉', threshold: '剩五條就要叫', unit: '條', warningValue: 5 },
         { name: '衛生紙', threshold: '剩五包就要叫', unit: '包', warningValue: 5 },
@@ -495,23 +461,33 @@ const inventoryData = {
         { name: '倉庫推車標示單', threshold: '剩一點1/3就要印', unit: '疊', warningValue: 0.33 },
         { name: '棧板出貨標示單', threshold: '剩一點1/3就要印', unit: '疊', warningValue: 0.33 },
         { name: '酒精', threshold: '剩一罐就要叫', unit: '罐', warningValue: 1 },
-        { name: '大紙箱', threshold: '低於線就要叫', unit: '個', warningValue: null },
-        { name: '中紙箱', threshold: '低於線就要叫', unit: '個', warningValue: null },
+        { name: '大紙箱', threshold: '下面只剩兩捆就要叫', unit: '捆', warningValue: 2 },
+        { name: '中紙箱', threshold: '下面只剩兩捆就要叫', unit: '捆', warningValue: 2 },
         { name: '15×15×15紙盒', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
         { name: '10×15×4小飛機盒', threshold: '剩三綑就要叫', unit: '綑', warningValue: 3 },
         { name: '18×11×6中飛機盒', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
         { name: '26.5×19×6.5大飛機盒', threshold: '剩三綑就要叫', unit: '綑', warningValue: 3 },
         { name: '防撞角', threshold: '剩1/3就要叫', unit: '箱', warningValue: 0.33 },
-        { name: '氣泡紙', threshold: '剩一捆就要叫', unit: '捆', warningValue: 1 }
+        { name: '氣泡紙', threshold: '剩一捆就要叫', unit: '捆', warningValue: 1 },
+        { name: 'PDA 6×4條碼貼紙', threshold: '剩200個就要叫', unit: '個', warningValue: 200 }
     ],
     meiban: [
-        { name: '新人手冊－香蕉', threshold: '剩一個就要叫', unit: '本', warningValue: 1 },
-        { name: '防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
+        { name: '小防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
+        { name: '中防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
+        { name: '大防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
         { name: '寄倉貼紙', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
-        { name: '備貨貼紙', threshold: '剩兩包就要叫', unit: '包', warningValue: 2 }
+        { name: '備貨貼紙', threshold: '剩兩包就要叫', unit: '包', warningValue: 2 },
+        { name: '地球貼', threshold: '', unit: '張', warningValue: null }
     ],
     xiujuan: [
-        { name: '破壞袋', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
+        { name: '破壞袋（40╳50）無光粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
+        { name: '破壞袋（32╳40）薄荷綠', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
+        { name: '破壞袋（35╳45）藍色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
+        { name: '破壞袋（20╳30）杏色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
+        { name: '破壞袋（25╳35）全新粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
+        { name: '破壞袋（15╳25）紫色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
+        { name: '破壞袋（15╳40）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
+        { name: '破壞袋（60╳70）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
         { name: '１號 6×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
         { name: '２號 7×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
         { name: '３號 8×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
@@ -603,9 +579,10 @@ function generateItems() {
         inventoryData[category].forEach((item, index) => {
             const itemDiv = document.createElement('div');
             itemDiv.className = 'item-row';
-            itemDiv.id = `${category}-${index}`;
+            itemDiv.id = `item-${item.name}`;
 
-            const itemKey = `${category}-${index}`;
+            // 使用項目名稱作為 key，這樣即使順序變動也能正確對應
+            const itemKey = item.name;
             const lastStatus = lastInventoryData[itemKey];
             const lastInfo = lastStatus ?
                 `<div class="last-inventory">${t('lastTime')}：${getStatusTextTranslated(lastStatus)}</div>` :
@@ -626,13 +603,13 @@ function generateItems() {
                     <div class="status-options">
                         <label class="status-option replenishing">
                             <input type="radio" name="${itemKey}" value="補貨中"
-                                   data-category="${category}" data-index="${index}" data-item-name="${item.name}" checked>
+                                   data-category="${category}" data-item-key="${itemKey}" data-item-name="${item.name}" checked>
                             <span class="status-icon">🚚</span>
                             <span class="status-text">${t('replenishingStatus')}</span>
                         </label>
                         <label class="status-option replenished">
                             <input type="radio" name="${itemKey}" value="已補貨"
-                                   data-category="${category}" data-index="${index}" data-item-name="${item.name}">
+                                   data-category="${category}" data-item-key="${itemKey}" data-item-name="${item.name}">
                             <span class="status-icon">✅</span>
                             <span class="status-text">${t('replenishedStatus')}</span>
                         </label>
@@ -644,13 +621,13 @@ function generateItems() {
                     <div class="status-options">
                         <label class="status-option no-need">
                             <input type="radio" name="${itemKey}" value="不用叫貨"
-                                   data-category="${category}" data-index="${index}" data-item-name="${item.name}" checked>
+                                   data-category="${category}" data-item-key="${itemKey}" data-item-name="${item.name}" checked>
                             <span class="status-icon">✅</span>
                             <span class="status-text">${t('noNeedOrderStatus')}</span>
                         </label>
                         <label class="status-option need-order">
                             <input type="radio" name="${itemKey}" value="要叫貨"
-                                   data-category="${category}" data-index="${index}" data-item-name="${item.name}">
+                                   data-category="${category}" data-item-key="${itemKey}" data-item-name="${item.name}">
                             <span class="status-icon">⚠️</span>
                             <span class="status-text">${t('needOrderStatus')}</span>
                         </label>
@@ -717,9 +694,7 @@ function updateItemStatus(input) {
     }
 
     // 檢查與上次盤點的差異
-    const category = input.dataset.category;
-    const index = input.dataset.index;
-    const itemKey = `${category}-${index}`;
+    const itemKey = input.dataset.itemKey;
     const lastStatus = lastInventoryData[itemKey];
 
     // 如果與上次狀態不同，標記為已變更
@@ -815,15 +790,12 @@ function saveData(silent = false) {
     };
 
     document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-        const category = radio.dataset.category;
-        const index = radio.dataset.index;
+        const itemKey = radio.dataset.itemKey;
         const value = radio.value;
 
-        if (!data.items[category]) {
-            data.items[category] = {};
+        if (itemKey) {
+            data.items[itemKey] = value;
         }
-
-        data.items[category][index] = value;
     });
 
     localStorage.setItem('inventoryData', JSON.stringify(data));
@@ -850,16 +822,14 @@ function loadData() {
         }
 
         if (data.items) {
-            Object.keys(data.items).forEach(category => {
-                Object.keys(data.items[category]).forEach(index => {
-                    const value = data.items[category][index];
-                    const itemKey = `${category}-${index}`;
-                    const radio = document.querySelector(`input[name="${itemKey}"][value="${value}"]`);
-                    if (radio) {
-                        radio.checked = true;
-                        updateItemStatus(radio);
-                    }
-                });
+            // 新格式：items 直接是 { itemName: status } 的對應
+            Object.keys(data.items).forEach(itemKey => {
+                const value = data.items[itemKey];
+                const radio = document.querySelector(`input[name="${itemKey}"][value="${value}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    updateItemStatus(radio);
+                }
             });
         }
 
@@ -891,7 +861,7 @@ function exportData() {
 
     Object.keys(inventoryData).forEach(category => {
         inventoryData[category].forEach((item, index) => {
-            const itemKey = `${category}-${index}`;
+            const itemKey = item.name;
             const selected = document.querySelector(`input[name="${itemKey}"]:checked`);
             const status = selected ? selected.value : '未填寫';
 
@@ -920,7 +890,7 @@ function showNeedToOrder() {
 
     Object.keys(inventoryData).forEach(category => {
         inventoryData[category].forEach((item, index) => {
-            const itemKey = `${category}-${index}`;
+            const itemKey = item.name;
 
             // 優先從手機版的 mobileSelections 讀取（如果在手機版）
             let status = null;
@@ -1159,7 +1129,8 @@ function initMobileSwipe() {
 
     Object.keys(inventoryData).forEach(category => {
         inventoryData[category].forEach((item, index) => {
-            const itemKey = `${category}-${index}`;
+            // 使用項目名稱作為 key
+            const itemKey = item.name;
             allItemsFlat.push({
                 ...item,
                 category: category,
@@ -1219,7 +1190,7 @@ function updateCategoryTabs() {
         // 計算該分類「要叫貨」的數量
         let needOrderCount = 0;
         items.forEach((item, index) => {
-            const itemKey = `${category}-${index}`;
+            const itemKey = item.name;
             if (mobileSelections[itemKey] === '要叫貨') {
                 needOrderCount++;
             }
@@ -1726,20 +1697,20 @@ async function submitToGoogleSheets() {
     // 收集所有項目資料
     const items = [];
     const latestInventory = {};
+    const validItemKeys = []; // 收集所有有效的項目名稱，用於清理孤兒資料
+
+    const categoryNames = {
+        ajun: '辦公室區域',
+        warehouse: '倉庫區',
+        meiban: '倉庫貼紙盤點',
+        xiujuan: 'OPP袋子盤點'
+    };
 
     document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
         const category = radio.dataset.category;
-        const index = radio.dataset.index;
         const itemName = radio.dataset.itemName;
+        const itemKey = radio.dataset.itemKey; // 使用項目名稱作為 key
         const status = radio.value;
-        const itemKey = `${category}-${index}`;
-
-        const categoryNames = {
-            ajun: '辦公室區域',
-            warehouse: '倉庫區',
-            meiban: '倉庫貼紙盤點',
-            xiujuan: 'OPP袋子盤點'
-        };
 
         items.push({
             category: categoryNames[category],
@@ -1749,6 +1720,7 @@ async function submitToGoogleSheets() {
         });
 
         latestInventory[itemKey] = status;
+        validItemKeys.push(itemKey);
     });
 
     const payload = {
@@ -1756,7 +1728,8 @@ async function submitToGoogleSheets() {
         date: date,
         person: person,
         items: items,
-        latestInventory: latestInventory
+        latestInventory: latestInventory,
+        validItemKeys: validItemKeys // 傳送有效項目清單，讓後端清理孤兒資料
     };
 
     // 使用 Google Apps Script 的標準方式提交
