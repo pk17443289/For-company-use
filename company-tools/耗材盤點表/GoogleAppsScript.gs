@@ -19,7 +19,7 @@
 // ===== 主要函數 =====
 
 /**
- * 處理 GET 請求（取得上次盤點資料）
+ * 處理 GET 請求（取得上次盤點資料、待採購清單、統計數據等）
  */
 function doGet(e) {
   try {
@@ -27,6 +27,22 @@ function doGet(e) {
 
     if (action === 'getLastInventory') {
       return getLastInventory();
+    }
+
+    if (action === 'getPurchaseList') {
+      return getPurchaseList();
+    }
+
+    if (action === 'getStatistics') {
+      return getStatistics();
+    }
+
+    if (action === 'getReplenishHistory') {
+      return getReplenishHistory(e.parameter.itemKey);
+    }
+
+    if (action === 'getDisabledItems') {
+      return getDisabledItems();
     }
 
     // 如果有 POST 資料透過 GET 傳來（備用方案）
@@ -41,7 +57,7 @@ function doGet(e) {
     return createJsonResponse({
       success: false,
       error: '請指定 action 參數',
-      availableActions: ['getLastInventory'],
+      availableActions: ['getLastInventory', 'getPurchaseList', 'getStatistics', 'getReplenishHistory'],
       receivedParams: e.parameter ? Object.keys(e.parameter) : []
     });
 
@@ -89,6 +105,14 @@ function doPost(e) {
 
     if (action === 'submitInventory') {
       return submitInventory(data);
+    }
+
+    if (action === 'updatePurchaseStatus') {
+      return updatePurchaseStatus(data);
+    }
+
+    if (action === 'markAbnormal') {
+      return markAbnormal(data);
     }
 
     return createJsonResponse({ success: false, error: '未知的操作: ' + action });
@@ -191,11 +215,23 @@ function submitInventory(data) {
     statusSheet.setFrozenRows(1);
   }
 
+  // 取得有效項目清單（用於清理孤兒資料）
+  const validItemKeys = data.validItemKeys || [];
+  const validKeySet = new Set(validItemKeys);
+
   // 取得現有資料
   const existingData = statusSheet.getDataRange().getValues();
   const existingMap = {};
+  const rowsToDelete = []; // 記錄要刪除的孤兒資料行號
+
   for (let i = 1; i < existingData.length; i++) {
-    existingMap[existingData[i][0]] = i + 1; // 記錄行號
+    const itemKey = existingData[i][0];
+    existingMap[itemKey] = i + 1; // 記錄行號
+
+    // 如果這個項目不在有效清單中，標記為要刪除
+    if (validItemKeys.length > 0 && itemKey && !validKeySet.has(itemKey)) {
+      rowsToDelete.push(i + 1);
+    }
   }
 
   // 更新或新增狀態
@@ -210,6 +246,14 @@ function submitInventory(data) {
       // 新增行
       statusSheet.appendRow([itemKey, status, timestamp]);
     }
+  }
+
+  // 刪除孤兒資料（從後面開始刪，避免行號錯亂）
+  if (rowsToDelete.length > 0) {
+    rowsToDelete.sort((a, b) => b - a); // 降序排列
+    rowsToDelete.forEach(rowNum => {
+      statusSheet.deleteRow(rowNum);
+    });
   }
 
   // 3. 記錄到「盤點摘要」工作表（每次盤點一筆摘要）
@@ -243,80 +287,117 @@ function submitInventory(data) {
     replenished
   ]);
 
-  // 4. 更新「待採購」工作表（追蹤採購狀態）
+  // 4. 更新「待採購」工作表（追蹤採購狀態，包含完整時間追蹤）
   let purchaseSheet = ss.getSheetByName('待採購');
-  const expectedHeaders = ['加入時間', '盤點日期', '盤點人員', '分類', '項目名稱', '狀態', '更新時間'];
+  const expectedHeaders = ['項目Key', '分類', '項目名稱', '狀態', '叫貨時間', '補貨中時間', '已補貨時間', '盤點人員', '補貨天數', '異常', '異常開始時間', '異常總天數'];
 
   if (!purchaseSheet) {
     // 建立新工作表
     purchaseSheet = ss.insertSheet('待採購');
-    purchaseSheet.getRange('A1:G1').setValues([expectedHeaders]);
-    purchaseSheet.getRange('A1:G1').setFontWeight('bold');
+    purchaseSheet.getRange('A1:L1').setValues([expectedHeaders]);
+    purchaseSheet.getRange('A1:L1').setFontWeight('bold');
     purchaseSheet.setFrozenRows(1);
   } else {
-    // 檢查並修復標題列
-    const currentHeaders = purchaseSheet.getRange('A1:G1').getValues()[0];
+    // 檢查標題列是否為新格式
+    const currentHeaders = purchaseSheet.getRange('A1:I1').getValues()[0];
     const firstHeader = currentHeaders[0] ? currentHeaders[0].toString() : '';
 
-    // 如果第一格不是「加入時間」，表示標題列有問題，重新設定
-    if (firstHeader !== '加入時間') {
-      purchaseSheet.getRange('A1:G1').setValues([expectedHeaders]);
-      purchaseSheet.getRange('A1:G1').setFontWeight('bold');
+    // 如果不是新格式，重建標題（舊資料會保留但欄位可能對不上）
+    if (firstHeader !== '項目Key') {
+      // 備份舊資料到「待採購_舊版備份」
+      const oldLastRow = purchaseSheet.getLastRow();
+      if (oldLastRow > 1) {
+        let backupSheet = ss.getSheetByName('待採購_舊版備份');
+        if (!backupSheet) {
+          backupSheet = ss.insertSheet('待採購_舊版備份');
+        }
+        const oldData = purchaseSheet.getDataRange().getValues();
+        backupSheet.getRange(1, 1, oldData.length, oldData[0].length).setValues(oldData);
+      }
+      // 清空並重建
+      purchaseSheet.clear();
+      purchaseSheet.getRange('A1:I1').setValues([expectedHeaders]);
+      purchaseSheet.getRange('A1:I1').setFontWeight('bold');
       purchaseSheet.setFrozenRows(1);
-    }
-    // 如果舊版只有5欄，補上新欄位
-    else if (!currentHeaders[5] || currentHeaders[5] !== '狀態') {
-      purchaseSheet.getRange('F1:G1').setValues([['狀態', '更新時間']]);
-      purchaseSheet.getRange('F1:G1').setFontWeight('bold');
     }
   }
 
   // 取得現有待採購資料（從第2行開始，跳過標題）
-  const lastRow = purchaseSheet.getLastRow();
-  const purchaseMap = {}; // key -> 行號
+  const purchaseLastRow = purchaseSheet.getLastRow();
+  const purchaseMap = {}; // itemKey -> { row: 行號, status: 狀態 }
 
-  if (lastRow > 1) {
-    const purchaseData = purchaseSheet.getRange(2, 1, lastRow - 1, 7).getValues();
+  if (purchaseLastRow > 1) {
+    const purchaseData = purchaseSheet.getRange(2, 1, purchaseLastRow - 1, 9).getValues();
     for (let i = 0; i < purchaseData.length; i++) {
-      const category = purchaseData[i][3]; // 分類在第4欄
-      const itemName = purchaseData[i][4]; // 項目名稱在第5欄
-      const status = purchaseData[i][5];   // 狀態在第6欄
+      const itemKey = purchaseData[i][0];   // 項目Key 在第1欄
+      const status = purchaseData[i][3];    // 狀態在第4欄
 
-      // 只追蹤尚未完成的項目
-      if (category && itemName && status !== '已補貨') {
-        const key = category + '-' + itemName;
-        purchaseMap[key] = i + 2; // 行號（1-based，從第2行開始）
+      // 只追蹤「待採購」和「補貨中」的項目（未完成的）
+      if (itemKey && (status === '待採購' || status === '補貨中')) {
+        purchaseMap[itemKey] = {
+          row: i + 2,  // 行號（1-based，從第2行開始）
+          status: status
+        };
       }
     }
   }
 
   // 處理每個項目
   items.forEach(item => {
-    const key = item.category + '-' + item.itemName;
-    const existingRow = purchaseMap[key];
+    const itemKey = item.itemKey || item.itemName;  // 使用 itemKey，若無則用 itemName
+    const existing = purchaseMap[itemKey];
 
     if (item.status === '要叫貨') {
-      // 新增要叫貨的項目（如果不存在）
-      if (!existingRow) {
+      // 新增要叫貨的項目
+      // 無論之前是否有「已補貨」的記錄，都新增一筆新的（代表新的採購週期）
+      if (!existing) {
         purchaseSheet.appendRow([
-          timestamp,
-          date,
-          person,
+          itemKey,
           item.category,
           item.itemName,
           '待採購',
-          timestamp
+          timestamp,  // 叫貨時間
+          '',         // 補貨中時間（尚未）
+          '',         // 已補貨時間（尚未）
+          person,
+          ''          // 補貨天數（完成後計算）
         ]);
+        // 更新 purchaseMap 以便後續處理
+        purchaseMap[itemKey] = {
+          row: purchaseSheet.getLastRow(),
+          status: '待採購'
+        };
       }
     } else if (item.status === '補貨中') {
-      // 更新為補貨中
-      if (existingRow) {
-        purchaseSheet.getRange(existingRow, 6, 1, 2).setValues([['補貨中', timestamp]]);
+      // 更新為補貨中，記錄補貨中時間
+      if (existing && existing.status === '待採購') {
+        purchaseSheet.getRange(existing.row, 4).setValue('補貨中');  // 狀態
+        purchaseSheet.getRange(existing.row, 6).setValue(timestamp); // 補貨中時間
+        existing.status = '補貨中';
       }
     } else if (item.status === '已補貨') {
-      // 更新為已補貨
-      if (existingRow) {
-        purchaseSheet.getRange(existingRow, 6, 1, 2).setValues([['已補貨', timestamp]]);
+      // 更新為已補貨，記錄已補貨時間並計算補貨天數
+      if (existing && (existing.status === '待採購' || existing.status === '補貨中')) {
+        const rowData = purchaseSheet.getRange(existing.row, 1, 1, 9).getValues()[0];
+        const orderTime = rowData[4];  // 叫貨時間
+
+        // 計算補貨天數
+        let replenishDays = '';
+        if (orderTime) {
+          const orderDate = new Date(orderTime);
+          const completedDate = new Date(timestamp);
+          const diffTime = Math.abs(completedDate - orderDate);
+          replenishDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        purchaseSheet.getRange(existing.row, 4).setValue('已補貨');   // 狀態
+        purchaseSheet.getRange(existing.row, 7).setValue(timestamp);  // 已補貨時間
+        purchaseSheet.getRange(existing.row, 9).setValue(replenishDays); // 補貨天數
+
+        // 如果之前沒有記錄補貨中時間，補上
+        if (!rowData[5]) {
+          purchaseSheet.getRange(existing.row, 6).setValue(timestamp);
+        }
       }
     }
   });
@@ -362,22 +443,29 @@ function initializeSpreadsheet() {
     summarySheet.setFrozenRows(1);
   }
 
-  // 建立「待採購」工作表
+  // 建立「待採購」工作表（新版：包含完整時間追蹤）
   let purchaseSheet = ss.getSheetByName('待採購');
+  const purchaseHeaders = ['項目Key', '分類', '項目名稱', '狀態', '叫貨時間', '補貨中時間', '已補貨時間', '盤點人員', '補貨天數'];
+
   if (!purchaseSheet) {
     purchaseSheet = ss.insertSheet('待採購');
-    purchaseSheet.getRange('A1:G1').setValues([['加入時間', '盤點日期', '盤點人員', '分類', '項目名稱', '狀態', '更新時間']]);
-    purchaseSheet.getRange('A1:G1').setFontWeight('bold');
+    purchaseSheet.getRange('A1:I1').setValues([purchaseHeaders]);
+    purchaseSheet.getRange('A1:I1').setFontWeight('bold');
     purchaseSheet.setFrozenRows(1);
-    purchaseSheet.setColumnWidth(6, 80);
+    purchaseSheet.setColumnWidth(1, 120);
+    purchaseSheet.setColumnWidth(2, 100);
+    purchaseSheet.setColumnWidth(3, 150);
+    purchaseSheet.setColumnWidth(4, 80);
+    purchaseSheet.setColumnWidth(5, 150);
+    purchaseSheet.setColumnWidth(6, 150);
     purchaseSheet.setColumnWidth(7, 150);
+    purchaseSheet.setColumnWidth(8, 80);
+    purchaseSheet.setColumnWidth(9, 80);
   } else {
-    // 舊版升級：確保有狀態和更新時間欄位
-    const headers = purchaseSheet.getRange(1, 1, 1, 7).getValues()[0];
-    if (!headers[5] || headers[5] !== '狀態') {
-      purchaseSheet.getRange('F1').setValue('狀態');
-      purchaseSheet.getRange('G1').setValue('更新時間');
-      purchaseSheet.getRange('F1:G1').setFontWeight('bold');
+    // 檢查是否為舊版格式，如果是則提示升級
+    const headers = purchaseSheet.getRange(1, 1, 1, 1).getValues()[0];
+    if (headers[0] !== '項目Key') {
+      SpreadsheetApp.getUi().alert('注意：待採購工作表使用舊格式。\n\n下次提交盤點資料時會自動升級（舊資料會備份到「待採購_舊版備份」）。');
     }
   }
 
@@ -398,7 +486,171 @@ function onOpen() {
   ui.createMenu('耗材盤點')
     .addItem('初始化工作表', 'initializeSpreadsheet')
     .addItem('清空待採購清單', 'clearPurchaseList')
+    .addItem('🔧 修復：從歷史記錄補回待採購', 'repairPurchaseListFromHistory')
     .addToUi();
+}
+
+/**
+ * 修復函數：指定日期，把那天所有「要叫貨」的項目補到待採購表
+ */
+function repairPurchaseListFromHistory() {
+  const ui = SpreadsheetApp.getUi();
+
+  // 讓用戶輸入要修復的日期
+  const response = ui.prompt(
+    '修復待採購清單',
+    '請輸入要補回的盤點日期（格式：YYYY-MM-DD，例如 2025-01-21）：\n\n會把那天所有「要叫貨」的項目補到待採購清單。',
+    ui.ButtonSet.OK_CANCEL
+  );
+
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+
+  const targetDate = response.getResponseText().trim();
+  if (!targetDate || !/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+    ui.alert('日期格式不正確，請使用 YYYY-MM-DD 格式（例如 2025-01-21）');
+    return;
+  }
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // 取得盤點歷史
+  const historySheet = ss.getSheetByName('盤點歷史');
+  if (!historySheet) {
+    ui.alert('找不到「盤點歷史」工作表');
+    return;
+  }
+
+  // 取得或建立待採購表（新格式）
+  let purchaseSheet = ss.getSheetByName('待採購');
+  const expectedHeaders = ['項目Key', '分類', '項目名稱', '狀態', '叫貨時間', '補貨中時間', '已補貨時間', '盤點人員', '補貨天數'];
+
+  if (!purchaseSheet) {
+    purchaseSheet = ss.insertSheet('待採購');
+    purchaseSheet.getRange('A1:I1').setValues([expectedHeaders]);
+    purchaseSheet.getRange('A1:I1').setFontWeight('bold');
+    purchaseSheet.setFrozenRows(1);
+  } else {
+    // 檢查是否為新格式，如果不是就先升級
+    const firstHeader = purchaseSheet.getRange('A1').getValue();
+    if (firstHeader !== '項目Key') {
+      // 備份舊資料
+      const oldLastRow = purchaseSheet.getLastRow();
+      if (oldLastRow > 0) {
+        let backupSheet = ss.getSheetByName('待採購_舊版備份');
+        if (!backupSheet) {
+          backupSheet = ss.insertSheet('待採購_舊版備份');
+        }
+        const oldData = purchaseSheet.getDataRange().getValues();
+        backupSheet.getRange(1, 1, oldData.length, oldData[0].length).setValues(oldData);
+      }
+      // 清空並重建
+      purchaseSheet.clear();
+      purchaseSheet.getRange('A1:I1').setValues([expectedHeaders]);
+      purchaseSheet.getRange('A1:I1').setFontWeight('bold');
+      purchaseSheet.setFrozenRows(1);
+    }
+  }
+
+  // 取得歷史資料
+  const historyLastRow = historySheet.getLastRow();
+  if (historyLastRow <= 1) {
+    ui.alert('盤點歷史是空的');
+    return;
+  }
+
+  const historyData = historySheet.getRange(2, 1, historyLastRow - 1, 6).getValues();
+  // 格式：[時間戳記, 盤點日期, 盤點人員, 分類, 項目名稱, 狀態]
+
+  // 先取得待採購表中已存在的「待採購」和「補貨中」項目
+  const existingPendingItems = new Set();
+  const purchaseLastRow = purchaseSheet.getLastRow();
+
+  if (purchaseLastRow > 1) {
+    const purchaseData = purchaseSheet.getRange(2, 1, purchaseLastRow - 1, 4).getValues();
+    purchaseData.forEach(row => {
+      const itemKey = row[0];
+      const status = row[3];
+      // 只記錄「待採購」和「補貨中」的項目
+      if (itemKey && (status === '待採購' || status === '補貨中')) {
+        existingPendingItems.add(itemKey);
+      }
+    });
+  }
+
+  // 找出指定日期所有「要叫貨」的項目
+  const toAdd = [];
+  const skipped = [];  // 跳過的項目（已存在）
+
+  historyData.forEach(row => {
+    const timestamp = row[0];
+    const date = row[1];  // 盤點日期
+    const person = row[2];
+    const category = row[3];
+    const itemName = row[4];
+    const status = row[5];
+
+    if (!itemName) return;
+
+    // 檢查日期是否匹配
+    let dateStr = '';
+    if (date instanceof Date) {
+      dateStr = Utilities.formatDate(date, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    } else if (typeof date === 'string') {
+      dateStr = date;
+    }
+
+    // 如果是指定日期且狀態是「要叫貨」
+    if (dateStr === targetDate && status === '要叫貨') {
+      // 檢查是否已經在待採購表中（且狀態是待採購或補貨中）
+      if (existingPendingItems.has(itemName)) {
+        skipped.push(itemName);
+      } else {
+        toAdd.push({
+          itemKey: itemName,
+          category: category,
+          itemName: itemName,
+          status: '待採購',
+          orderTime: timestamp,
+          person: person
+        });
+        // 加入 Set 避免同一天重複
+        existingPendingItems.add(itemName);
+      }
+    }
+  });
+
+  if (toAdd.length === 0 && skipped.length === 0) {
+    ui.alert(`在 ${targetDate} 沒有找到「要叫貨」的項目。\n\n請確認日期是否正確。`);
+    return;
+  }
+
+  if (toAdd.length === 0) {
+    ui.alert(`在 ${targetDate} 找到 ${skipped.length} 個「要叫貨」項目，但都已在待採購清單中（待採購或補貨中狀態）。\n\n跳過的項目：\n${skipped.map(i => '• ' + i).join('\n')}`);
+    return;
+  }
+
+  // 批次寫入
+  const rows = toAdd.map(item => [
+    item.itemKey,
+    item.category,
+    item.itemName,
+    item.status,
+    item.orderTime,  // 叫貨時間
+    '',              // 補貨中時間
+    '',              // 已補貨時間
+    item.person,
+    ''               // 補貨天數
+  ]);
+
+  purchaseSheet.getRange(purchaseSheet.getLastRow() + 1, 1, rows.length, 9).setValues(rows);
+
+  let message = `✅ 修復完成！\n\n已將 ${targetDate} 的 ${toAdd.length} 個「要叫貨」項目補到待採購清單：\n\n${toAdd.map(i => '• ' + i.itemName).join('\n')}`;
+
+  if (skipped.length > 0) {
+    message += `\n\n⚠️ 以下 ${skipped.length} 個項目已在待採購清單中，已跳過：\n${skipped.map(i => '• ' + i).join('\n')}`;
+  }
+
+  ui.alert(message);
 }
 
 /**
@@ -419,5 +671,520 @@ function clearPurchaseList() {
     SpreadsheetApp.getUi().alert('待採購清單已清空！');
   } else {
     SpreadsheetApp.getUi().alert('待採購清單是空的');
+  }
+}
+
+/**
+ * 取得待採購清單（給前端採購追蹤頁面使用）
+ */
+function getPurchaseList() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: true, data: [] });
+    }
+
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: true, data: [] });
+    }
+
+    const data = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    const result = [];
+
+    data.forEach((row, index) => {
+      const itemKey = row[0];
+      const status = row[3];
+      const isAbnormal = row[9] === '異常' || row[9] === true;
+
+      // 回傳未完成的項目（待採購、補貨中）和異常項目
+      if (itemKey && (status === '待採購' || status === '補貨中' || isAbnormal)) {
+        result.push({
+          row: index + 2,
+          itemKey: itemKey,
+          category: row[1],
+          itemName: row[2],
+          status: status,
+          orderTime: row[4] ? new Date(row[4]).toISOString() : null,
+          replenishingTime: row[5] ? new Date(row[5]).toISOString() : null,
+          completedTime: row[6] ? new Date(row[6]).toISOString() : null,
+          person: row[7],
+          replenishDays: row[8],
+          isAbnormal: isAbnormal,
+          abnormalStartTime: row[10] ? new Date(row[10]).toISOString() : null,
+          abnormalTotalDays: row[11] || 0
+        });
+      }
+    });
+
+    return createJsonResponse({ success: true, data: result });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'getPurchaseList 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 更新採購狀態（給採購人員標記已到貨使用）
+ */
+function updatePurchaseStatus(data) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: false, error: '找不到待採購工作表' });
+    }
+
+    const itemKey = data.itemKey;
+    const newStatus = data.status;  // '補貨中' 或 '已補貨'
+    const person = data.person || '';
+    const timestamp = new Date();
+
+    // 找到該項目
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: false, error: '待採購清單是空的' });
+    }
+
+    const purchaseData = purchaseSheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    let targetRow = -1;
+
+    for (let i = 0; i < purchaseData.length; i++) {
+      const rowItemKey = purchaseData[i][0];
+      const rowStatus = purchaseData[i][3];
+
+      // 找到對應的項目（且狀態是待採購或補貨中）
+      if (rowItemKey === itemKey && (rowStatus === '待採購' || rowStatus === '補貨中')) {
+        targetRow = i + 2;
+        break;
+      }
+    }
+
+    if (targetRow === -1) {
+      return createJsonResponse({ success: false, error: '找不到該項目或項目已完成' });
+    }
+
+    // 更新狀態
+    if (newStatus === '補貨中') {
+      purchaseSheet.getRange(targetRow, 4).setValue('補貨中');
+      purchaseSheet.getRange(targetRow, 6).setValue(timestamp);  // 補貨中時間
+    } else if (newStatus === '已補貨' || newStatus === '已到貨') {
+      const rowData = purchaseSheet.getRange(targetRow, 1, 1, 9).getValues()[0];
+      const orderTime = rowData[4];
+
+      // 計算補貨天數
+      let replenishDays = '';
+      if (orderTime) {
+        const orderDate = new Date(orderTime);
+        const diffTime = Math.abs(timestamp - orderDate);
+        replenishDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      purchaseSheet.getRange(targetRow, 4).setValue('已補貨');
+      purchaseSheet.getRange(targetRow, 7).setValue(timestamp);  // 已補貨時間
+      purchaseSheet.getRange(targetRow, 9).setValue(replenishDays);
+
+      // 如果沒有補貨中時間，補上
+      if (!rowData[5]) {
+        purchaseSheet.getRange(targetRow, 6).setValue(timestamp);
+      }
+    }
+
+    // 同時更新「最新狀態」工作表
+    let statusSheet = ss.getSheetByName('最新狀態');
+    if (statusSheet) {
+      const statusData = statusSheet.getDataRange().getValues();
+      for (let i = 1; i < statusData.length; i++) {
+        if (statusData[i][0] === itemKey) {
+          const newStatusValue = (newStatus === '已補貨' || newStatus === '已到貨') ? '不用叫貨' : newStatus;
+          statusSheet.getRange(i + 1, 2, 1, 2).setValues([[newStatusValue, timestamp]]);
+          break;
+        }
+      }
+    }
+
+    return createJsonResponse({ success: true, message: '狀態已更新' });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'updatePurchaseStatus 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 標記/取消標記項目為異常（需刪除考慮）
+ */
+function markAbnormal(data) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: false, error: '找不到待採購工作表' });
+    }
+
+    const itemKey = data.itemKey;
+    const markAsAbnormal = data.markAsAbnormal;  // true = 標記異常, false = 取消異常
+    const reason = data.reason || '';  // 異常原因
+    const timestamp = new Date();
+
+    // 找到該項目
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: false, error: '待採購清單是空的' });
+    }
+
+    // 檢查是否有新欄位，如果沒有就新增
+    const headers = purchaseSheet.getRange(1, 1, 1, 12).getValues()[0];
+    if (headers[9] !== '異常') {
+      purchaseSheet.getRange(1, 10).setValue('異常');
+      purchaseSheet.getRange(1, 10).setFontWeight('bold');
+    }
+    if (headers[10] !== '異常開始時間') {
+      purchaseSheet.getRange(1, 11).setValue('異常開始時間');
+      purchaseSheet.getRange(1, 11).setFontWeight('bold');
+    }
+    if (headers[11] !== '異常總天數') {
+      purchaseSheet.getRange(1, 12).setValue('異常總天數');
+      purchaseSheet.getRange(1, 12).setFontWeight('bold');
+    }
+
+    const purchaseData = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    let targetRow = -1;
+    let rowData = null;
+
+    for (let i = 0; i < purchaseData.length; i++) {
+      const rowItemKey = purchaseData[i][0];
+      const rowStatus = purchaseData[i][3];
+      const rowIsAbnormal = purchaseData[i][9] === '異常';
+
+      // 找到對應的項目（待採購、補貨中，或已標記異常）
+      if (rowItemKey === itemKey && (rowStatus === '待採購' || rowStatus === '補貨中' || rowIsAbnormal)) {
+        targetRow = i + 2;
+        rowData = purchaseData[i];
+        break;
+      }
+    }
+
+    if (targetRow === -1) {
+      return createJsonResponse({ success: false, error: '找不到該項目' });
+    }
+
+    // 更新異常狀態
+    if (markAsAbnormal) {
+      // 標記異常：記錄異常開始時間
+      purchaseSheet.getRange(targetRow, 10).setValue('異常');
+      purchaseSheet.getRange(targetRow, 11).setValue(timestamp);  // 異常開始時間
+    } else {
+      // 取消異常：計算這次異常的天數，累加到異常總天數
+      const abnormalStartTime = rowData[10];  // 異常開始時間
+      const previousAbnormalDays = rowData[11] || 0;  // 之前累計的異常天數
+
+      let thisAbnormalDays = 0;
+      if (abnormalStartTime) {
+        const startDate = new Date(abnormalStartTime);
+        const diffTime = Math.abs(timestamp - startDate);
+        thisAbnormalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      const totalAbnormalDays = previousAbnormalDays + thisAbnormalDays;
+
+      purchaseSheet.getRange(targetRow, 10).setValue('');  // 清除異常標記
+      purchaseSheet.getRange(targetRow, 11).setValue('');  // 清除異常開始時間
+      purchaseSheet.getRange(targetRow, 12).setValue(totalAbnormalDays);  // 更新異常總天數
+    }
+
+    // 記錄到「異常記錄」工作表
+    let abnormalSheet = ss.getSheetByName('異常記錄');
+    if (!abnormalSheet) {
+      abnormalSheet = ss.insertSheet('異常記錄');
+      abnormalSheet.getRange('A1:E1').setValues([['時間', '項目Key', '操作', '原因', '備註']]);
+      abnormalSheet.getRange('A1:E1').setFontWeight('bold');
+      abnormalSheet.setFrozenRows(1);
+    }
+
+    abnormalSheet.appendRow([
+      timestamp,
+      itemKey,
+      markAsAbnormal ? '標記異常' : '取消異常',
+      reason,
+      ''
+    ]);
+
+    return createJsonResponse({
+      success: true,
+      message: markAsAbnormal ? '已標記為異常' : '已取消異常標記'
+    });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'markAbnormal 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 取得統計數據（包含補貨週期計算和建議頻率）
+ *
+ * 建議頻率邏輯：
+ * - 基於「叫貨間隔」（多久需要叫一次貨）來判斷消耗速度
+ * - 叫貨間隔短（≤7天）= 消耗快 → 建議每日盤點
+ * - 叫貨間隔中（8-30天）= 消耗中等 → 建議每週盤點
+ * - 叫貨間隔長（>30天）= 消耗慢 → 建議每月盤點
+ */
+function getStatistics() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: true, data: { items: [], summary: {} } });
+    }
+
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: true, data: { items: [], summary: {} } });
+    }
+
+    const data = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
+
+    // 統計每個項目的補貨數據
+    const itemStats = {};
+
+    data.forEach(row => {
+      const itemKey = row[0];
+      const status = row[3];
+      const orderTime = row[4];  // 叫貨時間
+      const replenishDays = row[8];
+      const isAbnormal = row[9] === '異常' || row[9] === true;
+      const abnormalTotalDays = row[11] || 0;
+
+      if (!itemKey) return;
+
+      if (!itemStats[itemKey]) {
+        itemStats[itemKey] = {
+          itemKey: itemKey,
+          category: row[1],
+          itemName: row[2],
+          totalOrders: 0,
+          completedOrders: 0,
+          totalReplenishDays: 0,
+          replenishDaysList: [],
+          orderTimeList: [],  // 新增：記錄所有叫貨時間
+          currentStatus: null,
+          lastOrderTime: null,
+          isAbnormal: false,
+          abnormalTotalDays: 0
+        };
+      }
+
+      itemStats[itemKey].totalOrders++;
+
+      // 記錄叫貨時間（用於計算叫貨間隔）
+      if (orderTime) {
+        itemStats[itemKey].orderTimeList.push(new Date(orderTime));
+      }
+
+      if (status === '已補貨' && replenishDays) {
+        itemStats[itemKey].completedOrders++;
+        itemStats[itemKey].totalReplenishDays += replenishDays;
+        itemStats[itemKey].replenishDaysList.push(replenishDays);
+      }
+
+      if (status === '待採購' || status === '補貨中') {
+        itemStats[itemKey].currentStatus = status;
+        itemStats[itemKey].lastOrderTime = orderTime ? new Date(orderTime).toISOString() : null;
+      }
+
+      // 更新異常狀態（取最新的記錄）
+      if (isAbnormal) {
+        itemStats[itemKey].isAbnormal = true;
+        itemStats[itemKey].currentStatus = '異常';
+      }
+      if (abnormalTotalDays > itemStats[itemKey].abnormalTotalDays) {
+        itemStats[itemKey].abnormalTotalDays = abnormalTotalDays;
+      }
+    });
+
+    // 計算平均補貨天數、叫貨間隔和建議頻率
+    const result = [];
+    let totalItems = 0;
+    let dailyCount = 0;
+    let weeklyCount = 0;
+    let monthlyCount = 0;
+    let abnormalCount = 0;
+    let totalAbnormalDays = 0;
+
+    for (const itemKey in itemStats) {
+      const stats = itemStats[itemKey];
+      let avgReplenishDays = null;
+      let avgOrderInterval = null;  // 新增：平均叫貨間隔
+      let suggestedFrequency = 'weekly';  // 預設每週
+
+      // 統計異常
+      if (stats.isAbnormal) {
+        abnormalCount++;
+      }
+      totalAbnormalDays += stats.abnormalTotalDays || 0;
+
+      // 計算平均補貨天數（從叫貨到收貨）
+      if (stats.completedOrders > 0) {
+        avgReplenishDays = Math.round(stats.totalReplenishDays / stats.completedOrders * 10) / 10;
+      }
+
+      // 計算平均叫貨間隔（每兩次叫貨之間的天數）
+      if (stats.orderTimeList.length >= 2) {
+        // 按時間排序
+        stats.orderTimeList.sort((a, b) => a - b);
+
+        let totalInterval = 0;
+        let intervalCount = 0;
+
+        for (let i = 1; i < stats.orderTimeList.length; i++) {
+          const diffTime = stats.orderTimeList[i] - stats.orderTimeList[i - 1];
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          totalInterval += diffDays;
+          intervalCount++;
+        }
+
+        if (intervalCount > 0) {
+          avgOrderInterval = Math.round(totalInterval / intervalCount * 10) / 10;
+        }
+      }
+
+      // 根據叫貨間隔建議盤點頻率
+      // 叫貨間隔短 = 消耗快 → 需要更頻繁盤點
+      // 叫貨間隔長 = 消耗慢 → 不需要那麼頻繁盤點
+      if (avgOrderInterval !== null) {
+        if (avgOrderInterval <= 7) {
+          // 每週或更短就要叫一次 → 消耗很快，每日盤點
+          suggestedFrequency = 'daily';
+          dailyCount++;
+        } else if (avgOrderInterval <= 30) {
+          // 1個月內會叫貨 → 每週盤點
+          suggestedFrequency = 'weekly';
+          weeklyCount++;
+        } else {
+          // 超過1個月才叫一次 → 每月盤點就夠
+          suggestedFrequency = 'monthly';
+          monthlyCount++;
+        }
+      } else if (stats.totalOrders === 1) {
+        // 只有一筆訂單，無法判斷間隔，先用預設
+        weeklyCount++;
+      } else {
+        // 沒有訂單記錄，預設每週
+        weeklyCount++;
+      }
+
+      totalItems++;
+
+      result.push({
+        ...stats,
+        avgReplenishDays: avgReplenishDays,
+        avgOrderInterval: avgOrderInterval,  // 新增：平均叫貨間隔
+        suggestedFrequency: suggestedFrequency
+      });
+    }
+
+    return createJsonResponse({
+      success: true,
+      data: {
+        items: result,
+        summary: {
+          totalItems: totalItems,
+          dailyCount: dailyCount,
+          weeklyCount: weeklyCount,
+          monthlyCount: monthlyCount,
+          abnormalCount: abnormalCount,
+          totalAbnormalDays: totalAbnormalDays
+        }
+      }
+    });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'getStatistics 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 取得被停用（標記異常）的項目清單
+ */
+function getDisabledItems() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: true, data: [] });
+    }
+
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: true, data: [] });
+    }
+
+    const data = purchaseSheet.getRange(2, 1, lastRow - 1, 10).getValues();
+    const disabledItems = [];
+
+    data.forEach(row => {
+      const itemKey = row[0];
+      const isAbnormal = row[9] === '異常' || row[9] === true;
+
+      // 只回傳被標記異常的項目
+      if (itemKey && isAbnormal) {
+        disabledItems.push({
+          itemKey: itemKey,
+          category: row[1],
+          itemName: row[2]
+        });
+      }
+    });
+
+    return createJsonResponse({ success: true, data: disabledItems });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'getDisabledItems 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 取得特定項目的補貨歷史
+ */
+function getReplenishHistory(itemKey) {
+  try {
+    if (!itemKey) {
+      return createJsonResponse({ success: false, error: '請指定 itemKey 參數' });
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: true, data: [] });
+    }
+
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: true, data: [] });
+    }
+
+    const data = purchaseSheet.getRange(2, 1, lastRow - 1, 9).getValues();
+    const result = [];
+
+    data.forEach(row => {
+      if (row[0] === itemKey) {
+        result.push({
+          itemKey: row[0],
+          category: row[1],
+          itemName: row[2],
+          status: row[3],
+          orderTime: row[4] ? new Date(row[4]).toISOString() : null,
+          replenishingTime: row[5] ? new Date(row[5]).toISOString() : null,
+          completedTime: row[6] ? new Date(row[6]).toISOString() : null,
+          person: row[7],
+          replenishDays: row[8]
+        });
+      }
+    });
+
+    return createJsonResponse({ success: true, data: result });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'getReplenishHistory 錯誤: ' + error.toString() });
   }
 }

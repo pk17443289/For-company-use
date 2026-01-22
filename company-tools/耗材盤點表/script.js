@@ -117,6 +117,7 @@ const i18n = {
         item_衛生紙: '衛生紙',
         item_桶裝水: '桶裝水',
         item_燈泡: '燈泡',
+        item_電池: '電池',
 
         // 項目名稱 - 倉庫區
         'item_MO+店貼紙': 'MO+店貼紙',
@@ -295,6 +296,7 @@ const i18n = {
         item_衛生紙: 'Tisu',
         item_桶裝水: 'Air Galon',
         item_燈泡: 'Lampu',
+        item_電池: 'Baterai',
 
         // 項目名稱 - 倉庫區
         'item_MO+店貼紙': 'Stiker MO+',
@@ -436,100 +438,154 @@ function updatePageLanguage() {
     document.title = t('pageTitle') + ' - ' + t('companyName');
 }
 
-// 盤點項目資料
+// 盤點項目資料（含預設盤點頻率：daily=每日, weekly=每週, monthly=每月）
 const inventoryData = {
     ajun: [
-        { name: '蝸牛', threshold: '剩兩台就要叫', unit: '台', warningValue: 2 },
-        { name: '攝影機', threshold: '', unit: '台', warningValue: null },
-        { name: '小膠帶台', threshold: '剩兩台就要叫', unit: '台', warningValue: 2 },
-        { name: '大膠帶台', threshold: '剩兩台就要叫', unit: '台', warningValue: 2 },
-        { name: '新人制服', threshold: '剩兩個就要叫', unit: '件', warningValue: 2 },
-        { name: '紅筆', threshold: '剩十隻就要叫', unit: '隻', warningValue: 10 },
-        { name: '藍筆', threshold: '剩十隻就要叫', unit: '隻', warningValue: 10 },
-        { name: '奇異筆', threshold: '剩十隻就要叫', unit: '隻', warningValue: 10 },
-        { name: '美工刀', threshold: '剩兩把就要叫', unit: '把', warningValue: 2 },
-        { name: '大刀片', threshold: '剩一盒就要叫', unit: '盒', warningValue: 1 },
-        { name: '小刀片', threshold: '剩一盒就要叫', unit: '盒', warningValue: 1 },
-        { name: '剪刀', threshold: '剩兩把就要叫', unit: '把', warningValue: 2 },
-        { name: '大膠帶', threshold: '剩五條就要買', unit: '條', warningValue: 5 },
-        { name: '細膠帶', threshold: '剩三條就要買', unit: '條', warningValue: 3 },
-        { name: '紙膠帶', threshold: '剩三條就要叫', unit: '條', warningValue: 3 },
-        { name: '燈泡', threshold: '', unit: '個', warningValue: null },
-        { name: 'A4紙', threshold: '剩三箱就要叫', unit: '箱', warningValue: 3 },
-        { name: '碳粉', threshold: '剩五條就要叫', unit: '條', warningValue: 5 },
-        { name: '衛生紙', threshold: '剩五包就要叫', unit: '包', warningValue: 5 },
-        { name: '桶裝水', threshold: '剩兩桶就要叫', unit: '桶', warningValue: 2 }
+        { name: '蝸牛', threshold: '剩兩台就要叫', unit: '台', warningValue: 2, frequency: 'weekly' },
+        { name: '攝影機', threshold: '', unit: '台', warningValue: null, frequency: 'monthly' },
+        { name: '小膠帶台', threshold: '剩兩台就要叫', unit: '台', warningValue: 2, frequency: 'weekly' },
+        { name: '大膠帶台', threshold: '剩兩台就要叫', unit: '台', warningValue: 2, frequency: 'weekly' },
+        { name: '新人制服', threshold: '剩兩個就要叫', unit: '件', warningValue: 2, frequency: 'monthly' },
+        { name: '紅筆', threshold: '剩十隻就要叫', unit: '隻', warningValue: 10, frequency: 'weekly' },
+        { name: '藍筆', threshold: '剩十隻就要叫', unit: '隻', warningValue: 10, frequency: 'weekly' },
+        { name: '奇異筆', threshold: '剩十隻就要叫', unit: '隻', warningValue: 10, frequency: 'weekly' },
+        { name: '美工刀', threshold: '剩兩把就要叫', unit: '把', warningValue: 2, frequency: 'weekly' },
+        { name: '大刀片', threshold: '剩一盒就要叫', unit: '盒', warningValue: 1, frequency: 'weekly' },
+        { name: '小刀片', threshold: '剩一盒就要叫', unit: '盒', warningValue: 1, frequency: 'weekly' },
+        { name: '剪刀', threshold: '剩兩把就要叫', unit: '把', warningValue: 2, frequency: 'weekly' },
+        { name: '大膠帶', threshold: '剩五條就要買', unit: '條', warningValue: 5, frequency: 'daily' },
+        { name: '細膠帶', threshold: '剩三條就要買', unit: '條', warningValue: 3, frequency: 'daily' },
+        { name: '紙膠帶', threshold: '剩三條就要叫', unit: '條', warningValue: 3, frequency: 'weekly' },
+        { name: '燈泡', threshold: '', unit: '個', warningValue: null, frequency: 'monthly' },
+        { name: 'A4紙', threshold: '剩三箱就要叫', unit: '箱', warningValue: 3, frequency: 'weekly' },
+        { name: '碳粉', threshold: '剩五條就要叫', unit: '條', warningValue: 5, frequency: 'weekly' },
+        { name: '衛生紙', threshold: '剩五包就要叫', unit: '包', warningValue: 5, frequency: 'weekly' },
+        { name: '桶裝水', threshold: '剩兩桶就要叫', unit: '桶', warningValue: 2, frequency: 'weekly' },
+        { name: '電池', threshold: '剩五顆就要叫', unit: '顆', warningValue: 5, frequency: 'weekly' }
     ],
     warehouse: [
-        { name: 'MO+店貼紙', threshold: '剩一綑就要叫', unit: '綑', warningValue: 1 },
-        { name: '倉庫推車標示單', threshold: '剩一點1/3就要印', unit: '疊', warningValue: 0.33 },
-        { name: '棧板出貨標示單', threshold: '剩一點1/3就要印', unit: '疊', warningValue: 0.33 },
-        { name: '酒精', threshold: '剩一罐就要叫', unit: '罐', warningValue: 1 },
-        { name: '大紙箱', threshold: '下面只剩兩捆就要叫', unit: '捆', warningValue: 2 },
-        { name: '中紙箱', threshold: '下面只剩兩捆就要叫', unit: '捆', warningValue: 2 },
-        { name: '15×15×15紙盒', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '10×15×4小飛機盒', threshold: '剩三綑就要叫', unit: '綑', warningValue: 3 },
-        { name: '18×11×6中飛機盒', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '26.5×19×6.5大飛機盒', threshold: '剩三綑就要叫', unit: '綑', warningValue: 3 },
-        { name: '防撞角', threshold: '剩1/3就要叫', unit: '箱', warningValue: 0.33 },
-        { name: '氣泡紙', threshold: '剩一捆就要叫', unit: '捆', warningValue: 1 },
-        { name: 'PDA 6×4條碼貼紙', threshold: '剩200個就要叫', unit: '個', warningValue: 200 }
+        { name: 'MO+店貼紙', threshold: '剩一綑就要叫', unit: '綑', warningValue: 1, frequency: 'weekly' },
+        { name: '倉庫推車標示單', threshold: '剩一點1/3就要印', unit: '疊', warningValue: 0.33, frequency: 'weekly' },
+        { name: '棧板出貨標示單', threshold: '剩一點1/3就要印', unit: '疊', warningValue: 0.33, frequency: 'weekly' },
+        { name: '酒精', threshold: '剩一罐就要叫', unit: '罐', warningValue: 1, frequency: 'weekly' },
+        { name: '大紙箱', threshold: '下面只剩七捆就要叫', unit: '捆', warningValue: 7, frequency: 'daily' },
+        { name: '中紙箱', threshold: '下面只剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'daily' },
+        { name: '15×15×15紙盒', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '10×15×4小飛機盒', threshold: '剩三綑就要叫', unit: '綑', warningValue: 3, frequency: 'weekly' },
+        { name: '18×11×6中飛機盒', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '26.5×19×6.5大飛機盒', threshold: '剩三綑就要叫', unit: '綑', warningValue: 3, frequency: 'weekly' },
+        { name: '防撞角', threshold: '剩1/3就要叫', unit: '箱', warningValue: 0.33, frequency: 'weekly' },
+        { name: '氣泡紙', threshold: '剩一捆就要叫', unit: '捆', warningValue: 1, frequency: 'daily' },
+        { name: 'PDA 6×4條碼貼紙', threshold: '剩200個就要叫', unit: '個', warningValue: 200, frequency: 'weekly' }
     ],
     meiban: [
-        { name: '小防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
-        { name: '中防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
-        { name: '大防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
-        { name: '寄倉貼紙', threshold: '剩一包就要叫', unit: '包', warningValue: 1 },
-        { name: '備貨貼紙', threshold: '剩兩包就要叫', unit: '包', warningValue: 2 },
-        { name: '地球貼', threshold: '', unit: '張', warningValue: null }
+        { name: '小防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1, frequency: 'weekly' },
+        { name: '中防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1, frequency: 'weekly' },
+        { name: '大防撕貼', threshold: '剩一包就要叫', unit: '包', warningValue: 1, frequency: 'weekly' },
+        { name: '寄倉貼紙', threshold: '剩一包就要叫', unit: '包', warningValue: 1, frequency: 'weekly' },
+        { name: '備貨貼紙', threshold: '剩兩包就要叫', unit: '包', warningValue: 2, frequency: 'weekly' },
+        { name: '地球貼', threshold: '', unit: '張', warningValue: null, frequency: 'monthly' }
     ],
     xiujuan: [
-        { name: '破壞袋（40╳50）無光粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '破壞袋（32╳40）薄荷綠', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '破壞袋（35╳45）藍色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '破壞袋（20╳30）杏色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '破壞袋（25╳35）全新粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '破壞袋（15╳25）紫色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '破壞袋（15╳40）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '破壞袋（60╳70）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5 },
-        { name: '１號 6×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２號 7×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '３號 8×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '４號 9×14 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '５號 10×27 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '６號 10×20 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '７號 12×14 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '８號 12×20 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '９號 12×28 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１０號 13×23 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１１號 13×29 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１２號 15×22 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１３號 15×39 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１４號 16×19 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１５號 6×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１６號 17×22 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１７號 18×49 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１８號 20×30 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '１９號 20×39 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２０號 24×65 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２１號 27×30 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２２號 28×49 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２３號 28×54 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２４號 30×65 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２５號 35×45 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２６號 35×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２７號 35×85 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２８號 40×44 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '２９號 40×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '３０號 45×54 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '３１號 50×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '３２號 55×69 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 },
-        { name: '３３號 74×55 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5 }
+        { name: '破壞袋（40╳50）無光粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '破壞袋（32╳40）薄荷綠', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '破壞袋（35╳45）藍色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '破壞袋（20╳30）杏色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '破壞袋（25╳35）全新粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '破壞袋（15╳25）紫色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '破壞袋（15╳40）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '破壞袋（60╳70）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
+        { name: '１號 6×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２號 7×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '３號 8×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '４號 9×14 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '５號 10×27 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '６號 10×20 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '７號 12×14 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '８號 12×20 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '９號 12×28 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１０號 13×23 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１１號 13×29 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１２號 15×22 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１３號 15×39 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１４號 16×19 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１５號 6×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１６號 17×22 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１７號 18×49 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１８號 20×30 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '１９號 20×39 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２０號 24×65 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２１號 27×30 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２２號 28×49 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２３號 28×54 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２４號 30×65 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２５號 35×45 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２６號 35×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２７號 35×85 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２８號 40×44 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '２９號 40×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '３０號 45×54 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '３１號 50×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '３２號 55×69 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
+        { name: '３３號 74×55 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' }
     ]
 };
 
+// 取得項目的實際盤點頻率（統計數據優先，否則用預設）
+function getItemFrequency(itemName) {
+    // 如果有統計數據，使用建議的頻率
+    if (statisticsData && statisticsData.items) {
+        const stats = statisticsData.items.find(s => s.itemKey === itemName || s.itemName === itemName);
+        if (stats && stats.suggestedFrequency) {
+            return stats.suggestedFrequency;
+        }
+    }
+    // 否則找預設頻率
+    for (const category in inventoryData) {
+        const item = inventoryData[category].find(i => i.name === itemName);
+        if (item) {
+            return item.frequency || 'weekly';
+        }
+    }
+    return 'weekly';
+}
+
 // 儲存上次盤點資料
 let lastInventoryData = {};
+
+// 儲存被停用（標記異常）的項目
+let disabledItems = new Set();
+
+// ===== 全域載入指示器 =====
+function showLoading() {
+    const el = document.getElementById('globalLoading');
+    if (el) {
+        el.classList.add('show');
+        updateLoadingProgressDirect(0);
+    }
+}
+
+function hideLoading() {
+    const el = document.getElementById('globalLoading');
+    if (el) el.classList.remove('show');
+}
+
+function updateLoadingText(text) {
+    const textEl = document.getElementById('loadingText');
+    if (textEl) textEl.textContent = text;
+}
+
+function updateLoadingProgressDirect(percent) {
+    const fillEl = document.getElementById('loadingProgressFill');
+    const stepEl = document.getElementById('loadingStep');
+
+    if (fillEl) fillEl.style.width = percent + '%';
+    if (stepEl) stepEl.textContent = percent + '%';
+
+    if (percent >= 100) {
+        setTimeout(hideLoading, 300);
+    }
+}
 
 // 初始化頁面
 document.addEventListener('DOMContentLoaded', function() {
@@ -574,35 +630,84 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 初始化按鈕狀態
     updateButtonStates();
+
+    // 更新今日盤點建議並自動套用（靜默模式，不顯示提示）
+    updateTodaySuggestion();
+    applyTodaySuggestion(true);
 });
 
-// 生成項目
+// 今日建議盤點的頻率列表
+let todaySuggestedFrequencies = [];
+
+// 目前篩選的頻率（all=全部, daily=每日, weekly=每週, monthly=每月）
+let currentFrequencyFilter = 'all';
+
+// 生成項目（按區域分類：辦公室/倉庫/貼紙/OPP袋，並在每個項目上顯示頻率標籤）
 function generateItems() {
+    // 區域對應容器
+    const categoryContainers = {
+        ajun: 'ajun-items',
+        warehouse: 'warehouse-items',
+        meiban: 'meiban-items',
+        xiujuan: 'xiujuan-items'
+    };
+
+    // 清空所有容器
+    Object.values(categoryContainers).forEach(containerId => {
+        const container = document.getElementById(containerId);
+        if (container) container.innerHTML = '';
+    });
+
+    // 統計各頻率的項目數量
+    const frequencyCounts = { daily: 0, weekly: 0, monthly: 0 };
+
+    // 為每個區域生成項目
     Object.keys(inventoryData).forEach(category => {
-        const container = document.getElementById(`${category}-items`);
+        const containerId = categoryContainers[category];
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
         inventoryData[category].forEach((item, index) => {
+            // 跳過被標記異常（停用）的項目
+            if (disabledItems.has(item.name)) {
+                return;
+            }
+
+            const itemKey = item.name;
+            // 取得實際頻率（統計數據優先，否則用預設）
+            const frequency = getItemFrequency(itemKey);
+            frequencyCounts[frequency]++;
+
             const itemDiv = document.createElement('div');
             itemDiv.className = 'item-row';
             itemDiv.id = `item-${item.name}`;
+            itemDiv.setAttribute('data-frequency', frequency);
 
-            // 使用項目名稱作為 key，這樣即使順序變動也能正確對應
-            const itemKey = item.name;
             const lastStatus = lastInventoryData[itemKey];
             const lastInfo = lastStatus ?
                 `<div class="last-inventory">${t('lastTime')}：${getStatusTextTranslated(lastStatus)}</div>` :
                 `<div class="last-inventory" style="color: #999;">${t('lastTime')}：${t('noRecord')}</div>`;
+
+            // 取得平均補貨天數（從統計數據）
+            const avgDaysInfo = getAvgReplenishDaysInfo(itemKey);
 
             // 取得翻譯的項目名稱和補貨條件（顯示用）
             const displayName = getItemNameDisplay(item.name);
             const displayThreshold = getThresholdDisplay(item.threshold);
 
             // 根據上次狀態決定顯示哪種選項
-            // 如果上次是「要叫貨」或「補貨中」，則顯示補貨模式選項
             const replenishMode = isReplenishMode(itemKey);
+
+            // 頻率標籤
+            const freqLabels = {
+                daily: '🔴 每日',
+                weekly: '🔵 每週',
+                monthly: '🟢 每月'
+            };
+            const freqTag = `<span class="freq-tag ${frequency}">${freqLabels[frequency]}</span>`;
 
             let statusOptionsHtml;
             if (replenishMode) {
-                // 補貨模式：顯示「補貨中」和「已補貨」選項
                 statusOptionsHtml = `
                     <div class="status-options">
                         <label class="status-option replenishing">
@@ -620,7 +725,6 @@ function generateItems() {
                     </div>
                 `;
             } else {
-                // 正常模式：顯示「不用叫貨」和「要叫貨」選項
                 statusOptionsHtml = `
                     <div class="status-options">
                         <label class="status-option no-need">
@@ -639,11 +743,11 @@ function generateItems() {
                 `;
             }
 
-            // 注意：data-item-name 保持原始中文名稱，用於提交到 Google Sheets
             itemDiv.innerHTML = `
                 <div class="item-header">
-                    <div class="item-name">${displayName}</div>
+                    <div class="item-name">${displayName} ${freqTag}</div>
                     ${item.threshold ? `<div class="item-threshold">⚠️ ${displayThreshold}</div>` : ''}
+                    ${avgDaysInfo}
                     ${lastInfo}
                 </div>
                 ${statusOptionsHtml}
@@ -652,6 +756,197 @@ function generateItems() {
             container.appendChild(itemDiv);
         });
     });
+
+    // 更新各頻率的項目數量
+    const dailyCountEl = document.getElementById('freqDailyCount');
+    const weeklyCountEl = document.getElementById('freqWeeklyCount');
+    const monthlyCountEl = document.getElementById('freqMonthlyCount');
+    if (dailyCountEl) dailyCountEl.textContent = frequencyCounts.daily;
+    if (weeklyCountEl) weeklyCountEl.textContent = frequencyCounts.weekly;
+    if (monthlyCountEl) monthlyCountEl.textContent = frequencyCounts.monthly;
+
+    // 套用目前的篩選
+    applyFrequencyFilter();
+}
+
+// 頻率篩選功能
+function filterByFrequency(frequency) {
+    currentFrequencyFilter = frequency;
+
+    // 更新按鈕狀態
+    document.querySelectorAll('.freq-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.freq === frequency) {
+            btn.classList.add('active');
+        }
+    });
+
+    applyFrequencyFilter();
+
+    // 如果是手機版，重新初始化（使用手動選擇的頻率）
+    if (isMobileView()) {
+        initMobileSwipeWithFilter(frequency);
+    }
+}
+
+// 套用頻率篩選
+function applyFrequencyFilter() {
+    const allItems = document.querySelectorAll('.item-row[data-frequency]');
+
+    allItems.forEach(item => {
+        const itemFreq = item.getAttribute('data-frequency');
+        if (currentFrequencyFilter === 'all' || itemFreq === currentFrequencyFilter) {
+            item.classList.remove('freq-hidden');
+        } else {
+            item.classList.add('freq-hidden');
+        }
+    });
+
+    // 更新區域顯示（如果該區域所有項目都被隱藏，則隱藏整個區域標題）
+    updateCategorySectionsVisibility();
+}
+
+// 更新區域顯示狀態
+function updateCategorySectionsVisibility() {
+    const sections = document.querySelectorAll('.category-section');
+
+    sections.forEach(section => {
+        const visibleItems = section.querySelectorAll('.item-row:not(.freq-hidden)');
+        if (visibleItems.length === 0 && currentFrequencyFilter !== 'all') {
+            section.style.display = 'none';
+        } else {
+            section.style.display = '';
+        }
+    });
+}
+
+// ===== 今日盤點建議功能 =====
+
+// 計算今天應該盤點哪些頻率
+function getTodayFrequencies() {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0=週日, 1=週一, ...
+    const dayOfMonth = today.getDate(); // 1-31
+
+    const frequencies = [];
+
+    // 每日項目每天都要盤
+    frequencies.push('daily');
+
+    // 每週項目在週一盤（可調整）
+    if (dayOfWeek === 1) { // 週一
+        frequencies.push('weekly');
+    }
+
+    // 每月項目在每月1號盤（可調整）
+    if (dayOfMonth === 1) {
+        frequencies.push('monthly');
+    }
+
+    return frequencies;
+}
+
+// 取得今天的描述文字
+function getTodayDescription() {
+    const today = new Date();
+    const dayOfWeek = today.getDay();
+    const dayOfMonth = today.getDate();
+    const month = today.getMonth() + 1;
+
+    const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+    return `${month}月${dayOfMonth}日（${weekDays[dayOfWeek]}）`;
+}
+
+// 更新今日盤點建議顯示
+function updateTodaySuggestion() {
+    const titleEl = document.getElementById('suggestionTitle');
+    const contentEl = document.getElementById('suggestionContent');
+
+    if (!contentEl) return;
+
+    const todayDesc = getTodayDescription();
+    todaySuggestedFrequencies = getTodayFrequencies();
+
+    if (titleEl) {
+        titleEl.textContent = `📅 ${todayDesc}`;
+    }
+
+    // 建立頻率說明
+    const freqInfo = {
+        daily: { icon: '🔴', name: '每日項目' },
+        weekly: { icon: '🔵', name: '每週項目' },
+        monthly: { icon: '🟢', name: '每月項目' }
+    };
+
+    let html = '<div style="margin-bottom: 8px;">';
+
+    if (todaySuggestedFrequencies.length === 1 && todaySuggestedFrequencies[0] === 'daily') {
+        html += '今天是<strong>一般日</strong>，只需盤點：';
+    } else if (todaySuggestedFrequencies.includes('weekly') && !todaySuggestedFrequencies.includes('monthly')) {
+        html += '今天是<strong>週一</strong>，需盤點：';
+    } else if (todaySuggestedFrequencies.includes('monthly')) {
+        html += '今天是<strong>月初</strong>，需盤點：';
+    }
+
+    // 顯示今天需盤的頻率
+    const activeFreqs = todaySuggestedFrequencies.map(f => `${freqInfo[f].icon} ${freqInfo[f].name}`).join(' + ');
+    html += `<strong style="color: #1565c0;">${activeFreqs}</strong>`;
+    html += '</div>';
+
+    // 統計今天需要盤的項目數
+    let todayItemCount = 0;
+    Object.keys(inventoryData).forEach(category => {
+        inventoryData[category].forEach(item => {
+            if (disabledItems.has(item.name)) return;
+            const freq = getItemFrequency(item.name);
+            if (todaySuggestedFrequencies.includes(freq)) {
+                todayItemCount++;
+            }
+        });
+    });
+
+    html += `<div style="font-size: 1.1em;">
+        共 <strong style="color: #1e88e5; font-size: 1.3em;">${todayItemCount}</strong> 個項目（已自動篩選）
+    </div>`;
+
+    contentEl.innerHTML = html;
+}
+
+// 套用今日建議的篩選（系統自動執行）
+function applyTodaySuggestion(silent = true) {
+    // 設定為今日建議模式
+    currentFrequencyFilter = 'today';
+
+    // 套用篩選：只顯示今日建議的頻率
+    const allItems = document.querySelectorAll('.item-row[data-frequency]');
+
+    allItems.forEach(item => {
+        const itemFreq = item.getAttribute('data-frequency');
+        if (todaySuggestedFrequencies.includes(itemFreq)) {
+            item.classList.remove('freq-hidden');
+        } else {
+            item.classList.add('freq-hidden');
+        }
+    });
+
+    updateCategorySectionsVisibility();
+
+    // 重新初始化手機版（如果在手機上）
+    if (isMobileView()) {
+        initMobileSwipe();
+    }
+}
+
+// 取得分類標籤
+function getCategoryLabel(category) {
+    const labels = {
+        ajun: '辦公室',
+        warehouse: '倉庫',
+        meiban: '貼紙',
+        xiujuan: 'OPP袋'
+    };
+    return labels[category] || category;
 }
 
 // 取得狀態文字（原始中文，用於資料儲存）
@@ -677,6 +972,31 @@ function getStatusTextTranslated(status) {
         return '✅ ' + t('replenishedStatus');
     }
     return status;
+}
+
+// 取得平均補貨天數資訊（從統計數據）
+function getAvgReplenishDaysInfo(itemKey) {
+    if (!statisticsData || !statisticsData.items) {
+        return '';
+    }
+
+    const itemStats = statisticsData.items.find(item => item.itemKey === itemKey || item.itemName === itemKey);
+    if (!itemStats || itemStats.avgReplenishDays === null) {
+        return '';
+    }
+
+    const avgDays = itemStats.avgReplenishDays;
+    // 根據天數設定不同顏色
+    let colorStyle = 'color: #666;';
+    if (avgDays > 7) {
+        colorStyle = 'color: #e53935;';  // 紅色：補貨慢，需要頻繁盤點
+    } else if (avgDays <= 3) {
+        colorStyle = 'color: #43a047;';  // 綠色：補貨快
+    } else {
+        colorStyle = 'color: #1e88e5;';  // 藍色：一般
+    }
+
+    return `<div class="item-threshold" style="background: #f5f5f5; border-left-color: #9e9e9e; ${colorStyle}">📦 平均叫貨約 ${avgDays} 天到貨</div>`;
 }
 
 // 判斷項目是否需要顯示補貨模式（上次狀態是「要叫貨」或「補貨中」）
@@ -1138,7 +1458,16 @@ let currentItemIndex = 0;
 // 手機版選擇狀態儲存（獨立於 DOM）
 let mobileSelections = {};
 
-// 分類對應（使用函數取得翻譯名稱）
+// 頻率分類對應
+function getFrequencyInfo() {
+    return {
+        daily: { name: '每日盤', icon: '🔴', color: '#e53935' },
+        weekly: { name: '每週盤', icon: '🔵', color: '#1e88e5' },
+        monthly: { name: '每月盤', icon: '🟢', color: '#43a047' }
+    };
+}
+
+// 原分類對應（保留用於顯示）
 function getCategoryInfo() {
     return {
         ajun: { name: t('office'), icon: '🖊️', color: '#1e88e5' },
@@ -1148,18 +1477,41 @@ function getCategoryInfo() {
     };
 }
 
-// 初始化手機版滑動模式
+// 初始化手機版滑動模式（按區域分類：辦公室→倉庫→貼紙→OPP袋，自動套用今日建議）
 function initMobileSwipe() {
-    // 建立所有項目的扁平列表
+    // 取得今日應盤點的頻率
+    const todayFreqs = getTodayFrequencies();
+
+    // 更新手機版今日建議顯示
+    updateMobileTodaySuggestion(todayFreqs);
+
+    // 建立所有項目的扁平列表（按區域分類排序，只包含今日該盤的項目）
     allItemsFlat = [];
 
-    Object.keys(inventoryData).forEach(category => {
+    // 依區域順序加入項目
+    const categoryOrder = ['ajun', 'warehouse', 'meiban', 'xiujuan'];
+
+    categoryOrder.forEach(category => {
+        if (!inventoryData[category]) return;
+
         inventoryData[category].forEach((item, index) => {
-            // 使用項目名稱作為 key
+            // 跳過被標記異常（停用）的項目
+            if (disabledItems.has(item.name)) {
+                return;
+            }
+
             const itemKey = item.name;
+            const frequency = getItemFrequency(itemKey);
+
+            // 只加入今日該盤的項目
+            if (!todayFreqs.includes(frequency)) {
+                return;
+            }
+
             allItemsFlat.push({
                 ...item,
                 category: category,
+                frequency: frequency,
                 index: index,
                 itemKey: itemKey
             });
@@ -1167,10 +1519,8 @@ function initMobileSwipe() {
             // 根據補貨模式設定預設值（如果尚未設定）
             if (!mobileSelections[itemKey]) {
                 if (isReplenishMode(itemKey)) {
-                    // 補貨模式預設為「補貨中」
                     mobileSelections[itemKey] = '補貨中';
                 } else {
-                    // 正常模式預設為「不用叫貨」
                     mobileSelections[itemKey] = '不用叫貨';
                 }
             }
@@ -1184,6 +1534,7 @@ function initMobileSwipe() {
     generateCategoryTabs();
 
     // 顯示第一個項目
+    currentItemIndex = 0;
     showCurrentItem();
 
     // 更新導航按鈕狀態
@@ -1191,6 +1542,120 @@ function initMobileSwipe() {
 
     // 綁定觸控滑動事件
     bindSwipeEvents();
+}
+
+// 更新手機版今日盤點建議顯示
+function updateMobileTodaySuggestion(todayFreqs) {
+    const textEl = document.getElementById('mobileSuggestionText');
+    if (!textEl) return;
+
+    const todayDesc = getTodayDescription();
+    const freqNames = {
+        daily: '🔴每日',
+        weekly: '🔵每週',
+        monthly: '🟢每月'
+    };
+
+    const freqList = todayFreqs.map(f => freqNames[f]).join(' + ');
+
+    // 計算今日需盤點的項目數
+    let itemCount = 0;
+    Object.keys(inventoryData).forEach(category => {
+        inventoryData[category].forEach(item => {
+            if (disabledItems.has(item.name)) return;
+            const freq = getItemFrequency(item.name);
+            if (todayFreqs.includes(freq)) {
+                itemCount++;
+            }
+        });
+    });
+
+    textEl.innerHTML = `📅 ${todayDesc}<br><strong>${freqList}</strong> 共 <strong>${itemCount}</strong> 項`;
+}
+
+// 根據指定頻率初始化手機版（用於手動篩選）
+function initMobileSwipeWithFilter(frequency) {
+    // 根據篩選條件決定要顯示的頻率
+    let filterFreqs;
+    if (frequency === 'all') {
+        filterFreqs = ['daily', 'weekly', 'monthly'];
+    } else if (frequency === 'today') {
+        filterFreqs = getTodayFrequencies();
+    } else {
+        filterFreqs = [frequency];
+    }
+
+    // 更新手機版建議顯示
+    const textEl = document.getElementById('mobileSuggestionText');
+    if (textEl) {
+        const freqNames = {
+            daily: '🔴每日',
+            weekly: '🔵每週',
+            monthly: '🟢每月'
+        };
+        const freqList = filterFreqs.map(f => freqNames[f]).join(' + ');
+
+        // 計算篩選後的項目數
+        let itemCount = 0;
+        Object.keys(inventoryData).forEach(category => {
+            inventoryData[category].forEach(item => {
+                if (disabledItems.has(item.name)) return;
+                const freq = getItemFrequency(item.name);
+                if (filterFreqs.includes(freq)) {
+                    itemCount++;
+                }
+            });
+        });
+
+        if (frequency === 'all') {
+            textEl.innerHTML = `📋 顯示全部項目<br>共 <strong>${itemCount}</strong> 項`;
+        } else if (frequency === 'today') {
+            const todayDesc = getTodayDescription();
+            textEl.innerHTML = `📅 ${todayDesc}<br><strong>${freqList}</strong> 共 <strong>${itemCount}</strong> 項`;
+        } else {
+            textEl.innerHTML = `🔍 篩選：<strong>${freqList}</strong><br>共 <strong>${itemCount}</strong> 項`;
+        }
+    }
+
+    // 建立篩選後的項目列表
+    allItemsFlat = [];
+    const categoryOrder = ['ajun', 'warehouse', 'meiban', 'xiujuan'];
+
+    categoryOrder.forEach(category => {
+        if (!inventoryData[category]) return;
+
+        inventoryData[category].forEach((item, index) => {
+            if (disabledItems.has(item.name)) return;
+
+            const itemKey = item.name;
+            const itemFreq = getItemFrequency(itemKey);
+
+            // 只加入符合篩選條件的項目
+            if (!filterFreqs.includes(itemFreq)) return;
+
+            allItemsFlat.push({
+                ...item,
+                category: category,
+                frequency: itemFreq,
+                index: index,
+                itemKey: itemKey
+            });
+
+            if (!mobileSelections[itemKey]) {
+                if (isReplenishMode(itemKey)) {
+                    mobileSelections[itemKey] = '補貨中';
+                } else {
+                    mobileSelections[itemKey] = '不用叫貨';
+                }
+            }
+        });
+    });
+
+    syncFromDesktop();
+    generateCategoryTabs();
+    currentItemIndex = 0;
+    showCurrentItem();
+    updateNavButtons();
 }
 
 // 生成分類標籤
@@ -1201,7 +1666,7 @@ function generateCategoryTabs() {
     updateCategoryTabs();
 }
 
-// 更新分類標籤（顯示要叫貨數量）
+// 更新分類標籤（按區域分類，顯示要叫貨數量）
 function updateCategoryTabs() {
     const tabsContainer = document.getElementById('categoryTabs');
     if (!tabsContainer) return;
@@ -1209,29 +1674,32 @@ function updateCategoryTabs() {
     let html = '';
     let startIndex = 0;
 
-    Object.keys(inventoryData).forEach(category => {
-        const info = getCategoryInfo()[category];
-        const items = inventoryData[category];
+    const categoryOrder = ['ajun', 'warehouse', 'meiban', 'xiujuan'];
 
-        // 計算該分類「要叫貨」的數量
+    categoryOrder.forEach(category => {
+        const info = getCategoryInfo()[category];
+        if (!info) return;
+
+        // 計算該區域的項目
+        const categoryItems = allItemsFlat.filter(item => item.category === category);
+
+        // 計算「要叫貨」的數量
         let needOrderCount = 0;
-        items.forEach((item, index) => {
-            const itemKey = item.name;
-            if (mobileSelections[itemKey] === '要叫貨') {
+        categoryItems.forEach(item => {
+            if (mobileSelections[item.itemKey] === '要叫貨') {
                 needOrderCount++;
             }
         });
 
-        // 顯示所有分類，點擊跳到該分類第一項
         const countBadge = needOrderCount > 0
             ? `<span class="tab-count" style="background: #ff5722; color: white;">${needOrderCount}</span>`
-            : `<span class="tab-count">0</span>`;
+            : `<span class="tab-count">${categoryItems.length}</span>`;
 
-        html += `<button class="category-tab" data-category="${category}" data-start="${startIndex}" onclick="jumpToItem(${startIndex})">
+        html += `<button class="category-tab" data-category="${category}" data-start="${startIndex}" onclick="jumpToItem(${startIndex})" style="border-color: ${info.color};">
             ${info.icon} ${info.name} ${countBadge}
         </button>`;
 
-        startIndex += items.length;
+        startIndex += categoryItems.length;
     });
 
     tabsContainer.innerHTML = html;
@@ -1283,6 +1751,9 @@ function showCurrentItem() {
         `<div class="last-inventory">${t('lastTime')}：${getStatusTextTranslated(lastStatus)}</div>` :
         `<div class="last-inventory" style="color: #999;">${t('lastTime')}：${t('noRecord')}</div>`;
 
+    // 取得平均補貨天數資訊
+    const avgDaysInfo = getAvgReplenishDaysInfo(itemKey);
+
     let statusOptionsHtml;
     if (replenishMode) {
         // 補貨模式：顯示「補貨中」和「已補貨」選項
@@ -1326,10 +1797,19 @@ function showCurrentItem() {
         `;
     }
 
+    // 頻率標籤
+    const freqLabels = {
+        daily: '🔴 每日',
+        weekly: '🔵 每週',
+        monthly: '🟢 每月'
+    };
+    const freqTag = `<span class="freq-tag ${item.frequency}" style="margin-left: 8px;">${freqLabels[item.frequency]}</span>`;
+
     container.innerHTML = `
         <div class="swipe-card" data-item-key="${itemKey}">
-            <div class="item-name">${displayName}</div>
+            <div class="item-name">${displayName} ${freqTag}</div>
             ${item.threshold ? `<div class="item-threshold">⚠️ ${displayThreshold}</div>` : ''}
+            ${avgDaysInfo}
             ${lastInfo}
             ${statusOptionsHtml}
         </div>
@@ -1368,10 +1848,15 @@ function showCurrentItem() {
     updateMobileProgress();
     updateMobileStats();
 
-    // 更新分類名稱
+    // 更新分類名稱（顯示區域 + 頻率標籤）
     const categoryNameEl = document.getElementById('mobileCategoryName');
     if (categoryNameEl) {
-        categoryNameEl.textContent = `${info.icon} ${info.name}`;
+        const freqLabels = {
+            daily: '🔴 每日',
+            weekly: '🔵 每週',
+            monthly: '🟢 每月'
+        };
+        categoryNameEl.textContent = `${info.icon} ${info.name} (${freqLabels[item.frequency]})`;
     }
 }
 
@@ -1673,40 +2158,97 @@ async function testGoogleSheetsConnection() {
     }
 }
 
-// 從 Google Sheets 載入上次盤點資料
+// 從 Google Sheets 載入所有資料（並行載入加速）
 async function loadLastInventory() {
     if (!GOOGLE_SCRIPT_URL) {
-        console.log('未設定 Google Sheets URL，跳過載入上次盤點資料');
+        console.log('未設定 Google Sheets URL，跳過載入');
+        hideLoading();
         return;
     }
 
+    showLoading();
+    updateLoadingText('正在連接伺服器...');
+
     try {
-        const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getLastInventory');
-        const data = await response.json();
+        // 並行載入所有資料（速度快很多）
+        const [inventoryResponse, disabledResponse, purchaseResponse, statsResponse] = await Promise.all([
+            fetch(GOOGLE_SCRIPT_URL + '?action=getLastInventory'),
+            fetch(GOOGLE_SCRIPT_URL + '?action=getDisabledItems'),
+            fetch(GOOGLE_SCRIPT_URL + '?action=getPurchaseList'),
+            fetch(GOOGLE_SCRIPT_URL + '?action=getStatistics')
+        ]);
 
-        if (data.success && data.data) {
-            lastInventoryData = data.data;
+        updateLoadingText('處理資料中...');
+        updateLoadingProgressDirect(50);
+
+        // 解析所有回應
+        const [inventoryData, disabledData, purchaseResult, statsData] = await Promise.all([
+            inventoryResponse.json(),
+            disabledResponse.json(),
+            purchaseResponse.json(),
+            statsResponse.json()
+        ]);
+
+        updateLoadingProgressDirect(80);
+
+        // 處理上次盤點資料
+        if (inventoryData.success && inventoryData.data) {
+            lastInventoryData = inventoryData.data;
             console.log('成功載入上次盤點資料', lastInventoryData);
+        }
 
-            // 重新生成項目以顯示上次盤點數量
-            document.querySelectorAll('.items-grid').forEach(grid => grid.innerHTML = '');
-            generateItems();
+        // 處理停用項目清單
+        if (disabledData.success && disabledData.data) {
+            disabledItems = new Set(disabledData.data.map(item => item.itemKey));
+            console.log('成功載入停用項目清單', disabledItems);
+        }
 
-            // 重新綁定事件監聽器
-            document.querySelectorAll('input[type="radio"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    updateItemStatus(this);
-                    updateStats();
-                    updateButtonStates();
-                    autoSave();
-                });
+        // 處理採購追蹤清單
+        if (purchaseResult.success) {
+            purchaseListData = purchaseResult.data || [];
+            renderPurchaseList(purchaseListData);
+            updatePurchaseBadge();
+            console.log('成功載入採購追蹤清單', purchaseListData);
+        }
+
+        // 處理統計數據
+        if (statsData.success && statsData.data) {
+            statisticsData = statsData.data;
+            renderStatistics(statisticsData);
+            console.log('成功載入統計數據', statisticsData);
+        }
+
+        updateLoadingText('載入完成！');
+        updateLoadingProgressDirect(100);
+
+        // 重新生成項目以顯示上次盤點數量（會過濾掉停用項目）
+        document.querySelectorAll('.items-grid').forEach(grid => grid.innerHTML = '');
+        generateItems();
+
+        // 重新綁定事件監聽器
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                updateItemStatus(this);
+                updateStats();
+                updateButtonStates();
+                autoSave();
             });
+        });
 
-            // 重新載入本地儲存的資料
-            loadData();
+        // 重新載入本地儲存的資料
+        loadData();
+
+        // 重新更新今日盤點建議並套用（因為統計數據載入後頻率可能有變動）
+        updateTodaySuggestion();
+        applyTodaySuggestion(true);
+
+        // 如果是手機版，確保重新初始化
+        if (isMobileView()) {
+            initMobileSwipe();
         }
     } catch (error) {
-        console.error('載入上次盤點資料失敗：', error);
+        console.error('載入資料失敗：', error);
+        hideLoading();
         // 不顯示錯誤訊息，因為可能是第一次使用
     }
 }
@@ -1802,3 +2344,573 @@ async function submitToGoogleSheets() {
         return true;
     }
 }
+
+// ===== Tab 切換功能 =====
+
+let currentTab = 'inventory';
+let purchaseListData = [];
+let statisticsData = null;
+let currentPurchaseFilter = 'all';
+
+// 切換主要 Tab
+function switchMainTab(tabName) {
+    currentTab = tabName;
+
+    // 更新 Tab 按鈕狀態
+    document.querySelectorAll('.main-tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.tab === tabName) {
+            tab.classList.add('active');
+        }
+    });
+
+    // 更新 Tab 面板顯示
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    document.getElementById(tabName + 'Panel').classList.add('active');
+
+    // 如果數據尚未載入，則載入（通常已在頁面初始化時載入）
+    if (tabName === 'purchase' && purchaseListData.length === 0) {
+        loadPurchaseList();
+    } else if (tabName === 'dashboard' && !statisticsData) {
+        loadStatistics();
+    }
+}
+
+// ===== 採購追蹤功能 =====
+
+// 載入待採購清單
+async function loadPurchaseList() {
+    if (!GOOGLE_SCRIPT_URL) {
+        renderPurchaseList([]);
+        return;
+    }
+
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getPurchaseList');
+        const result = await response.json();
+
+        if (result.success) {
+            purchaseListData = result.data || [];
+            renderPurchaseList(purchaseListData);
+            updatePurchaseBadge();
+        } else {
+            console.error('載入待採購清單失敗：', result.error);
+            renderPurchaseList([]);
+        }
+    } catch (error) {
+        console.error('載入待採購清單失敗：', error);
+        renderPurchaseList([]);
+    }
+}
+
+// 超時設定
+let overdueSettings = {
+    warningDays: 2,
+    dangerDays: 3
+};
+
+// 載入超時設定
+function loadOverdueSettings() {
+    const saved = localStorage.getItem('overdueSettings');
+    if (saved) {
+        try {
+            overdueSettings = JSON.parse(saved);
+            document.getElementById('warningDays').value = overdueSettings.warningDays;
+            document.getElementById('dangerDays').value = overdueSettings.dangerDays;
+        } catch (e) {}
+    }
+}
+
+// 儲存超時設定
+function saveOverdueSettings() {
+    overdueSettings.warningDays = parseInt(document.getElementById('warningDays').value) || 3;
+    overdueSettings.dangerDays = parseInt(document.getElementById('dangerDays').value) || 7;
+    localStorage.setItem('overdueSettings', JSON.stringify(overdueSettings));
+}
+
+// 渲染待採購清單
+function renderPurchaseList(data) {
+    const container = document.getElementById('purchaseList');
+
+    // 計算每個項目的等待天數（扣除異常天數）
+    data.forEach(item => {
+        if (item.orderTime) {
+            const orderDate = new Date(item.orderTime);
+            const now = new Date();
+            const diffTime = Math.abs(now - orderDate);
+            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const abnormalDays = item.abnormalTotalDays || 0;
+            item.waitDays = Math.max(0, totalDays - abnormalDays);
+        } else {
+            item.waitDays = 0;
+        }
+    });
+
+    // 統計各類別數量
+    const counts = {
+        all: data.filter(item => !item.isAbnormal).length,
+        pending: data.filter(item => item.status === '待採購' && !item.isAbnormal).length,
+        replenishing: data.filter(item => item.status === '補貨中' && !item.isAbnormal).length,
+        overdue: data.filter(item => item.waitDays >= overdueSettings.warningDays && !item.isAbnormal).length,
+        abnormal: data.filter(item => item.isAbnormal).length
+    };
+
+    // 更新計數顯示
+    const countAllEl = document.getElementById('purchaseCountAll');
+    const countPendingEl = document.getElementById('purchaseCountPending');
+    const countReplenishingEl = document.getElementById('purchaseCountReplenishing');
+    const countOverdueEl = document.getElementById('purchaseCountOverdue');
+    const countAbnormalEl = document.getElementById('purchaseCountAbnormal');
+
+    if (countAllEl) countAllEl.textContent = counts.all;
+    if (countPendingEl) countPendingEl.textContent = counts.pending;
+    if (countReplenishingEl) countReplenishingEl.textContent = counts.replenishing;
+    if (countOverdueEl) countOverdueEl.textContent = counts.overdue;
+    if (countAbnormalEl) countAbnormalEl.textContent = counts.abnormal;
+
+    // 重新計算等待天數（避免重複計算）
+    data.forEach(item => {
+        if (item.orderTime) {
+            const orderDate = new Date(item.orderTime);
+            const now = new Date();
+            const diffTime = Math.abs(now - orderDate);
+            const totalDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            // 扣除異常總天數
+            const abnormalDays = item.abnormalTotalDays || 0;
+            item.waitDays = Math.max(0, totalDays - abnormalDays);
+            item.totalDays = totalDays;  // 保留總天數供參考
+            item.abnormalDays = abnormalDays;
+        } else {
+            item.waitDays = 0;
+            item.totalDays = 0;
+            item.abnormalDays = 0;
+        }
+    });
+
+    // 根據篩選條件過濾
+    let filteredData = data;
+    if (currentPurchaseFilter === 'pending') {
+        filteredData = data.filter(item => item.status === '待採購' && !item.isAbnormal);
+    } else if (currentPurchaseFilter === 'replenishing') {
+        filteredData = data.filter(item => item.status === '補貨中' && !item.isAbnormal);
+    } else if (currentPurchaseFilter === 'overdue') {
+        filteredData = data.filter(item => item.waitDays >= overdueSettings.warningDays && !item.isAbnormal);
+    } else if (currentPurchaseFilter === 'abnormal') {
+        filteredData = data.filter(item => item.isAbnormal);
+    } else {
+        // all - 不顯示異常項目（除非專門篩選）
+        filteredData = data.filter(item => !item.isAbnormal);
+    }
+
+    if (filteredData.length === 0) {
+        const emptyMessage = currentPurchaseFilter === 'abnormal'
+            ? '目前沒有標記為異常的項目'
+            : currentPurchaseFilter === 'overdue'
+            ? '太好了！沒有超時的項目'
+            : '目前沒有待處理的採購項目';
+
+        container.innerHTML = `
+            <div class="purchase-empty">
+                <div class="purchase-empty-icon">✅</div>
+                <div class="purchase-empty-text">${emptyMessage}</div>
+            </div>
+        `;
+        return;
+    }
+
+    // 按等待天數排序（最久的在前面）
+    filteredData.sort((a, b) => (b.waitDays || 0) - (a.waitDays || 0));
+
+    let html = '';
+    filteredData.forEach(item => {
+        let statusClass = item.status === '待採購' ? 'status-pending' : 'status-replenishing';
+        const orderTime = item.orderTime ? formatDateTime(item.orderTime) : '-';
+        const replenishingTime = item.replenishingTime ? formatDateTime(item.replenishingTime) : '-';
+        const waitDays = item.waitDays || 0;
+
+        // 超時警告樣式
+        let overdueClass = '';
+        let overdueBadge = '';
+        if (!item.isAbnormal) {
+            if (waitDays >= overdueSettings.dangerDays) {
+                overdueClass = 'overdue-danger';
+                overdueBadge = `<span class="overdue-badge danger">🔴 超過 ${waitDays} 天</span>`;
+            } else if (waitDays >= overdueSettings.warningDays) {
+                overdueClass = 'overdue-warning';
+                overdueBadge = `<span class="overdue-badge warning">⚠️ 已 ${waitDays} 天</span>`;
+            }
+        }
+
+        // 異常樣式
+        let abnormalBadge = '';
+        if (item.isAbnormal) {
+            statusClass = 'marked-abnormal';
+            overdueClass = '';
+            abnormalBadge = `<span class="abnormal-badge">🚫 異常</span>`;
+        }
+
+        html += `
+            <div class="purchase-item ${statusClass} ${overdueClass}">
+                <div class="purchase-item-info">
+                    <div class="purchase-item-name">
+                        ${item.itemName}
+                        ${overdueBadge}
+                        ${abnormalBadge}
+                    </div>
+                    <div class="purchase-item-category">${item.category}</div>
+                    <div class="purchase-item-time">
+                        <span>📅 叫貨時間：${orderTime}</span>
+                        ${item.status === '補貨中' ? `<span>🚚 開始補貨：${replenishingTime}</span>` : ''}
+                        <span>⏱️ 採購等待 ${waitDays} 天</span>
+                        ${item.abnormalDays > 0 ? `<span style="color: #9c27b0;">🚫 異常 ${item.abnormalDays} 天</span>` : ''}
+                    </div>
+                </div>
+                <div class="purchase-item-actions">
+                    ${!item.isAbnormal ? `
+                        ${item.status === '待採購' ? `
+                            <button class="purchase-action-btn replenishing" onclick="updatePurchaseStatus('${item.itemKey}', '補貨中')">
+                                🚚 開始補貨
+                            </button>
+                        ` : ''}
+                        <button class="purchase-action-btn completed" onclick="updatePurchaseStatus('${item.itemKey}', '已補貨')">
+                            ✅ 已到貨
+                        </button>
+                        <button class="purchase-action-btn abnormal" onclick="markItemAbnormal('${item.itemKey}', true)">
+                            🚫 標記異常
+                        </button>
+                    ` : `
+                        <button class="purchase-action-btn cancel-abnormal" onclick="markItemAbnormal('${item.itemKey}', false)">
+                            ↩️ 取消異常
+                        </button>
+                        <button class="purchase-action-btn completed" onclick="updatePurchaseStatus('${item.itemKey}', '已補貨')">
+                            ✅ 確認完成
+                        </button>
+                    `}
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+// 格式化日期時間
+function formatDateTime(isoString) {
+    const date = new Date(isoString);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${month}/${day} ${hours}:${minutes}`;
+}
+
+// 篩選待採購清單
+function filterPurchase(filter) {
+    currentPurchaseFilter = filter;
+
+    // 更新篩選按鈕狀態
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === filter) {
+            btn.classList.add('active');
+        }
+    });
+
+    renderPurchaseList(purchaseListData);
+}
+
+// 更新採購狀態
+async function updatePurchaseStatus(itemKey, newStatus) {
+    if (!GOOGLE_SCRIPT_URL) {
+        showAlert('未設定 Google Sheets URL', 'warning');
+        return;
+    }
+
+    const confirmMsg = newStatus === '補貨中'
+        ? `確定要將「${itemKey}」標記為「補貨中」嗎？`
+        : `確定要將「${itemKey}」標記為「已到貨」嗎？`;
+
+    if (!confirm(confirmMsg)) return;
+
+    try {
+        const payload = {
+            action: 'updatePurchaseStatus',
+            itemKey: itemKey,
+            status: newStatus,
+            person: document.getElementById('inventoryPerson')?.value || ''
+        };
+
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert(`✅ ${itemKey} 已更新為「${newStatus}」`, 'success');
+            loadPurchaseList();  // 重新載入清單
+            loadLastInventory(); // 重新載入最新狀態
+        } else {
+            throw new Error(result.error || '更新失敗');
+        }
+    } catch (error) {
+        console.error('更新採購狀態失敗：', error);
+
+        // 嘗試 no-cors 模式
+        try {
+            const payload = {
+                action: 'updatePurchaseStatus',
+                itemKey: itemKey,
+                status: newStatus
+            };
+
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            showAlert(`✅ ${itemKey} 已更新（請重新載入確認）`, 'success');
+            setTimeout(() => loadPurchaseList(), 1500);
+        } catch (e) {
+            showAlert('❌ 更新失敗：' + error.message, 'danger');
+        }
+    }
+}
+
+// 更新採購 Tab 的 Badge
+function updatePurchaseBadge() {
+    const badge = document.getElementById('purchaseBadge');
+    if (badge) {
+        const pendingCount = purchaseListData.filter(item =>
+            (item.status === '待採購' || item.status === '補貨中') && !item.isAbnormal
+        ).length;
+        badge.textContent = pendingCount;
+        badge.classList.toggle('zero', pendingCount === 0);
+    }
+}
+
+// 標記項目為異常
+async function markItemAbnormal(itemKey, markAsAbnormal) {
+    if (!GOOGLE_SCRIPT_URL) {
+        showAlert('未設定 Google Sheets URL', 'warning');
+        return;
+    }
+
+    let reason = '';
+    if (markAsAbnormal) {
+        reason = prompt(`請輸入標記「${itemKey}」為異常的原因：\n（例如：已停用、不再需要、重複項目等）`);
+        if (reason === null) return;  // 用戶取消
+    } else {
+        if (!confirm(`確定要取消「${itemKey}」的異常標記嗎？`)) return;
+    }
+
+    try {
+        const payload = {
+            action: 'markAbnormal',
+            itemKey: itemKey,
+            markAsAbnormal: markAsAbnormal,
+            reason: reason
+        };
+
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert(`✅ ${itemKey} ${markAsAbnormal ? '已標記為異常，將不會出現在盤點表中' : '已取消異常標記，將重新出現在盤點表中'}`, 'success');
+            loadPurchaseList();  // 重新載入採購清單
+
+            // 更新停用項目清單
+            if (markAsAbnormal) {
+                disabledItems.add(itemKey);
+            } else {
+                disabledItems.delete(itemKey);
+            }
+
+            // 重新生成盤點項目（這樣盤點頁面會立即更新）
+            document.querySelectorAll('.items-grid').forEach(grid => grid.innerHTML = '');
+            generateItems();
+            document.querySelectorAll('input[type="radio"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    updateItemStatus(this);
+                    updateStats();
+                    updateButtonStates();
+                    autoSave();
+                });
+            });
+            updateStats();
+
+            // 如果在手機版，也要更新
+            if (isMobileView()) {
+                initMobileSwipe();
+            }
+        } else {
+            throw new Error(result.error || '操作失敗');
+        }
+    } catch (error) {
+        console.error('標記異常失敗：', error);
+
+        // 嘗試 no-cors 模式
+        try {
+            const payload = {
+                action: 'markAbnormal',
+                itemKey: itemKey,
+                markAsAbnormal: markAsAbnormal,
+                reason: reason
+            };
+
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify(payload)
+            });
+
+            showAlert(`✅ ${itemKey} 已更新（請重新載入確認）`, 'success');
+            setTimeout(() => loadPurchaseList(), 1500);
+        } catch (e) {
+            showAlert('❌ 操作失敗：' + error.message, 'danger');
+        }
+    }
+}
+
+// ===== 數據儀表板功能 =====
+
+// 載入統計數據
+async function loadStatistics() {
+    if (!GOOGLE_SCRIPT_URL) {
+        renderStatistics(null);
+        return;
+    }
+
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getStatistics');
+        const result = await response.json();
+
+        if (result.success) {
+            statisticsData = result.data;
+            renderStatistics(statisticsData);
+        } else {
+            console.error('載入統計數據失敗：', result.error);
+            renderStatistics(null);
+        }
+    } catch (error) {
+        console.error('載入統計數據失敗：', error);
+        renderStatistics(null);
+    }
+}
+
+// 渲染統計數據
+function renderStatistics(data) {
+    // 更新摘要卡片
+    const summary = data?.summary || {};
+    document.getElementById('summaryTotal').textContent = summary.totalItems || 0;
+    document.getElementById('summaryDaily').textContent = summary.dailyCount || 0;
+    document.getElementById('summaryWeekly').textContent = summary.weeklyCount || 0;
+    document.getElementById('summaryMonthly').textContent = summary.monthlyCount || 0;
+    document.getElementById('summaryAbnormal').textContent = summary.abnormalCount || 0;
+
+    // 渲染表格
+    const tbody = document.getElementById('dashboardTableBody');
+    const items = data?.items || [];
+
+    if (items.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                    目前沒有補貨數據，請先進行幾次盤點後再查看分析
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    // 按建議頻率排序（每日 > 每週 > 每月），異常的排最後
+    const frequencyOrder = { daily: 0, weekly: 1, monthly: 2 };
+    items.sort((a, b) => {
+        // 異常項目排最後
+        if (a.isAbnormal && !b.isAbnormal) return 1;
+        if (!a.isAbnormal && b.isAbnormal) return -1;
+        return (frequencyOrder[a.suggestedFrequency] || 1) - (frequencyOrder[b.suggestedFrequency] || 1);
+    });
+
+    let html = '';
+    items.forEach(item => {
+        const frequencyText = {
+            daily: '每日盤點',
+            weekly: '每週盤點',
+            monthly: '每月盤點'
+        };
+
+        // 處理狀態顯示
+        let statusText;
+        if (item.isAbnormal || item.currentStatus === '異常') {
+            statusText = '<span style="color: #9c27b0; font-weight: bold;">🚫 異常</span>';
+        } else if (item.currentStatus === '待採購') {
+            statusText = '<span style="color: #f57c00">待採購</span>';
+        } else if (item.currentStatus === '補貨中') {
+            statusText = '<span style="color: #42a5f5">補貨中</span>';
+        } else {
+            statusText = '<span style="color: #66bb6a">正常</span>';
+        }
+
+        // 異常天數顯示
+        const abnormalDaysText = item.abnormalTotalDays > 0
+            ? `<span style="color: #9c27b0; font-weight: bold;">${item.abnormalTotalDays} 天</span>`
+            : '<span style="color: #999">-</span>';
+
+        // 異常項目的行樣式
+        const rowStyle = item.isAbnormal ? 'background: #f3e5f5;' : '';
+
+        html += `
+            <tr style="${rowStyle}">
+                <td><strong>${item.itemName}</strong></td>
+                <td>${item.category || '-'}</td>
+                <td>${item.totalOrders || 0}</td>
+                <td>
+                    ${item.avgReplenishDays !== null
+                        ? `<span class="days-badge">${item.avgReplenishDays} 天</span>`
+                        : '<span style="color: #999">尚無數據</span>'
+                    }
+                </td>
+                <td>${abnormalDaysText}</td>
+                <td>
+                    <span class="frequency-badge ${item.suggestedFrequency}">
+                        ${frequencyText[item.suggestedFrequency] || '每週盤點'}
+                    </span>
+                </td>
+                <td>${statusText}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+// 頁面載入時初始化 Tab 功能
+document.addEventListener('DOMContentLoaded', function() {
+    // 載入超時設定
+    loadOverdueSettings();
+    // 數據已在 loadLastInventory 中統一載入，無需重複載入
+});
