@@ -3864,33 +3864,25 @@ const dashboardTutorialSteps = [
     {
         target: '.dashboard-summary',
         title: '數據總覽',
-        content: '顯示所有項目的統計：<br>📦 總項目數<br>🔴 每日盤點<br>🔵 每週盤點<br>🟢 每月盤點<br>🟣 異常項目',
+        content: '📦總項目 🔴每日 🔵每週 🟢每月 🟣異常',
         position: 'bottom'
     },
     {
-        target: '.summary-card-value.daily',
-        targetFallback: '.summary-card',
+        target: '.summary-card',
         title: '盤點頻率',
-        content: '系統根據歷史數據自動計算建議的盤點頻率，越常叫貨的項目建議越頻繁盤點。',
+        content: '系統自動計算建議的盤點頻率',
         position: 'bottom'
     },
     {
         target: '.dashboard-table-header',
         title: '項目分析表',
-        content: '詳細顯示每個項目的：<br>• 叫貨次數<br>• 平均補貨天數<br>• 異常天數<br>• 建議盤點頻率',
+        content: '叫貨次數、補貨天數、建議頻率',
         position: 'bottom'
-    },
-    {
-        target: '.dashboard-table',
-        targetFallback: '.dashboard-table-container',
-        title: '數據說明',
-        content: '<strong>叫貨次數</strong>：歷史叫貨總數<br><strong>平均補貨天數</strong>：從叫貨到到貨的平均時間<br><strong>建議頻率</strong>：系統自動計算',
-        position: 'top'
     },
     {
         target: '.help-btn',
         title: '完成！',
-        content: '點擊「❓ 說明」可重新觀看教學',
+        content: '點擊「❓ 說明」重新觀看教學',
         position: 'bottom'
     }
 ];
@@ -4162,13 +4154,14 @@ function positionTooltipFixed(targetRect, preferredPosition) {
     const tooltip = document.getElementById('tutorialTooltip');
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
+    const isMobile = viewportWidth <= 768;
 
     let top, left;
     let arrowClass = 'arrow-top';
 
-    const gap = 15;
-    const tooltipHeight = 180; // 減少預估高度
-    const tooltipWidth = Math.min(350, viewportWidth - 40);
+    const gap = isMobile ? 10 : 15;
+    const tooltipHeight = isMobile ? 140 : 160;
+    const tooltipWidth = isMobile ? viewportWidth - 30 : Math.min(340, viewportWidth - 40);
 
     // 計算目標元素中心位置
     const targetCenterY = targetRect.top + targetRect.height / 2;
@@ -4186,16 +4179,18 @@ function positionTooltipFixed(targetRect, preferredPosition) {
         arrowClass = 'arrow-bottom';
     }
 
-    // 計算水平位置（置中於目標）
-    left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2);
-
-    // 確保不超出左右邊界
-    if (left < 15) left = 15;
-    if (left + tooltipWidth > viewportWidth - 15) left = viewportWidth - tooltipWidth - 15;
+    // 手機版水平置中
+    if (isMobile) {
+        left = 15;
+    } else {
+        left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2);
+        if (left < 15) left = 15;
+        if (left + tooltipWidth > viewportWidth - 15) left = viewportWidth - tooltipWidth - 15;
+    }
 
     // 確保不超出上下邊界（最重要：確保按鈕可見）
-    const minTop = 60; // 至少離頂部60px
-    const maxTop = viewportHeight - tooltipHeight - 20;
+    const minTop = isMobile ? 50 : 60;
+    const maxTop = viewportHeight - tooltipHeight - (isMobile ? 10 : 20);
 
     if (top < minTop) top = minTop;
     if (top > maxTop) top = maxTop;

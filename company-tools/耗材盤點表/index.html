@@ -1707,11 +1707,35 @@
             position: fixed;
             background: white;
             border-radius: 12px;
-            padding: 20px 25px;
-            max-width: 380px;
+            padding: 15px 20px;
+            max-width: 340px;
+            max-height: 60vh;
+            overflow-y: auto;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
             z-index: 10002;
             animation: tooltipFadeIn 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .tutorial-tooltip {
+                max-width: 90vw;
+                max-height: 50vh;
+                padding: 12px 15px;
+            }
+            .tutorial-title {
+                font-size: 1.1em;
+            }
+            .tutorial-content {
+                font-size: 0.9em;
+                margin-bottom: 15px;
+            }
+            .tutorial-buttons {
+                gap: 8px;
+            }
+            .tutorial-btn {
+                padding: 8px 15px;
+                font-size: 0.9em;
+            }
         }
 
         @keyframes tooltipFadeIn {
