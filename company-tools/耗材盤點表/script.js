@@ -3640,4 +3640,242 @@ document.addEventListener('DOMContentLoaded', function() {
     // 載入超時設定
     loadOverdueSettings();
     // 數據已在 loadLastInventory 中統一載入，無需重複載入
+
+    // 檢查是否為首次使用，顯示歡迎教學
+    setTimeout(() => {
+        checkFirstTimeUser();
+    }, 1500); // 延遲顯示，等頁面載入完成
 });
+
+// ===== 互動式教學系統 =====
+
+// 教學步驟定義
+const tutorialSteps = [
+    {
+        target: '.header',
+        title: '歡迎使用耗材盤點系統',
+        content: '這是杰特企業的耗材盤點系統，幫助您輕鬆管理日常耗材的庫存狀況。',
+        position: 'bottom'
+    },
+    {
+        target: '.info-section',
+        title: '填寫基本資訊',
+        content: '開始盤點前，請先選擇<strong>盤點日期</strong>和<strong>盤點人員</strong>。這些資訊會被記錄在報表中。',
+        position: 'bottom'
+    },
+    {
+        target: '.today-suggestion',
+        title: '今日盤點建議',
+        content: '系統會根據歷史數據，自動建議您今天應該盤點哪些項目。每日、每週、每月的盤點頻率會自動計算。',
+        position: 'bottom'
+    },
+    {
+        target: '.category-section',
+        title: '盤點項目分類',
+        content: '項目按負責區域分類，點擊分類標題可以<strong>展開/收起</strong>該區域的項目。',
+        position: 'bottom'
+    },
+    {
+        target: '.status-options',
+        title: '填寫盤點狀態',
+        content: '對每個項目選擇狀態：<br>✅ <strong>不用叫</strong>：庫存充足<br>⚠️ <strong>要叫貨</strong>：需要採購<br>🚚 <strong>補貨中</strong>：已訂購等待到貨<br>📦 <strong>已補貨</strong>：貨已到，盤點完成',
+        position: 'top'
+    },
+    {
+        target: '.main-tabs',
+        title: '功能分頁',
+        content: '系統有三個主要功能：<br>📋 <strong>盤點</strong>：日常盤點作業<br>🛒 <strong>採購追蹤</strong>：追蹤待採購和補貨中的項目<br>📊 <strong>數據儀表板</strong>：查看統計數據和分析',
+        position: 'bottom'
+    },
+    {
+        target: '.button-group',
+        title: '提交盤點表',
+        content: '填寫完成後，點擊<strong>「✅ 提交盤點表」</strong>即可上傳資料。系統會自動儲存您的盤點記錄。',
+        position: 'top'
+    },
+    {
+        target: '.help-btn',
+        title: '需要幫助？',
+        content: '隨時點擊左上角的<strong>「❓ 說明」</strong>按鈕，即可重新觀看這個教學！',
+        position: 'bottom'
+    }
+];
+
+let currentTutorialStep = 0;
+let tutorialActive = false;
+
+// 檢查是否為首次使用
+function checkFirstTimeUser() {
+    const hasSeenTutorial = localStorage.getItem('hasSeenInventoryTutorial');
+    if (!hasSeenTutorial) {
+        showWelcomeModal();
+    }
+}
+
+// 顯示歡迎彈窗
+function showWelcomeModal() {
+    const modal = document.getElementById('welcomeModal');
+    if (modal) {
+        modal.classList.add('show');
+    }
+}
+
+// 跳過歡迎教學
+function skipWelcome() {
+    const modal = document.getElementById('welcomeModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+    localStorage.setItem('hasSeenInventoryTutorial', 'true');
+}
+
+// 從歡迎彈窗開始教學
+function startTutorialFromWelcome() {
+    const modal = document.getElementById('welcomeModal');
+    if (modal) {
+        modal.classList.remove('show');
+    }
+    localStorage.setItem('hasSeenInventoryTutorial', 'true');
+    setTimeout(() => {
+        startTutorial();
+    }, 300);
+}
+
+// 開始教學
+function startTutorial() {
+    currentTutorialStep = 0;
+    tutorialActive = true;
+    showTutorialStep();
+}
+
+// 顯示教學步驟
+function showTutorialStep() {
+    const overlay = document.getElementById('tutorialOverlay');
+    const highlight = document.getElementById('tutorialHighlight');
+    const tooltip = document.getElementById('tutorialTooltip');
+
+    if (!overlay || !highlight || !tooltip) return;
+
+    const step = tutorialSteps[currentTutorialStep];
+    let targetElement = document.querySelector(step.target);
+
+    // 如果找不到目標元素，嘗試找備用元素
+    if (!targetElement) {
+        // 如果是 status-options，可能需要找第一個項目
+        if (step.target === '.status-options') {
+            targetElement = document.querySelector('.item-row');
+        }
+    }
+
+    if (!targetElement) {
+        // 跳過找不到的步驟
+        nextTutorialStep();
+        return;
+    }
+
+    // 顯示遮罩層
+    overlay.classList.add('show');
+
+    // 滾動到目標元素
+    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // 延遲計算位置（等滾動完成）
+    setTimeout(() => {
+        const rect = targetElement.getBoundingClientRect();
+        const padding = 8;
+
+        // 設定高亮區域
+        highlight.style.top = (rect.top + window.scrollY - padding) + 'px';
+        highlight.style.left = (rect.left - padding) + 'px';
+        highlight.style.width = (rect.width + padding * 2) + 'px';
+        highlight.style.height = (rect.height + padding * 2) + 'px';
+
+        // 更新提示框內容
+        document.getElementById('tutorialStepNumber').textContent = currentTutorialStep + 1;
+        document.getElementById('tutorialStepTotal').textContent = `共 ${tutorialSteps.length} 步`;
+        document.getElementById('tutorialTitle').textContent = step.title;
+        document.getElementById('tutorialContent').innerHTML = step.content;
+
+        // 更新按鈕
+        const nextBtn = document.getElementById('tutorialNextBtn');
+        if (currentTutorialStep === tutorialSteps.length - 1) {
+            nextBtn.textContent = '完成教學 ✓';
+            nextBtn.className = 'tutorial-btn tutorial-btn-finish';
+        } else {
+            nextBtn.textContent = '下一步 ➜';
+            nextBtn.className = 'tutorial-btn tutorial-btn-next';
+        }
+
+        // 計算提示框位置
+        positionTooltip(rect, step.position);
+
+    }, 300);
+}
+
+// 計算提示框位置
+function positionTooltip(targetRect, preferredPosition) {
+    const tooltip = document.getElementById('tutorialTooltip');
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+    const scrollY = window.scrollY;
+
+    let top, left;
+    let arrowClass = 'arrow-top';
+
+    const gap = 20; // 與目標元素的間距
+
+    // 根據偏好位置計算
+    if (preferredPosition === 'bottom') {
+        top = targetRect.bottom + scrollY + gap;
+        left = targetRect.left + (targetRect.width / 2) - (380 / 2);
+        arrowClass = 'arrow-top';
+
+        // 檢查是否超出下方邊界
+        if (top + 200 > scrollY + viewportHeight) {
+            top = targetRect.top + scrollY - 200 - gap;
+            arrowClass = 'arrow-bottom';
+        }
+    } else {
+        // top position
+        top = targetRect.top + scrollY - 200 - gap;
+        left = targetRect.left + (targetRect.width / 2) - (380 / 2);
+        arrowClass = 'arrow-bottom';
+
+        // 檢查是否超出上方邊界
+        if (top < scrollY + 20) {
+            top = targetRect.bottom + scrollY + gap;
+            arrowClass = 'arrow-top';
+        }
+    }
+
+    // 確保不超出左右邊界
+    if (left < 20) left = 20;
+    if (left + 380 > viewportWidth - 20) left = viewportWidth - 400;
+
+    tooltip.style.top = top + 'px';
+    tooltip.style.left = left + 'px';
+    tooltip.className = 'tutorial-tooltip ' + arrowClass;
+}
+
+// 下一步
+function nextTutorialStep() {
+    currentTutorialStep++;
+
+    if (currentTutorialStep >= tutorialSteps.length) {
+        endTutorial();
+        return;
+    }
+
+    showTutorialStep();
+}
+
+// 結束教學
+function endTutorial() {
+    tutorialActive = false;
+    const overlay = document.getElementById('tutorialOverlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+    }
+    localStorage.setItem('hasSeenInventoryTutorial', 'true');
+}

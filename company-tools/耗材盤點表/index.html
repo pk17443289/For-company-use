@@ -1665,6 +1665,269 @@
             font-size: 0.85em;
             opacity: 0.9;
         }
+
+        /* ===== 互動式教學樣式 ===== */
+        .tutorial-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: none;
+        }
+
+        .tutorial-overlay.show {
+            display: block;
+        }
+
+        .tutorial-highlight {
+            position: absolute;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            z-index: 10001;
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .tutorial-tooltip {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            padding: 20px 25px;
+            max-width: 380px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            z-index: 10002;
+            animation: tooltipFadeIn 0.3s ease;
+        }
+
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .tutorial-tooltip::before {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border: 10px solid transparent;
+        }
+
+        .tutorial-tooltip.arrow-top::before {
+            top: -20px;
+            left: 30px;
+            border-bottom-color: white;
+        }
+
+        .tutorial-tooltip.arrow-bottom::before {
+            bottom: -20px;
+            left: 30px;
+            border-top-color: white;
+        }
+
+        .tutorial-tooltip.arrow-left::before {
+            left: -20px;
+            top: 30px;
+            border-right-color: white;
+        }
+
+        .tutorial-tooltip.arrow-right::before {
+            right: -20px;
+            top: 30px;
+            border-left-color: white;
+        }
+
+        .tutorial-step-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tutorial-step-number {
+            background: #1e88e5;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+
+        .tutorial-step-total {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .tutorial-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #1e88e5;
+            margin-bottom: 10px;
+        }
+
+        .tutorial-content {
+            font-size: 1em;
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .tutorial-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .tutorial-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tutorial-btn-skip {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .tutorial-btn-skip:hover {
+            background: #e0e0e0;
+        }
+
+        .tutorial-btn-next {
+            background: #1e88e5;
+            color: white;
+        }
+
+        .tutorial-btn-next:hover {
+            background: #1976d2;
+        }
+
+        .tutorial-btn-finish {
+            background: #43a047;
+            color: white;
+        }
+
+        .tutorial-btn-finish:hover {
+            background: #388e3c;
+        }
+
+        /* 說明按鈕 */
+        .help-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 8px 14px;
+            border: 2px solid rgba(255,255,255,0.5);
+            background: transparent;
+            color: white;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .help-btn:hover {
+            background: rgba(255,255,255,0.2);
+            border-color: white;
+        }
+
+        /* 歡迎彈窗 */
+        .welcome-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .welcome-modal.show {
+            display: flex;
+        }
+
+        .welcome-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        .welcome-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .welcome-title {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #1e88e5;
+            margin-bottom: 12px;
+        }
+
+        .welcome-message {
+            font-size: 1em;
+            color: #666;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .welcome-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .welcome-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .welcome-btn-skip {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .welcome-btn-skip:hover {
+            background: #e0e0e0;
+        }
+
+        .welcome-btn-start {
+            background: #1e88e5;
+            color: white;
+        }
+
+        .welcome-btn-start:hover {
+            background: #1976d2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 136, 229, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -1682,6 +1945,10 @@
 
     <div class="container">
         <div class="header">
+            <!-- 說明按鈕 -->
+            <button class="help-btn" onclick="startTutorial()">
+                <span>❓</span> 說明
+            </button>
             <!-- 語言切換 -->
             <div class="lang-switch">
                 <button class="lang-btn active" data-lang="zh" onclick="switchLanguage('zh')">中文</button>
@@ -1963,6 +2230,40 @@
             <div class="success-title" id="successTitle">提交成功！</div>
             <div class="success-message" id="successMessage">盤點表已成功提交到 Google Sheets</div>
             <button class="success-btn" onclick="closeSuccessModal()">確定</button>
+        </div>
+    </div>
+
+    <!-- 首次使用歡迎彈窗 -->
+    <div id="welcomeModal" class="welcome-modal">
+        <div class="welcome-modal-content">
+            <div class="welcome-icon">👋</div>
+            <div class="welcome-title">歡迎使用耗材盤點系統！</div>
+            <div class="welcome-message">
+                這是您第一次使用本系統<br>
+                是否需要觀看操作教學？<br>
+                <small style="color: #999;">（之後可點擊左上角「❓ 說明」重新觀看）</small>
+            </div>
+            <div class="welcome-buttons">
+                <button class="welcome-btn welcome-btn-skip" onclick="skipWelcome()">跳過</button>
+                <button class="welcome-btn welcome-btn-start" onclick="startTutorialFromWelcome()">🎓 開始教學</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 教學遮罩層 -->
+    <div id="tutorialOverlay" class="tutorial-overlay">
+        <div id="tutorialHighlight" class="tutorial-highlight"></div>
+        <div id="tutorialTooltip" class="tutorial-tooltip arrow-top">
+            <div class="tutorial-step-indicator">
+                <div class="tutorial-step-number" id="tutorialStepNumber">1</div>
+                <div class="tutorial-step-total" id="tutorialStepTotal">共 8 步</div>
+            </div>
+            <div class="tutorial-title" id="tutorialTitle">標題</div>
+            <div class="tutorial-content" id="tutorialContent">內容</div>
+            <div class="tutorial-buttons">
+                <button class="tutorial-btn tutorial-btn-skip" onclick="endTutorial()">跳過教學</button>
+                <button class="tutorial-btn tutorial-btn-next" id="tutorialNextBtn" onclick="nextTutorialStep()">下一步 ➜</button>
+            </div>
         </div>
     </div>
 
