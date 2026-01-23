@@ -2504,8 +2504,14 @@ function switchMainTab(tabName) {
     document.getElementById(tabName + 'Panel').classList.add('active');
 
     // 如果數據尚未載入，則載入（通常已在頁面初始化時載入）
-    if (tabName === 'purchase' && purchaseListData.length === 0) {
-        loadPurchaseList();
+    if (tabName === 'purchase') {
+        if (purchaseListData.length === 0) {
+            loadPurchaseList();
+        }
+        // 檢查是否為首次使用採購追蹤
+        setTimeout(() => {
+            checkFirstTimePurchaseUser();
+        }, 500);
     } else if (tabName === 'dashboard' && !statisticsData) {
         loadStatistics();
     }
@@ -3775,8 +3781,54 @@ const mobileTutorialSteps = [
     }
 ];
 
+// 採購追蹤教學步驟
+const purchaseTutorialSteps = [
+    {
+        target: '.purchase-title',
+        title: '採購追蹤',
+        content: '這裡顯示所有<strong>需要採購</strong>和<strong>補貨中</strong>的項目，方便追蹤採購進度。',
+        position: 'bottom'
+    },
+    {
+        target: '.purchase-filters',
+        title: '篩選功能',
+        content: '可以按狀態篩選：<br>• <strong>全部</strong>：所有項目<br>• <strong>待採購</strong>：還沒開始處理<br>• <strong>補貨中</strong>：已訂購等待到貨<br>• <strong>超時</strong>：超過時間未處理<br>• <strong>異常</strong>：標記有問題的項目',
+        position: 'bottom'
+    },
+    {
+        target: '.overdue-settings',
+        title: '超時提示',
+        content: '系統會自動標記：<br>🟠 超過 2 天未處理<br>🔴 超過 3 天未處理<br>🟣 標記異常的項目',
+        position: 'bottom'
+    },
+    {
+        target: '.purchase-list',
+        title: '採購清單',
+        content: '每個項目會顯示：<br>• 項目名稱和分類<br>• 標記時間和等待天數<br>• 操作按鈕',
+        position: 'top'
+    },
+    {
+        target: '.purchase-item-actions',
+        targetFallback: '.purchase-list',
+        title: '操作按鈕',
+        content: '📦 <strong>補貨中</strong>：已下單，等待到貨<br>✅ <strong>已補貨</strong>：貨到了，完成採購<br>❌ <strong>取消採購</strong>：不需要了<br>🗑️ <strong>確認移除</strong>：永久刪除此項目',
+        position: 'top'
+    },
+    {
+        target: '.help-btn',
+        title: '需要幫助？',
+        content: '隨時點擊<strong>「❓ 說明」</strong>重新觀看教學！',
+        position: 'bottom'
+    }
+];
+
 // 取得當前應使用的教學步驟
 function getTutorialSteps() {
+    // 檢查當前是哪個分頁
+    const purchasePanel = document.getElementById('purchasePanel');
+    if (purchasePanel && purchasePanel.classList.contains('active')) {
+        return purchaseTutorialSteps;
+    }
     return window.innerWidth <= 768 ? mobileTutorialSteps : desktopTutorialSteps;
 }
 
@@ -3789,6 +3841,58 @@ function checkFirstTimeUser() {
     if (!hasSeenTutorial) {
         showWelcomeModal();
     }
+}
+
+// 檢查是否為首次使用採購追蹤
+function checkFirstTimePurchaseUser() {
+    const hasSeenPurchaseTutorial = localStorage.getItem('hasSeenPurchaseTutorial');
+    if (!hasSeenPurchaseTutorial) {
+        showPurchaseWelcomeModal();
+    }
+}
+
+// 顯示採購追蹤歡迎彈窗
+function showPurchaseWelcomeModal() {
+    // 建立彈窗
+    const overlay = document.createElement('div');
+    overlay.id = 'purchaseWelcomeOverlay';
+    overlay.className = 'welcome-modal show';
+    overlay.innerHTML = `
+        <div class="welcome-modal-content">
+            <div class="welcome-icon">🛒</div>
+            <div class="welcome-title">採購追蹤功能</div>
+            <div class="welcome-message">
+                這是您第一次使用採購追蹤<br>
+                是否需要觀看操作教學？
+            </div>
+            <div class="welcome-buttons">
+                <button class="welcome-btn welcome-btn-skip" onclick="skipPurchaseWelcome()">跳過</button>
+                <button class="welcome-btn welcome-btn-start" onclick="startPurchaseTutorialFromWelcome()">🎓 開始教學</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+// 跳過採購追蹤教學
+function skipPurchaseWelcome() {
+    const overlay = document.getElementById('purchaseWelcomeOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    localStorage.setItem('hasSeenPurchaseTutorial', 'true');
+}
+
+// 從歡迎彈窗開始採購追蹤教學
+function startPurchaseTutorialFromWelcome() {
+    const overlay = document.getElementById('purchaseWelcomeOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    localStorage.setItem('hasSeenPurchaseTutorial', 'true');
+    setTimeout(() => {
+        startTutorial();
+    }, 300);
 }
 
 // 顯示歡迎彈窗
