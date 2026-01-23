@@ -3685,18 +3685,20 @@ const tutorialSteps = [
         }
     },
     {
-        target: '.item-row',
+        target: '#ajun-items .item-row',
+        targetFallback: '.item-row',
         title: '填寫盤點狀態',
         content: '對每個項目選擇狀態：<br>✅ <strong>不用叫</strong>：庫存充足<br>⚠️ <strong>要叫貨</strong>：需要採購<br>🚚 <strong>補貨中</strong>：已訂購等待到貨<br>📦 <strong>已補貨</strong>：貨已到，盤點完成',
         position: 'bottom',
         beforeShow: function() {
-            // 確保分類是展開的，讓 item-row 可見
-            const firstContent = document.querySelector('.category-content');
-            const firstHeader = document.querySelector('.category-header');
-            if (firstContent && firstContent.classList.contains('collapsed')) {
-                firstContent.classList.remove('collapsed');
-                if (firstHeader) firstHeader.classList.remove('collapsed');
-            }
+            // 確保分類是展開的
+            document.querySelectorAll('.category-content').forEach((content, index) => {
+                const header = document.querySelectorAll('.category-header')[index];
+                if (content.classList.contains('collapsed')) {
+                    content.classList.remove('collapsed');
+                    if (header) header.classList.remove('collapsed');
+                }
+            });
         }
     },
     {
@@ -3785,10 +3787,14 @@ function showTutorialStep() {
     setTimeout(() => {
         let targetElement = document.querySelector(step.target);
 
-        // 如果找不到目標元素，嘗試找備用元素
-        if (!targetElement || !isElementVisible(targetElement)) {
-            console.log('找不到目標元素或元素不可見：', step.target);
-            // 跳過找不到的步驟
+        // 如果找不到目標元素，嘗試備用選擇器
+        if (!targetElement && step.targetFallback) {
+            targetElement = document.querySelector(step.targetFallback);
+        }
+
+        // 如果還是找不到
+        if (!targetElement) {
+            console.log('找不到目標元素：', step.target, step.targetFallback);
             nextTutorialStep();
             return;
         }
@@ -3801,37 +3807,46 @@ function showTutorialStep() {
 
         // 延遲計算位置（等滾動完成）
         setTimeout(() => {
-            // 重新取得位置（滾動後位置可能改變）
-            const rect = targetElement.getBoundingClientRect();
-            const padding = 10;
+            updateHighlightPosition(targetElement, step);
+        }, 500);
+    }, 150);
+}
 
-            // 設定高亮區域
-            highlight.style.top = (rect.top + window.scrollY - padding) + 'px';
-            highlight.style.left = (rect.left - padding) + 'px';
-            highlight.style.width = (rect.width + padding * 2) + 'px';
-            highlight.style.height = (rect.height + padding * 2) + 'px';
+// 更新高亮框位置（使用 fixed 定位）
+function updateHighlightPosition(targetElement, step) {
+    const highlight = document.getElementById('tutorialHighlight');
+    const tooltip = document.getElementById('tutorialTooltip');
 
-            // 更新提示框內容
-            document.getElementById('tutorialStepNumber').textContent = currentTutorialStep + 1;
-            document.getElementById('tutorialStepTotal').textContent = `共 ${tutorialSteps.length} 步`;
-            document.getElementById('tutorialTitle').textContent = step.title;
-            document.getElementById('tutorialContent').innerHTML = step.content;
+    if (!targetElement || !highlight) return;
 
-            // 更新按鈕
-            const nextBtn = document.getElementById('tutorialNextBtn');
-            if (currentTutorialStep === tutorialSteps.length - 1) {
-                nextBtn.textContent = '完成教學 ✓';
-                nextBtn.className = 'tutorial-btn tutorial-btn-finish';
-            } else {
-                nextBtn.textContent = '下一步 ➜';
-                nextBtn.className = 'tutorial-btn tutorial-btn-next';
-            }
+    // 使用 getBoundingClientRect 取得相對於視窗的位置
+    const rect = targetElement.getBoundingClientRect();
+    const padding = 10;
 
-            // 計算提示框位置
-            positionTooltip(rect, step.position);
+    // 使用 fixed 定位，直接用視窗座標
+    highlight.style.top = (rect.top - padding) + 'px';
+    highlight.style.left = (rect.left - padding) + 'px';
+    highlight.style.width = (rect.width + padding * 2) + 'px';
+    highlight.style.height = (rect.height + padding * 2) + 'px';
 
-        }, 400);
-    }, 100);
+    // 更新提示框內容
+    document.getElementById('tutorialStepNumber').textContent = currentTutorialStep + 1;
+    document.getElementById('tutorialStepTotal').textContent = `共 ${tutorialSteps.length} 步`;
+    document.getElementById('tutorialTitle').textContent = step.title;
+    document.getElementById('tutorialContent').innerHTML = step.content;
+
+    // 更新按鈕
+    const nextBtn = document.getElementById('tutorialNextBtn');
+    if (currentTutorialStep === tutorialSteps.length - 1) {
+        nextBtn.textContent = '完成教學 ✓';
+        nextBtn.className = 'tutorial-btn tutorial-btn-finish';
+    } else {
+        nextBtn.textContent = '下一步 ➜';
+        nextBtn.className = 'tutorial-btn tutorial-btn-next';
+    }
+
+    // 計算提示框位置（也改為 fixed）
+    positionTooltipFixed(rect, step.position);
 }
 
 // 檢查元素是否可見
@@ -3846,49 +3861,54 @@ function isElementVisible(el) {
            style.opacity !== '0';
 }
 
-// 計算提示框位置
-function positionTooltip(targetRect, preferredPosition) {
+// 計算提示框位置（使用 fixed 定位）
+function positionTooltipFixed(targetRect, preferredPosition) {
     const tooltip = document.getElementById('tutorialTooltip');
-    const tooltipRect = tooltip.getBoundingClientRect();
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
-    const scrollY = window.scrollY;
 
     let top, left;
     let arrowClass = 'arrow-top';
 
-    const gap = 20; // 與目標元素的間距
+    const gap = 15; // 與目標元素的間距
+    const tooltipHeight = 200; // 預估高度
+    const tooltipWidth = Math.min(380, viewportWidth - 40);
 
-    // 根據偏好位置計算
+    // 根據偏好位置計算（使用視窗座標，因為是 fixed）
     if (preferredPosition === 'bottom') {
-        top = targetRect.bottom + scrollY + gap;
-        left = targetRect.left + (targetRect.width / 2) - (380 / 2);
+        top = targetRect.bottom + gap;
+        left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2);
         arrowClass = 'arrow-top';
 
         // 檢查是否超出下方邊界
-        if (top + 200 > scrollY + viewportHeight) {
-            top = targetRect.top + scrollY - 200 - gap;
+        if (top + tooltipHeight > viewportHeight - 20) {
+            top = targetRect.top - tooltipHeight - gap;
             arrowClass = 'arrow-bottom';
         }
     } else {
         // top position
-        top = targetRect.top + scrollY - 200 - gap;
-        left = targetRect.left + (targetRect.width / 2) - (380 / 2);
+        top = targetRect.top - tooltipHeight - gap;
+        left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2);
         arrowClass = 'arrow-bottom';
 
         // 檢查是否超出上方邊界
-        if (top < scrollY + 20) {
-            top = targetRect.bottom + scrollY + gap;
+        if (top < 20) {
+            top = targetRect.bottom + gap;
             arrowClass = 'arrow-top';
         }
     }
 
     // 確保不超出左右邊界
     if (left < 20) left = 20;
-    if (left + 380 > viewportWidth - 20) left = viewportWidth - 400;
+    if (left + tooltipWidth > viewportWidth - 20) left = viewportWidth - tooltipWidth - 20;
+
+    // 確保不超出上下邊界
+    if (top < 20) top = 20;
+    if (top + tooltipHeight > viewportHeight - 20) top = viewportHeight - tooltipHeight - 20;
 
     tooltip.style.top = top + 'px';
     tooltip.style.left = left + 'px';
+    tooltip.style.maxWidth = tooltipWidth + 'px';
     tooltip.className = 'tutorial-tooltip ' + arrowClass;
 }
 
