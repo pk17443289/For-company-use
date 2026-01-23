@@ -53,6 +53,10 @@ function doGet(e) {
       return getPendingAlerts();
     }
 
+    if (action === 'getPersonnelList') {
+      return getPersonnelList();
+    }
+
     // 如果有 POST 資料透過 GET 傳來（備用方案）
     if (e.parameter && e.parameter.data) {
       const data = JSON.parse(e.parameter.data);
@@ -1982,4 +1986,65 @@ function setupDailyTrigger() {
 function testSendReminder() {
   sendDailyReminder();
   SpreadsheetApp.getUi().alert('測試提醒已發送！請檢查收件匣。');
+}
+
+/**
+ * 取得人員清單
+ * 從「人員清單」工作表讀取，如不存在則建立預設清單
+ */
+function getPersonnelList() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('人員清單');
+
+    // 如果工作表不存在，建立預設人員清單
+    if (!sheet) {
+      sheet = ss.insertSheet('人員清單');
+      sheet.getRange('A1:B1').setValues([['姓名', '備註']]);
+      sheet.getRange('A1:B1').setFontWeight('bold');
+      sheet.setFrozenRows(1);
+
+      // 預設人員清單
+      const defaultPersonnel = [
+        ['洪杰', ''],
+        ['翁嘉駿', ''],
+        ['李紫伶', ''],
+        ['曾紫淇', ''],
+        ['陳佳雯', ''],
+        ['沈鈴鈺', ''],
+        ['楊秀娟', ''],
+        ['李泓霖', ''],
+        ['吳佩真', ''],
+        ['李宗泓', ''],
+        ['Dar Maji', ''],
+        ['Meri Kurniasari', ''],
+        ['Sari Indah Purnama', ''],
+        ['Qoirul Anwar', '']
+      ];
+
+      sheet.getRange(2, 1, defaultPersonnel.length, 2).setValues(defaultPersonnel);
+
+      // 設定欄寬
+      sheet.setColumnWidth(1, 150);
+      sheet.setColumnWidth(2, 200);
+    }
+
+    // 讀取人員清單
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: true, data: [] });
+    }
+
+    const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    const personnel = data
+      .filter(row => row[0] && row[0].toString().trim() !== '')
+      .map(row => ({
+        name: row[0].toString().trim(),
+        note: row[1] ? row[1].toString().trim() : ''
+      }));
+
+    return createJsonResponse({ success: true, data: personnel });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'getPersonnelList 錯誤: ' + error.toString() });
+  }
 }

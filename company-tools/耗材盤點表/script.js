@@ -597,6 +597,28 @@ function updateLoadingProgressDirect(percent) {
     }
 }
 
+// 填充人員下拉選單
+function populatePersonnelDropdown(personnelList) {
+    const select = document.getElementById('inventoryPerson');
+    if (!select) return;
+
+    // 保留第一個「請選擇」選項
+    const firstOption = select.options[0];
+    select.innerHTML = '';
+    select.appendChild(firstOption);
+
+    // 加入從 Google Sheets 讀取的人員
+    personnelList.forEach(person => {
+        const option = document.createElement('option');
+        option.value = person.name;
+        option.textContent = person.name;
+        if (person.note) {
+            option.title = person.note; // 滑鼠懸停顯示備註
+        }
+        select.appendChild(option);
+    });
+}
+
 // 初始化頁面
 document.addEventListener('DOMContentLoaded', function() {
     // 每次開啟頁面時清除之前的填寫資料，重新開始
@@ -2225,25 +2247,33 @@ async function loadLastInventory() {
 
     try {
         // 並行載入所有資料（速度快很多）
-        const [lastInvResponse, disabledResponse, purchaseResponse, statsResponse, itemsResponse] = await Promise.all([
+        const [lastInvResponse, disabledResponse, purchaseResponse, statsResponse, itemsResponse, personnelResponse] = await Promise.all([
             fetch(GOOGLE_SCRIPT_URL + '?action=getLastInventory'),
             fetch(GOOGLE_SCRIPT_URL + '?action=getDisabledItems'),
             fetch(GOOGLE_SCRIPT_URL + '?action=getPurchaseList'),
             fetch(GOOGLE_SCRIPT_URL + '?action=getStatistics'),
-            fetch(GOOGLE_SCRIPT_URL + '?action=getInventoryItems')
+            fetch(GOOGLE_SCRIPT_URL + '?action=getInventoryItems'),
+            fetch(GOOGLE_SCRIPT_URL + '?action=getPersonnelList')
         ]);
 
         updateLoadingText('處理資料中...');
         updateLoadingProgressDirect(50);
 
         // 解析所有回應
-        const [lastInvData, disabledData, purchaseResult, statsData, itemsData] = await Promise.all([
+        const [lastInvData, disabledData, purchaseResult, statsData, itemsData, personnelData] = await Promise.all([
             lastInvResponse.json(),
             disabledResponse.json(),
             purchaseResponse.json(),
             statsResponse.json(),
-            itemsResponse.json()
+            itemsResponse.json(),
+            personnelResponse.json()
         ]);
+
+        // 處理人員清單
+        if (personnelData.success && personnelData.data && personnelData.data.length > 0) {
+            populatePersonnelDropdown(personnelData.data);
+            console.log('成功載入人員清單', personnelData.data);
+        }
 
         updateLoadingProgressDirect(80);
 
