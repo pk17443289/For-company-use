@@ -3765,6 +3765,8 @@ function startTutorialFromWelcome() {
 function startTutorial() {
     currentTutorialStep = 0;
     tutorialActive = true;
+    // 禁止頁面滾動
+    document.body.classList.add('tutorial-active');
     showTutorialStep();
 }
 
@@ -3927,6 +3929,8 @@ function nextTutorialStep() {
 // 結束教學
 function endTutorial() {
     tutorialActive = false;
+    // 恢復頁面滾動
+    document.body.classList.remove('tutorial-active');
     const overlay = document.getElementById('tutorialOverlay');
     if (overlay) {
         overlay.classList.remove('show');
