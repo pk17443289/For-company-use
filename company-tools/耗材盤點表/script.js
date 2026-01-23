@@ -2542,8 +2542,14 @@ function switchMainTab(tabName) {
         setTimeout(() => {
             checkFirstTimePurchaseUser();
         }, 500);
-    } else if (tabName === 'dashboard' && !statisticsData) {
-        loadStatistics();
+    } else if (tabName === 'dashboard') {
+        if (!statisticsData) {
+            loadStatistics();
+        }
+        // 檢查是否為首次使用數據儀表板
+        setTimeout(() => {
+            checkFirstTimeDashboardUser();
+        }, 500);
     }
 }
 
@@ -3853,12 +3859,53 @@ const purchaseTutorialSteps = [
     }
 ];
 
+// 數據儀表板教學步驟
+const dashboardTutorialSteps = [
+    {
+        target: '.dashboard-summary',
+        title: '數據總覽',
+        content: '顯示所有項目的統計：<br>📦 總項目數<br>🔴 每日盤點<br>🔵 每週盤點<br>🟢 每月盤點<br>🟣 異常項目',
+        position: 'bottom'
+    },
+    {
+        target: '.summary-card-value.daily',
+        targetFallback: '.summary-card',
+        title: '盤點頻率',
+        content: '系統根據歷史數據自動計算建議的盤點頻率，越常叫貨的項目建議越頻繁盤點。',
+        position: 'bottom'
+    },
+    {
+        target: '.dashboard-table-header',
+        title: '項目分析表',
+        content: '詳細顯示每個項目的：<br>• 叫貨次數<br>• 平均補貨天數<br>• 異常天數<br>• 建議盤點頻率',
+        position: 'bottom'
+    },
+    {
+        target: '.dashboard-table',
+        targetFallback: '.dashboard-table-container',
+        title: '數據說明',
+        content: '<strong>叫貨次數</strong>：歷史叫貨總數<br><strong>平均補貨天數</strong>：從叫貨到到貨的平均時間<br><strong>建議頻率</strong>：系統自動計算',
+        position: 'top'
+    },
+    {
+        target: '.help-btn',
+        title: '完成！',
+        content: '點擊「❓ 說明」可重新觀看教學',
+        position: 'bottom'
+    }
+];
+
 // 取得當前應使用的教學步驟
 function getTutorialSteps() {
     // 檢查當前是哪個分頁
     const purchasePanel = document.getElementById('purchasePanel');
+    const dashboardPanel = document.getElementById('dashboardPanel');
+
     if (purchasePanel && purchasePanel.classList.contains('active')) {
         return purchaseTutorialSteps;
+    }
+    if (dashboardPanel && dashboardPanel.classList.contains('active')) {
+        return dashboardTutorialSteps;
     }
     return window.innerWidth <= 768 ? mobileTutorialSteps : desktopTutorialSteps;
 }
@@ -3880,6 +3927,57 @@ function checkFirstTimePurchaseUser() {
     if (!hasSeenPurchaseTutorial) {
         showPurchaseWelcomeModal();
     }
+}
+
+// 檢查是否為首次使用數據儀表板
+function checkFirstTimeDashboardUser() {
+    const hasSeenDashboardTutorial = localStorage.getItem('hasSeenDashboardTutorial');
+    if (!hasSeenDashboardTutorial) {
+        showDashboardWelcomeModal();
+    }
+}
+
+// 顯示數據儀表板歡迎彈窗
+function showDashboardWelcomeModal() {
+    const overlay = document.createElement('div');
+    overlay.id = 'dashboardWelcomeOverlay';
+    overlay.className = 'welcome-modal show';
+    overlay.innerHTML = `
+        <div class="welcome-modal-content">
+            <div class="welcome-icon">📊</div>
+            <div class="welcome-title">數據儀表板</div>
+            <div class="welcome-message">
+                這是您第一次使用數據儀表板<br>
+                是否需要觀看操作教學？
+            </div>
+            <div class="welcome-buttons">
+                <button class="welcome-btn welcome-btn-skip" onclick="skipDashboardWelcome()">跳過</button>
+                <button class="welcome-btn welcome-btn-start" onclick="startDashboardTutorialFromWelcome()">🎓 開始教學</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+// 跳過儀表板教學
+function skipDashboardWelcome() {
+    const overlay = document.getElementById('dashboardWelcomeOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    localStorage.setItem('hasSeenDashboardTutorial', 'true');
+}
+
+// 從歡迎彈窗開始儀表板教學
+function startDashboardTutorialFromWelcome() {
+    const overlay = document.getElementById('dashboardWelcomeOverlay');
+    if (overlay) {
+        overlay.remove();
+    }
+    localStorage.setItem('hasSeenDashboardTutorial', 'true');
+    setTimeout(() => {
+        startTutorial();
+    }, 300);
 }
 
 // 顯示採購追蹤歡迎彈窗
