@@ -2861,6 +2861,19 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
 
 // 確認移除項目（不需要了）
 async function confirmRemoveItem(itemKey) {
+    // 詢問操作人員
+    const personInput = document.getElementById('personName');
+    let person = personInput ? personInput.value.trim() : '';
+
+    if (!person) {
+        person = prompt(`請輸入您的姓名：`);
+        if (person === null || !person.trim()) {
+            showAlert('❌ 請輸入操作人員姓名', 'danger');
+            return;
+        }
+        person = person.trim();
+    }
+
     // 詢問移除原因
     const reason = prompt(`請輸入移除「${itemKey}」的原因：\n\n例如：已停用、不再需要、重複項目等`);
 
@@ -2871,15 +2884,6 @@ async function confirmRemoveItem(itemKey) {
 
     if (!reason.trim()) {
         showAlert('❌ 請輸入移除原因', 'danger');
-        return;
-    }
-
-    // 取得操作人員
-    const personInput = document.getElementById('personName');
-    const person = personInput ? personInput.value.trim() : '';
-
-    if (!person) {
-        showAlert('❌ 請先在上方填寫盤點人員姓名', 'danger');
         return;
     }
 
@@ -2954,6 +2958,19 @@ async function confirmRemoveItem(itemKey) {
 
 // 取消本次採購（規則設定問題，不需要實際採購）
 async function cancelPurchase(itemKey) {
+    // 詢問操作人員
+    const personInput = document.getElementById('personName');
+    let person = personInput ? personInput.value.trim() : '';
+
+    if (!person) {
+        person = prompt(`請輸入您的姓名：`);
+        if (person === null || !person.trim()) {
+            showAlert('❌ 請輸入操作人員姓名', 'danger');
+            return;
+        }
+        person = person.trim();
+    }
+
     // 詢問取消原因
     const reason = prompt(`請輸入取消採購「${itemKey}」的原因：\n\n例如：規則調整、庫存充足、安全庫存設太高等`);
 
@@ -2963,15 +2980,6 @@ async function cancelPurchase(itemKey) {
 
     if (!reason.trim()) {
         showAlert('❌ 請輸入取消原因', 'danger');
-        return;
-    }
-
-    // 取得操作人員
-    const personInput = document.getElementById('personName');
-    const person = personInput ? personInput.value.trim() : '';
-
-    if (!person) {
-        showAlert('❌ 請先在上方填寫盤點人員姓名', 'danger');
         return;
     }
 
