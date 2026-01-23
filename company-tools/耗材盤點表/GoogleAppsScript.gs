@@ -1352,7 +1352,7 @@ function getStatistics() {
 }
 
 /**
- * 取得被停用（標記異常）的項目清單
+ * 取得被停用（標記異常或已移除）的項目清單
  */
 function getDisabledItems() {
   try {
@@ -1370,18 +1370,22 @@ function getDisabledItems() {
 
     const data = purchaseSheet.getRange(2, 1, lastRow - 1, 10).getValues();
     const disabledItems = [];
+    const addedKeys = new Set();  // 避免重複
 
     data.forEach(row => {
       const itemKey = row[0];
+      const status = row[3];
       const isAbnormal = row[9] === '異常' || row[9] === true;
 
-      // 只回傳被標記異常的項目
-      if (itemKey && isAbnormal) {
+      // 回傳被標記異常或已移除的項目
+      if (itemKey && !addedKeys.has(itemKey) && (isAbnormal || status === '已移除')) {
         disabledItems.push({
           itemKey: itemKey,
           category: row[1],
-          itemName: row[2]
+          itemName: row[2],
+          reason: status === '已移除' ? '已移除' : '異常'
         });
+        addedKeys.add(itemKey);
       }
     });
 

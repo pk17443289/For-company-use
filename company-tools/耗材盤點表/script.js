@@ -2915,11 +2915,17 @@ async function confirmRemoveItem(itemKey) {
         if (result.success) {
             showAlert(`✅ ${itemKey} 已移除（操作人員：${person}）`, 'success');
 
-            // 從本地清單移除
+            // 加入停用清單（盤點時會跳過）
+            disabledItems.add(itemKey);
+
+            // 從本地採購清單移除
             if (purchaseListData) {
                 purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
                 renderPurchaseList(purchaseListData);
             }
+
+            // 重新生成盤點項目（會跳過已停用的項目）
+            refreshInventoryItems();
 
             // 重新載入儀表板數據
             loadStatistics();
@@ -2942,11 +2948,17 @@ async function confirmRemoveItem(itemKey) {
 
             showAlert(`✅ ${itemKey} 已移除（操作人員：${person}）`, 'success');
 
-            // 從本地清單移除
+            // 加入停用清單（盤點時會跳過）
+            disabledItems.add(itemKey);
+
+            // 從本地採購清單移除
             if (purchaseListData) {
                 purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
                 renderPurchaseList(purchaseListData);
             }
+
+            // 重新生成盤點項目（會跳過已停用的項目）
+            refreshInventoryItems();
 
             // 重新載入儀表板數據
             loadStatistics();
