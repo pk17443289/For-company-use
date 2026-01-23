@@ -3673,13 +3673,31 @@ const tutorialSteps = [
         target: '.category-section',
         title: '盤點項目分類',
         content: '項目按負責區域分類，點擊分類標題可以<strong>展開/收起</strong>該區域的項目。',
-        position: 'bottom'
+        position: 'bottom',
+        beforeShow: function() {
+            // 確保第一個分類是展開的
+            const firstContent = document.querySelector('.category-content');
+            const firstHeader = document.querySelector('.category-header');
+            if (firstContent && firstContent.classList.contains('collapsed')) {
+                firstContent.classList.remove('collapsed');
+                if (firstHeader) firstHeader.classList.remove('collapsed');
+            }
+        }
     },
     {
-        target: '.status-options',
+        target: '.item-row',
         title: '填寫盤點狀態',
         content: '對每個項目選擇狀態：<br>✅ <strong>不用叫</strong>：庫存充足<br>⚠️ <strong>要叫貨</strong>：需要採購<br>🚚 <strong>補貨中</strong>：已訂購等待到貨<br>📦 <strong>已補貨</strong>：貨已到，盤點完成',
-        position: 'top'
+        position: 'bottom',
+        beforeShow: function() {
+            // 確保分類是展開的，讓 item-row 可見
+            const firstContent = document.querySelector('.category-content');
+            const firstHeader = document.querySelector('.category-header');
+            if (firstContent && firstContent.classList.contains('collapsed')) {
+                firstContent.classList.remove('collapsed');
+                if (firstHeader) firstHeader.classList.remove('collapsed');
+            }
+        }
     },
     {
         target: '.main-tabs',
@@ -3757,59 +3775,75 @@ function showTutorialStep() {
     if (!overlay || !highlight || !tooltip) return;
 
     const step = tutorialSteps[currentTutorialStep];
-    let targetElement = document.querySelector(step.target);
 
-    // 如果找不到目標元素，嘗試找備用元素
-    if (!targetElement) {
-        // 如果是 status-options，可能需要找第一個項目
-        if (step.target === '.status-options') {
-            targetElement = document.querySelector('.item-row');
-        }
+    // 執行 beforeShow 函數（如果有定義）
+    if (step.beforeShow && typeof step.beforeShow === 'function') {
+        step.beforeShow();
     }
 
-    if (!targetElement) {
-        // 跳過找不到的步驟
-        nextTutorialStep();
-        return;
-    }
-
-    // 顯示遮罩層
-    overlay.classList.add('show');
-
-    // 滾動到目標元素
-    targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-    // 延遲計算位置（等滾動完成）
+    // 延遲一點讓 DOM 更新（例如展開分類後）
     setTimeout(() => {
-        const rect = targetElement.getBoundingClientRect();
-        const padding = 8;
+        let targetElement = document.querySelector(step.target);
 
-        // 設定高亮區域
-        highlight.style.top = (rect.top + window.scrollY - padding) + 'px';
-        highlight.style.left = (rect.left - padding) + 'px';
-        highlight.style.width = (rect.width + padding * 2) + 'px';
-        highlight.style.height = (rect.height + padding * 2) + 'px';
-
-        // 更新提示框內容
-        document.getElementById('tutorialStepNumber').textContent = currentTutorialStep + 1;
-        document.getElementById('tutorialStepTotal').textContent = `共 ${tutorialSteps.length} 步`;
-        document.getElementById('tutorialTitle').textContent = step.title;
-        document.getElementById('tutorialContent').innerHTML = step.content;
-
-        // 更新按鈕
-        const nextBtn = document.getElementById('tutorialNextBtn');
-        if (currentTutorialStep === tutorialSteps.length - 1) {
-            nextBtn.textContent = '完成教學 ✓';
-            nextBtn.className = 'tutorial-btn tutorial-btn-finish';
-        } else {
-            nextBtn.textContent = '下一步 ➜';
-            nextBtn.className = 'tutorial-btn tutorial-btn-next';
+        // 如果找不到目標元素，嘗試找備用元素
+        if (!targetElement || !isElementVisible(targetElement)) {
+            console.log('找不到目標元素或元素不可見：', step.target);
+            // 跳過找不到的步驟
+            nextTutorialStep();
+            return;
         }
 
-        // 計算提示框位置
-        positionTooltip(rect, step.position);
+        // 顯示遮罩層
+        overlay.classList.add('show');
 
-    }, 300);
+        // 滾動到目標元素
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // 延遲計算位置（等滾動完成）
+        setTimeout(() => {
+            // 重新取得位置（滾動後位置可能改變）
+            const rect = targetElement.getBoundingClientRect();
+            const padding = 10;
+
+            // 設定高亮區域
+            highlight.style.top = (rect.top + window.scrollY - padding) + 'px';
+            highlight.style.left = (rect.left - padding) + 'px';
+            highlight.style.width = (rect.width + padding * 2) + 'px';
+            highlight.style.height = (rect.height + padding * 2) + 'px';
+
+            // 更新提示框內容
+            document.getElementById('tutorialStepNumber').textContent = currentTutorialStep + 1;
+            document.getElementById('tutorialStepTotal').textContent = `共 ${tutorialSteps.length} 步`;
+            document.getElementById('tutorialTitle').textContent = step.title;
+            document.getElementById('tutorialContent').innerHTML = step.content;
+
+            // 更新按鈕
+            const nextBtn = document.getElementById('tutorialNextBtn');
+            if (currentTutorialStep === tutorialSteps.length - 1) {
+                nextBtn.textContent = '完成教學 ✓';
+                nextBtn.className = 'tutorial-btn tutorial-btn-finish';
+            } else {
+                nextBtn.textContent = '下一步 ➜';
+                nextBtn.className = 'tutorial-btn tutorial-btn-next';
+            }
+
+            // 計算提示框位置
+            positionTooltip(rect, step.position);
+
+        }, 400);
+    }, 100);
+}
+
+// 檢查元素是否可見
+function isElementVisible(el) {
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    const style = window.getComputedStyle(el);
+    return rect.width > 0 &&
+           rect.height > 0 &&
+           style.display !== 'none' &&
+           style.visibility !== 'hidden' &&
+           style.opacity !== '0';
 }
 
 // 計算提示框位置
