@@ -691,7 +691,7 @@ function getPurchaseList() {
       return createJsonResponse({ success: true, data: [] });
     }
 
-    const data = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    const data = purchaseSheet.getRange(2, 1, lastRow - 1, 13).getValues();
     const result = [];
 
     data.forEach((row, index) => {
@@ -714,7 +714,8 @@ function getPurchaseList() {
           replenishDays: row[8],
           isAbnormal: isAbnormal,
           abnormalStartTime: row[10] ? new Date(row[10]).toISOString() : null,
-          abnormalTotalDays: row[11] || 0
+          abnormalTotalDays: row[11] || 0,
+          abnormalReason: row[12] || ''
         });
       }
     });
@@ -835,7 +836,7 @@ function markAbnormal(data) {
     }
 
     // 檢查是否有新欄位，如果沒有就新增
-    const headers = purchaseSheet.getRange(1, 1, 1, 12).getValues()[0];
+    const headers = purchaseSheet.getRange(1, 1, 1, 13).getValues()[0];
     if (headers[9] !== '異常') {
       purchaseSheet.getRange(1, 10).setValue('異常');
       purchaseSheet.getRange(1, 10).setFontWeight('bold');
@@ -847,6 +848,10 @@ function markAbnormal(data) {
     if (headers[11] !== '異常總天數') {
       purchaseSheet.getRange(1, 12).setValue('異常總天數');
       purchaseSheet.getRange(1, 12).setFontWeight('bold');
+    }
+    if (headers[12] !== '異常原因') {
+      purchaseSheet.getRange(1, 13).setValue('異常原因');
+      purchaseSheet.getRange(1, 13).setFontWeight('bold');
     }
 
     const purchaseData = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
@@ -872,9 +877,10 @@ function markAbnormal(data) {
 
     // 更新異常狀態
     if (markAsAbnormal) {
-      // 標記異常：記錄異常開始時間
+      // 標記異常：記錄異常開始時間和原因
       purchaseSheet.getRange(targetRow, 10).setValue('異常');
       purchaseSheet.getRange(targetRow, 11).setValue(timestamp);  // 異常開始時間
+      purchaseSheet.getRange(targetRow, 13).setValue(reason);     // 異常原因
     } else {
       // 取消異常：計算這次異常的天數，累加到異常總天數
       const abnormalStartTime = rowData[10];  // 異常開始時間
@@ -892,6 +898,7 @@ function markAbnormal(data) {
       purchaseSheet.getRange(targetRow, 10).setValue('');  // 清除異常標記
       purchaseSheet.getRange(targetRow, 11).setValue('');  // 清除異常開始時間
       purchaseSheet.getRange(targetRow, 12).setValue(totalAbnormalDays);  // 更新異常總天數
+      purchaseSheet.getRange(targetRow, 13).setValue('');  // 清除異常原因
     }
 
     // 記錄到「異常記錄」工作表
@@ -1021,6 +1028,16 @@ function getStatistics() {
       // 統計異常
       if (stats.isAbnormal) {
         abnormalCount++;
+        totalAbnormalDays += stats.abnormalTotalDays || 0;
+        // 異常項目不計入頻率統計，直接跳過
+        totalItems++;
+        result.push({
+          ...stats,
+          avgReplenishDays: null,
+          avgOrderInterval: null,
+          suggestedFrequency: 'weekly'  // 異常項目預設顯示每週
+        });
+        continue;
       }
       totalAbnormalDays += stats.abnormalTotalDays || 0;
 

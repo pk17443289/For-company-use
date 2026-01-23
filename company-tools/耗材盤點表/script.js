@@ -631,9 +631,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化按鈕狀態
     updateButtonStates();
 
-    // 更新今日盤點建議並自動套用（靜默模式，不顯示提示）
+    // 更新今日盤點建議（顯示篩選按鈕，預設顯示全部項目）
     updateTodaySuggestion();
-    applyTodaySuggestion(true);
+    applyFrequencyFilter();
 });
 
 // 今日建議盤點的頻率列表
@@ -773,8 +773,8 @@ function generateItems() {
 function filterByFrequency(frequency) {
     currentFrequencyFilter = frequency;
 
-    // 更新按鈕狀態
-    document.querySelectorAll('.freq-btn').forEach(btn => {
+    // 更新按鈕狀態（支援新的 freq-filter-btn 和舊的 freq-btn）
+    document.querySelectorAll('.freq-btn, .freq-filter-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.dataset.freq === frequency) {
             btn.classList.add('active');
@@ -782,6 +782,9 @@ function filterByFrequency(frequency) {
     });
 
     applyFrequencyFilter();
+
+    // 更新今日建議區塊的顯示（更新數量和選中狀態）
+    updateTodaySuggestion();
 
     // 如果是手機版，重新初始化（使用手動選擇的頻率）
     if (isMobileView()) {
@@ -793,9 +796,19 @@ function filterByFrequency(frequency) {
 function applyFrequencyFilter() {
     const allItems = document.querySelectorAll('.item-row[data-frequency]');
 
+    // 確定要顯示的頻率列表
+    let filterFreqs = [];
+    if (currentFrequencyFilter === 'all') {
+        filterFreqs = ['daily', 'weekly', 'monthly'];
+    } else if (currentFrequencyFilter === 'today') {
+        filterFreqs = todaySuggestedFrequencies;
+    } else {
+        filterFreqs = [currentFrequencyFilter];
+    }
+
     allItems.forEach(item => {
         const itemFreq = item.getAttribute('data-frequency');
-        if (currentFrequencyFilter === 'all' || itemFreq === currentFrequencyFilter) {
+        if (filterFreqs.includes(itemFreq)) {
             item.classList.remove('freq-hidden');
         } else {
             item.classList.add('freq-hidden');
@@ -879,14 +892,24 @@ function updateTodaySuggestion() {
         monthly: { icon: '🟢', name: '每月項目' }
     };
 
+    // 統計各頻率的項目數
+    const freqCounts = { daily: 0, weekly: 0, monthly: 0 };
+    Object.keys(inventoryData).forEach(category => {
+        inventoryData[category].forEach(item => {
+            if (disabledItems.has(item.name)) return;
+            const freq = getItemFrequency(item.name);
+            freqCounts[freq]++;
+        });
+    });
+
     let html = '<div style="margin-bottom: 8px;">';
 
     if (todaySuggestedFrequencies.length === 1 && todaySuggestedFrequencies[0] === 'daily') {
-        html += '今天是<strong>一般日</strong>，只需盤點：';
+        html += '今天是<strong>一般日</strong>，建議盤點：';
     } else if (todaySuggestedFrequencies.includes('weekly') && !todaySuggestedFrequencies.includes('monthly')) {
-        html += '今天是<strong>週一</strong>，需盤點：';
+        html += '今天是<strong>週一</strong>，建議盤點：';
     } else if (todaySuggestedFrequencies.includes('monthly')) {
-        html += '今天是<strong>月初</strong>，需盤點：';
+        html += '今天是<strong>月初</strong>，建議盤點：';
     }
 
     // 顯示今天需盤的頻率
@@ -894,20 +917,53 @@ function updateTodaySuggestion() {
     html += `<strong style="color: #1565c0;">${activeFreqs}</strong>`;
     html += '</div>';
 
-    // 統計今天需要盤的項目數
-    let todayItemCount = 0;
+    // 篩選按鈕區域
+    html += `<div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0;">
+        <button class="freq-filter-btn ${currentFrequencyFilter === 'all' ? 'active' : ''}" onclick="filterByFrequency('all')" data-freq="all">
+            📦 全部 <span class="freq-count">${freqCounts.daily + freqCounts.weekly + freqCounts.monthly}</span>
+        </button>
+        <button class="freq-filter-btn ${currentFrequencyFilter === 'today' ? 'active' : ''}" onclick="filterByFrequency('today')" data-freq="today">
+            📅 今日建議
+        </button>
+        <button class="freq-filter-btn ${currentFrequencyFilter === 'daily' ? 'active' : ''}" onclick="filterByFrequency('daily')" data-freq="daily">
+            🔴 每日 <span class="freq-count">${freqCounts.daily}</span>
+        </button>
+        <button class="freq-filter-btn ${currentFrequencyFilter === 'weekly' ? 'active' : ''}" onclick="filterByFrequency('weekly')" data-freq="weekly">
+            🔵 每週 <span class="freq-count">${freqCounts.weekly}</span>
+        </button>
+        <button class="freq-filter-btn ${currentFrequencyFilter === 'monthly' ? 'active' : ''}" onclick="filterByFrequency('monthly')" data-freq="monthly">
+            🟢 每月 <span class="freq-count">${freqCounts.monthly}</span>
+        </button>
+    </div>`;
+
+    // 統計目前篩選顯示的項目數
+    let visibleItemCount = 0;
+    let filterFreqs = [];
+    if (currentFrequencyFilter === 'all') {
+        filterFreqs = ['daily', 'weekly', 'monthly'];
+    } else if (currentFrequencyFilter === 'today') {
+        filterFreqs = todaySuggestedFrequencies;
+    } else {
+        filterFreqs = [currentFrequencyFilter];
+    }
+
     Object.keys(inventoryData).forEach(category => {
         inventoryData[category].forEach(item => {
             if (disabledItems.has(item.name)) return;
             const freq = getItemFrequency(item.name);
-            if (todaySuggestedFrequencies.includes(freq)) {
-                todayItemCount++;
+            if (filterFreqs.includes(freq)) {
+                visibleItemCount++;
             }
         });
     });
 
-    html += `<div style="font-size: 1.1em;">
-        共 <strong style="color: #1e88e5; font-size: 1.3em;">${todayItemCount}</strong> 個項目（已自動篩選）
+    const filterDesc = currentFrequencyFilter === 'all' ? '全部項目' :
+                       currentFrequencyFilter === 'today' ? '今日建議項目' :
+                       freqInfo[currentFrequencyFilter].name;
+
+    html += `<div style="font-size: 1.1em; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #90caf9;">
+        目前顯示：<strong style="color: #1565c0;">${filterDesc}</strong>，
+        共 <strong style="color: #1e88e5; font-size: 1.3em;">${visibleItemCount}</strong> 個項目
     </div>`;
 
     contentEl.innerHTML = html;
@@ -1027,47 +1083,9 @@ function updateItemStatus(input) {
     }
 }
 
-// 更新統計
+// 更新統計（統計區域已移除，此函數保留供內部邏輯使用）
 function updateStats() {
-    const allRadios = document.querySelectorAll('input[type="radio"]');
-    const uniqueNames = new Set();
-    allRadios.forEach(radio => uniqueNames.add(radio.name));
-
-    let total = uniqueNames.size;
-    let filled = 0;
-    let needOrder = 0;
-    let noNeed = 0;
-    let replenishing = 0;
-    let replenished = 0;
-
-    uniqueNames.forEach(name => {
-        const selected = document.querySelector(`input[name="${name}"]:checked`);
-        if (selected) {
-            filled++;
-            const value = selected.value;
-            if (value === '要叫貨') {
-                needOrder++;
-            } else if (value === '不用叫貨') {
-                noNeed++;
-            } else if (value === '補貨中') {
-                replenishing++;
-            } else if (value === '已補貨') {
-                replenished++;
-            }
-        }
-    });
-
-    document.getElementById('totalItems').textContent = total;
-    document.getElementById('filledItems').textContent = filled;
-    document.getElementById('urgentItems').textContent = needOrder;
-    document.getElementById('warningItems').textContent = noNeed;
-    document.getElementById('replenishingItems').textContent = replenishing;
-    document.getElementById('replenishedItems').textContent = replenished;
-
-    // 顯示統計區域
-    if (filled > 0) {
-        document.getElementById('statsSection').style.display = 'block';
-    }
+    // 統計區域已移除，不再需要更新 DOM
 }
 
 // 檢查是否所有項目都已填寫
@@ -1208,9 +1226,11 @@ function exportData() {
     showAlert(t('dataExported'), 'success');
 }
 
-// 顯示需補貨項目
-function showNeedToOrder() {
+
+// 顯示待處理項目（要叫貨 + 補貨中）
+function showPendingItems() {
     const needToOrder = [];
+    const replenishing = [];
 
     Object.keys(inventoryData).forEach(category => {
         inventoryData[category].forEach((item, index) => {
@@ -1231,7 +1251,11 @@ function showNeedToOrder() {
             if (status === '要叫貨') {
                 needToOrder.push({
                     name: item.name,
-                    status: status,
+                    threshold: item.threshold
+                });
+            } else if (status === '補貨中') {
+                replenishing.push({
+                    name: item.name,
                     threshold: item.threshold
                 });
             }
@@ -1240,30 +1264,57 @@ function showNeedToOrder() {
 
     const orderList = document.getElementById('orderList');
 
-    if (needToOrder.length === 0) {
-        orderList.innerHTML = `<p style="color: #28a745; font-weight: bold;">${t('noOrderNeeded')}</p>`;
+    if (needToOrder.length === 0 && replenishing.length === 0) {
+        orderList.innerHTML = `<p style="color: #28a745; font-weight: bold;">✅ 目前沒有待處理項目</p>`;
     } else {
-        let html = '<div style="margin-bottom: 15px;">';
-        html += `<strong>${t('followingNeedOrder')}</strong>`;
-        html += '</div>';
-        html += '<div id="copyableList">';
+        let html = '<div id="copyableList">';
 
-        html += '<div style="background: #fff3cd; padding: 15px; border-radius: 8px;">';
-        html += `<strong style="color: #856404;">${t('needOrderLabel')}</strong><br><br>`;
-        needToOrder.forEach(item => {
-            html += `• ${item.name}`;
-            if (item.threshold) {
-                html += ` - ${item.threshold}`;
-            }
-            html += '<br>';
-        });
-        html += '</div>';
+        // 要叫貨區塊
+        if (needToOrder.length > 0) {
+            html += '<div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">';
+            html += `<strong style="color: #856404;">⚠️ 要叫貨（${needToOrder.length} 項）- 需要採購</strong><br><br>`;
+            needToOrder.forEach(item => {
+                html += `• ${item.name}`;
+                if (item.threshold) {
+                    html += ` <span style="color: #999; font-size: 0.9em;">(${item.threshold})</span>`;
+                }
+                html += '<br>';
+            });
+            html += '</div>';
+        }
+
+        // 補貨中區塊
+        if (replenishing.length > 0) {
+            html += '<div style="background: #e3f2fd; padding: 15px; border-radius: 8px;">';
+            html += `<strong style="color: #1565c0;">🚚 補貨中（${replenishing.length} 項）- 已在處理</strong><br><br>`;
+            replenishing.forEach(item => {
+                html += `• ${item.name}`;
+                if (item.threshold) {
+                    html += ` <span style="color: #999; font-size: 0.9em;">(${item.threshold})</span>`;
+                }
+                html += '<br>';
+            });
+            html += '</div>';
+        }
 
         html += '</div>';
+
+        // 摘要
+        html = `<div style="margin-bottom: 15px; padding: 10px; background: #f5f5f5; border-radius: 6px;">
+            <span style="color: #f57c00; font-weight: bold;">⚠️ 要叫貨: ${needToOrder.length}</span>
+            &nbsp;&nbsp;|&nbsp;&nbsp;
+            <span style="color: #1565c0; font-weight: bold;">🚚 補貨中: ${replenishing.length}</span>
+        </div>` + html;
+
         orderList.innerHTML = html;
     }
 
     document.getElementById('orderModal').classList.add('show');
+}
+
+// 舊函數保留相容性
+function showNeedToOrder() {
+    showPendingItems();
 }
 
 // 複製叫貨清單
@@ -1875,32 +1926,25 @@ function updateMobileProgress() {
     }
 }
 
-// 更新手機版統計
+// 更新手機版統計（只顯示關鍵數據：要叫貨、補貨中）
 function updateMobileStats() {
     let needOrder = 0;
     let replenishing = 0;
-    let replenished = 0;
 
     allItemsFlat.forEach(item => {
         const value = mobileSelections[item.itemKey];
-        if (value) {
-            if (value === '要叫貨') {
-                needOrder++;
-            } else if (value === '補貨中') {
-                replenishing++;
-            } else if (value === '已補貨') {
-                replenished++;
-            }
+        if (value === '要叫貨') {
+            needOrder++;
+        } else if (value === '補貨中') {
+            replenishing++;
         }
     });
 
     const orderEl = document.getElementById('mobileOrderCount');
     const replenishingEl = document.getElementById('mobileReplenishingCount');
-    const replenishedEl = document.getElementById('mobileReplenishedCount');
 
     if (orderEl) orderEl.textContent = needOrder;
     if (replenishingEl) replenishingEl.textContent = replenishing;
-    if (replenishedEl) replenishedEl.textContent = replenished;
 }
 
 // 導航到上一項/下一項
@@ -2238,9 +2282,9 @@ async function loadLastInventory() {
         // 重新載入本地儲存的資料
         loadData();
 
-        // 重新更新今日盤點建議並套用（因為統計數據載入後頻率可能有變動）
+        // 重新更新今日盤點建議（因為統計數據載入後頻率可能有變動，但保持用戶選擇的篩選）
         updateTodaySuggestion();
-        applyTodaySuggestion(true);
+        applyFrequencyFilter();
 
         // 如果是手機版，確保重新初始化
         if (isMobileView()) {
@@ -2546,10 +2590,14 @@ function renderPurchaseList(data) {
 
         // 異常樣式
         let abnormalBadge = '';
+        let abnormalReasonText = '';
         if (item.isAbnormal) {
             statusClass = 'marked-abnormal';
             overdueClass = '';
             abnormalBadge = `<span class="abnormal-badge">🚫 異常</span>`;
+            if (item.abnormalReason) {
+                abnormalReasonText = `<div style="color: #9c27b0; font-size: 0.85em; margin-top: 4px;">📝 原因：${item.abnormalReason}</div>`;
+            }
         }
 
         html += `
@@ -2561,6 +2609,7 @@ function renderPurchaseList(data) {
                         ${abnormalBadge}
                     </div>
                     <div class="purchase-item-category">${item.category}</div>
+                    ${abnormalReasonText}
                     <div class="purchase-item-time">
                         <span>📅 叫貨時間：${orderTime}</span>
                         ${item.status === '補貨中' ? `<span>🚚 開始補貨：${replenishingTime}</span>` : ''}
@@ -2716,6 +2765,12 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
         if (!confirm(`確定要取消「${itemKey}」的異常標記嗎？`)) return;
     }
 
+    // 顯示處理中狀態
+    showAlert(`⏳ 正在${markAsAbnormal ? '標記' : '取消'}異常...`, 'warning');
+
+    // 立即在本地更新 UI（樂觀更新）
+    updateLocalAbnormalStatus(itemKey, markAsAbnormal);
+
     try {
         const payload = {
             action: 'markAbnormal',
@@ -2736,8 +2791,7 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
         const result = await response.json();
 
         if (result.success) {
-            showAlert(`✅ ${itemKey} ${markAsAbnormal ? '已標記為異常，將不會出現在盤點表中' : '已取消異常標記，將重新出現在盤點表中'}`, 'success');
-            loadPurchaseList();  // 重新載入採購清單
+            showAlert(`✅ ${itemKey} ${markAsAbnormal ? '已標記為異常' : '已取消異常標記'}`, 'success');
 
             // 更新停用項目清單
             if (markAsAbnormal) {
@@ -2746,24 +2800,11 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
                 disabledItems.delete(itemKey);
             }
 
-            // 重新生成盤點項目（這樣盤點頁面會立即更新）
-            document.querySelectorAll('.items-grid').forEach(grid => grid.innerHTML = '');
-            generateItems();
-            document.querySelectorAll('input[type="radio"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    updateItemStatus(this);
-                    updateStats();
-                    updateButtonStates();
-                    autoSave();
-                });
-            });
-            updateStats();
-
-            // 如果在手機版，也要更新
-            if (isMobileView()) {
-                initMobileSwipe();
-            }
+            // 重新生成盤點項目
+            refreshInventoryItems();
         } else {
+            // 如果失敗，恢復原狀
+            updateLocalAbnormalStatus(itemKey, !markAsAbnormal);
             throw new Error(result.error || '操作失敗');
         }
     } catch (error) {
@@ -2787,11 +2828,59 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
                 body: JSON.stringify(payload)
             });
 
-            showAlert(`✅ ${itemKey} 已更新（請重新載入確認）`, 'success');
-            setTimeout(() => loadPurchaseList(), 1500);
+            showAlert(`✅ ${itemKey} ${markAsAbnormal ? '已標記為異常' : '已取消異常標記'}`, 'success');
+
+            // 更新停用項目清單
+            if (markAsAbnormal) {
+                disabledItems.add(itemKey);
+            } else {
+                disabledItems.delete(itemKey);
+            }
+
+            // 重新生成盤點項目
+            refreshInventoryItems();
         } catch (e) {
+            // 恢復原狀
+            updateLocalAbnormalStatus(itemKey, !markAsAbnormal);
             showAlert('❌ 操作失敗：' + error.message, 'danger');
         }
+    }
+}
+
+// 立即更新本地異常狀態（樂觀更新，讓 UI 立即響應）
+function updateLocalAbnormalStatus(itemKey, isAbnormal) {
+    // 更新 purchaseListData
+    if (purchaseListData) {
+        const item = purchaseListData.find(i => i.itemKey === itemKey);
+        if (item) {
+            item.isAbnormal = isAbnormal;
+        }
+    }
+    // 立即重新渲染採購列表
+    renderPurchaseList(purchaseListData || []);
+}
+
+// 重新生成盤點項目
+function refreshInventoryItems() {
+    document.querySelectorAll('.items-grid').forEach(grid => grid.innerHTML = '');
+    generateItems();
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updateItemStatus(this);
+            updateStats();
+            updateButtonStates();
+            autoSave();
+        });
+    });
+    updateStats();
+
+    // 更新篩選按鈕的數字（排除異常項目後重新計算）
+    updateTodaySuggestion();
+    applyFrequencyFilter();
+
+    // 如果在手機版，也要更新
+    if (isMobileView()) {
+        initMobileSwipe();
     }
 }
 

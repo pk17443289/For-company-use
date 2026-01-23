@@ -797,35 +797,35 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .mobile-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .mobile-stat {
-            background: white;
-            padding: 12px;
+        /* 簡潔統計摘要條 */
+        .mobile-stats-summary-bar {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            background: #f0f7ff;
+            padding: 8px 12px;
             border-radius: 8px;
-            text-align: center;
-            border: 1px solid #e8eef2;
+            margin-top: 10px;
+            border: 1px solid #bbdefb;
+            font-size: 0.9em;
         }
 
-        .mobile-stat-label {
-            font-size: 0.75em;
-            color: #666;
-            margin-bottom: 4px;
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        .mobile-stat-value {
-            font-size: 1.3em;
-            font-weight: 700;
+        .summary-item.warning {
+            color: #f57c00;
+        }
+
+        .summary-item.replenishing {
             color: #1e88e5;
         }
 
-        .mobile-stat-value.warning {
-            color: #f57c00;
+        .summary-item strong {
+            font-size: 1.1em;
         }
 
         .modal {
@@ -1428,6 +1428,46 @@
             display: none !important;
         }
 
+        /* 頻率篩選按鈕樣式 */
+        .freq-filter-btn {
+            padding: 8px 14px;
+            border: 2px solid #e0e7f0;
+            background: white;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .freq-filter-btn:hover {
+            border-color: #1e88e5;
+            color: #1e88e5;
+            background: #f5f9ff;
+        }
+
+        .freq-filter-btn.active {
+            background: #1e88e5;
+            border-color: #1e88e5;
+            color: white;
+        }
+
+        .freq-filter-btn .freq-count {
+            display: inline-block;
+            padding: 2px 8px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            font-size: 0.85em;
+        }
+
+        .freq-filter-btn.active .freq-count {
+            background: rgba(255,255,255,0.3);
+        }
+
         .summary-card-label {
             font-size: 0.9em;
             color: #666;
@@ -1682,35 +1722,7 @@
                 </div>
             </div>
 
-            <!-- 統計區域 -->
-            <div class="stats-section" id="statsSection" style="display: none;">
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-label" data-i18n="totalItems">總項目數</div>
-                        <div class="stat-value" id="totalItems">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label" data-i18n="filledItems">已填寫</div>
-                        <div class="stat-value" id="filledItems">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label" data-i18n="needOrder">要叫貨</div>
-                        <div class="stat-value warning" id="urgentItems">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label" data-i18n="noNeedOrder">不用叫貨</div>
-                        <div class="stat-value" id="warningItems">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label" data-i18n="replenishing">補貨中</div>
-                        <div class="stat-value replenishing" id="replenishingItems">0</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label" data-i18n="replenished">已補貨</div>
-                        <div class="stat-value" id="replenishedItems">0</div>
-                    </div>
-                </div>
-            </div>
+            <!-- 統計區域已移除，改為在今日盤點建議區塊顯示關鍵數據 -->
 
             <!-- 今日盤點建議（系統自動判斷，無需手動篩選） -->
             <div class="today-suggestion" id="todaySuggestion">
@@ -1786,19 +1798,10 @@
                         <div class="progress-bar" id="mobileProgressBar" style="width: 0%"></div>
                     </div>
                     <div class="category-tabs" id="categoryTabs"></div>
-                    <div class="mobile-stats">
-                        <div class="mobile-stat">
-                            <div class="mobile-stat-label" data-i18n="needOrder">要叫貨</div>
-                            <div class="mobile-stat-value warning" id="mobileOrderCount">0</div>
-                        </div>
-                        <div class="mobile-stat">
-                            <div class="mobile-stat-label" data-i18n="replenishing">補貨中</div>
-                            <div class="mobile-stat-value replenishing" id="mobileReplenishingCount">0</div>
-                        </div>
-                        <div class="mobile-stat">
-                            <div class="mobile-stat-label" data-i18n="replenished">已補貨</div>
-                            <div class="mobile-stat-value" id="mobileReplenishedCount">0</div>
-                        </div>
+                    <!-- 簡潔的統計摘要（只顯示關鍵數據） -->
+                    <div class="mobile-stats-summary-bar">
+                        <span class="summary-item warning">⚠️ 要叫貨 <strong id="mobileOrderCount">0</strong></span>
+                        <span class="summary-item replenishing">🚚 補貨中 <strong id="mobileReplenishingCount">0</strong></span>
                     </div>
                 </div>
                 <div class="swipe-card-container" id="swipeCardContainer"></div>
@@ -1822,7 +1825,7 @@
 
             <!-- 按鈕區 -->
             <div class="button-group">
-                <button class="btn btn-success" onclick="showNeedToOrder()" data-i18n="viewNeedOrder">🛒 查看要叫貨的項目</button>
+                <button class="btn btn-success" onclick="showPendingItems()" data-i18n="viewPendingItems">🛒 查看待處理項目</button>
                 <button class="btn btn-primary" onclick="submitData()" data-i18n="submitInventory">✅ 提交盤點表</button>
             </div>
 
@@ -1926,7 +1929,7 @@
     <!-- 要叫貨項目彈窗 -->
     <div id="orderModal" class="modal">
         <div class="modal-content">
-            <div class="modal-header" data-i18n="orderListTitle">🛒 要叫貨項目清單</div>
+            <div class="modal-header" data-i18n="pendingListTitle">🛒 待處理項目清單</div>
             <div class="modal-body" id="orderList"></div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" onclick="closeModal()" data-i18n="close">關閉</button>
