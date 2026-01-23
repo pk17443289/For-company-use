@@ -45,6 +45,10 @@ function doGet(e) {
       return getDisabledItems();
     }
 
+    if (action === 'getInventoryItems') {
+      return getInventoryItems();
+    }
+
     // 如果有 POST 資料透過 GET 傳來（備用方案）
     if (e.parameter && e.parameter.data) {
       const data = JSON.parse(e.parameter.data);
@@ -121,6 +125,10 @@ function doPost(e) {
 
     if (action === 'cancelPurchase') {
       return cancelPurchase(data);
+    }
+
+    if (action === 'initInventoryItems') {
+      return initInventoryItems(data);
     }
 
     return createJsonResponse({ success: false, error: '未知的操作: ' + action });
@@ -1046,9 +1054,14 @@ function removeItem(data) {
       }
     }
 
+    // 同時從「項目清單」工作表刪除該項目
+    const deleteResult = deleteInventoryItem(itemKey);
+    const inventoryDeleted = deleteResult.success;
+
     return createJsonResponse({
       success: true,
-      message: '項目已移除'
+      message: '項目已移除',
+      inventoryDeleted: inventoryDeleted
     });
   } catch (error) {
     return createJsonResponse({ success: false, error: 'removeItem 錯誤: ' + error.toString() });
@@ -1186,6 +1199,14 @@ function getStatistics() {
     // 統計每個項目的補貨數據
     const itemStats = {};
 
+    // 先找出所有已移除的項目
+    const removedItems = new Set();
+    data.forEach(row => {
+      if (row[3] === '已移除') {
+        removedItems.add(row[0]);
+      }
+    });
+
     data.forEach(row => {
       const itemKey = row[0];
       const status = row[3];
@@ -1194,7 +1215,9 @@ function getStatistics() {
       const isAbnormal = row[9] === '異常' || row[9] === true;
       const abnormalTotalDays = row[11] || 0;
 
+      // 跳過空項目和已移除的項目
       if (!itemKey) return;
+      if (removedItems.has(itemKey)) return;
 
       if (!itemStats[itemKey]) {
         itemStats[itemKey] = {
@@ -1438,5 +1461,165 @@ function getReplenishHistory(itemKey) {
     return createJsonResponse({ success: true, data: result });
   } catch (error) {
     return createJsonResponse({ success: false, error: 'getReplenishHistory 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 取得盤點項目清單
+ * 從「項目清單」工作表讀取所有盤點項目
+ */
+function getInventoryItems() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('項目清單');
+
+    // 如果工作表不存在，回傳空資料（前端會使用預設項目）
+    if (!sheet) {
+      return createJsonResponse({
+        success: true,
+        data: null,
+        message: '項目清單工作表不存在，請先初始化'
+      });
+    }
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({
+        success: true,
+        data: {},
+        message: '項目清單是空的'
+      });
+    }
+
+    // 讀取所有資料（跳過標題列）
+    // 欄位：分類 | 名稱 | 閾值說明 | 單位 | 警告數量 | 盤點頻率
+    const data = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
+
+    // 轉換成前端需要的格式
+    const inventoryData = {};
+
+    data.forEach(row => {
+      const category = row[0];
+      const name = row[1];
+      const threshold = row[2] || '';
+      const unit = row[3] || '';
+      const warningValue = row[4] === '' ? null : row[4];
+      const frequency = row[5] || 'weekly';
+
+      if (!category || !name) return;
+
+      if (!inventoryData[category]) {
+        inventoryData[category] = [];
+      }
+
+      inventoryData[category].push({
+        name: name,
+        threshold: threshold,
+        unit: unit,
+        warningValue: warningValue,
+        frequency: frequency
+      });
+    });
+
+    return createJsonResponse({ success: true, data: inventoryData });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'getInventoryItems 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 初始化盤點項目清單
+ * 將前端傳來的項目資料寫入「項目清單」工作表
+ */
+function initInventoryItems(data) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName('項目清單');
+
+    // 如果工作表已存在，詢問是否覆蓋
+    if (sheet) {
+      // 清空現有資料（保留標題）
+      const lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        sheet.deleteRows(2, lastRow - 1);
+      }
+    } else {
+      // 創建新工作表
+      sheet = ss.insertSheet('項目清單');
+      // 設定標題列
+      sheet.getRange('A1:F1').setValues([['分類', '名稱', '閾值說明', '單位', '警告數量', '盤點頻率']]);
+      sheet.getRange('A1:F1').setFontWeight('bold');
+      sheet.setFrozenRows(1);
+      // 設定欄寬
+      sheet.setColumnWidth(1, 120);
+      sheet.setColumnWidth(2, 200);
+      sheet.setColumnWidth(3, 200);
+      sheet.setColumnWidth(4, 60);
+      sheet.setColumnWidth(5, 80);
+      sheet.setColumnWidth(6, 80);
+    }
+
+    // 寫入項目資料
+    const items = data.items;
+    const rows = [];
+
+    for (const category in items) {
+      items[category].forEach(item => {
+        rows.push([
+          category,
+          item.name,
+          item.threshold || '',
+          item.unit || '',
+          item.warningValue === null ? '' : item.warningValue,
+          item.frequency || 'weekly'
+        ]);
+      });
+    }
+
+    if (rows.length > 0) {
+      sheet.getRange(2, 1, rows.length, 6).setValues(rows);
+    }
+
+    return createJsonResponse({
+      success: true,
+      message: '已初始化 ' + rows.length + ' 個項目'
+    });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'initInventoryItems 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 從項目清單中刪除指定項目
+ */
+function deleteInventoryItem(itemKey) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('項目清單');
+
+    if (!sheet) {
+      return { success: false, error: '項目清單工作表不存在' };
+    }
+
+    const lastRow = sheet.getLastRow();
+    if (lastRow <= 1) {
+      return { success: false, error: '項目清單是空的' };
+    }
+
+    // 讀取所有資料找到要刪除的項目
+    const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+
+    for (let i = 0; i < data.length; i++) {
+      const name = data[i][1];
+      if (name === itemKey) {
+        // 刪除該列
+        sheet.deleteRow(i + 2);
+        return { success: true, message: '已從項目清單刪除: ' + itemKey };
+      }
+    }
+
+    return { success: false, error: '找不到項目: ' + itemKey };
+  } catch (error) {
+    return { success: false, error: 'deleteInventoryItem 錯誤: ' + error.toString() };
   }
 }

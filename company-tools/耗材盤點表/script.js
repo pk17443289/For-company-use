@@ -438,8 +438,9 @@ function updatePageLanguage() {
     document.title = t('pageTitle') + ' - ' + t('companyName');
 }
 
-// 盤點項目資料（含預設盤點頻率：daily=每日, weekly=每週, monthly=每月）
-const inventoryData = {
+// 預設盤點項目資料（含預設盤點頻率：daily=每日, weekly=每週, monthly=每月）
+// 如果 Google Sheets 有「項目清單」工作表，會從那裡讀取；否則使用此預設資料
+const defaultInventoryData = {
     ajun: [
         { name: '蝸牛', threshold: '剩兩台就要叫', unit: '台', warningValue: 2, frequency: 'weekly' },
         { name: '攝影機', threshold: '', unit: '台', warningValue: null, frequency: 'monthly' },
@@ -530,6 +531,9 @@ const inventoryData = {
         { name: '３３號 74×55 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' }
     ]
 };
+
+// 實際使用的盤點項目資料（初始化時會從 Google Sheets 載入，若無則使用預設）
+let inventoryData = defaultInventoryData;
 
 // 取得項目的實際盤點頻率（統計數據優先，否則用預設）
 function getItemFrequency(itemName) {
@@ -2215,29 +2219,46 @@ async function loadLastInventory() {
 
     try {
         // 並行載入所有資料（速度快很多）
-        const [inventoryResponse, disabledResponse, purchaseResponse, statsResponse] = await Promise.all([
+        const [lastInvResponse, disabledResponse, purchaseResponse, statsResponse, itemsResponse] = await Promise.all([
             fetch(GOOGLE_SCRIPT_URL + '?action=getLastInventory'),
             fetch(GOOGLE_SCRIPT_URL + '?action=getDisabledItems'),
             fetch(GOOGLE_SCRIPT_URL + '?action=getPurchaseList'),
-            fetch(GOOGLE_SCRIPT_URL + '?action=getStatistics')
+            fetch(GOOGLE_SCRIPT_URL + '?action=getStatistics'),
+            fetch(GOOGLE_SCRIPT_URL + '?action=getInventoryItems')
         ]);
 
         updateLoadingText('處理資料中...');
         updateLoadingProgressDirect(50);
 
         // 解析所有回應
-        const [inventoryData, disabledData, purchaseResult, statsData] = await Promise.all([
-            inventoryResponse.json(),
+        const [lastInvData, disabledData, purchaseResult, statsData, itemsData] = await Promise.all([
+            lastInvResponse.json(),
             disabledResponse.json(),
             purchaseResponse.json(),
-            statsResponse.json()
+            statsResponse.json(),
+            itemsResponse.json()
         ]);
 
         updateLoadingProgressDirect(80);
 
+        // 處理盤點項目清單（優先處理，因為其他功能依賴它）
+        if (itemsData.success && itemsData.data && Object.keys(itemsData.data).length > 0) {
+            inventoryData = itemsData.data;
+            console.log('成功載入項目清單（來自 Google Sheets）', inventoryData);
+        } else {
+            // 使用預設項目清單
+            inventoryData = defaultInventoryData;
+            console.log('使用預設項目清單', inventoryData);
+            // 如果 Google Sheets 沒有項目清單，自動初始化
+            if (itemsData.success && itemsData.data === null) {
+                console.log('項目清單工作表不存在，自動初始化...');
+                initInventoryItemsToSheet();
+            }
+        }
+
         // 處理上次盤點資料
-        if (inventoryData.success && inventoryData.data) {
-            lastInventoryData = inventoryData.data;
+        if (lastInvData.success && lastInvData.data) {
+            lastInventoryData = lastInvData.data;
             console.log('成功載入上次盤點資料', lastInventoryData);
         }
 
@@ -2295,6 +2316,63 @@ async function loadLastInventory() {
         hideLoading();
         // 不顯示錯誤訊息，因為可能是第一次使用
     }
+}
+
+// 初始化項目清單到 Google Sheets（第一次使用時自動執行）
+async function initInventoryItemsToSheet() {
+    if (!GOOGLE_SCRIPT_URL) return;
+
+    try {
+        const payload = {
+            action: 'initInventoryItems',
+            items: defaultInventoryData
+        };
+
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            console.log('項目清單已初始化到 Google Sheets：', result.message);
+        } else {
+            console.error('初始化項目清單失敗：', result.error);
+        }
+    } catch (error) {
+        console.error('初始化項目清單失敗：', error);
+        // 嘗試 no-cors 模式
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify({ action: 'initInventoryItems', items: defaultInventoryData })
+            });
+            console.log('項目清單已初始化（no-cors 模式）');
+        } catch (e) {
+            console.error('初始化項目清單失敗（no-cors）：', e);
+        }
+    }
+}
+
+// 從本地項目資料中移除指定項目
+function removeItemFromLocalData(itemKey) {
+    for (const category in inventoryData) {
+        const index = inventoryData[category].findIndex(item => item.name === itemKey);
+        if (index !== -1) {
+            inventoryData[category].splice(index, 1);
+            console.log(`已從本地項目資料移除：${itemKey}`);
+            return true;
+        }
+    }
+    return false;
 }
 
 // 提交資料到 Google Sheets
@@ -2765,7 +2843,22 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
 
     let reason = '';
     if (markAsAbnormal) {
-        reason = prompt(`請輸入標記「${itemKey}」為異常的原因：\n（例如：已停用、不再需要、重複項目等）`);
+        // 顯示異常原因選擇對話框
+        reason = await showReasonDialog({
+            title: '標記異常',
+            icon: '🚫',
+            itemKey: itemKey,
+            reasons: [
+                '長期缺貨',
+                '供應商問題',
+                '品質異常',
+                '價格異常',
+                '暫停使用',
+                '待確認規格'
+            ],
+            confirmText: '確認標記',
+            confirmColor: '#9c27b0'
+        });
         if (reason === null) return;  // 用戶取消
     } else {
         if (!confirm(`確定要取消「${itemKey}」的異常標記嗎？`)) return;
@@ -2859,6 +2952,188 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
     }
 }
 
+// 通用輸入對話框
+function showInputDialog(options) {
+    const {
+        title = '請輸入',
+        icon = '✏️',
+        label = '',
+        placeholder = '請輸入...',
+        confirmText = '確認',
+        confirmColor = '#1976d2',
+        defaultValue = ''
+    } = options;
+
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;';
+
+        const dialog = document.createElement('div');
+        dialog.style.cssText = 'background:white;border-radius:12px;padding:24px;max-width:360px;width:90%;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+
+        dialog.innerHTML = `
+            <h3 style="margin:0 0 16px 0;color:#333;">${icon} ${title}</h3>
+            ${label ? `<p style="margin:0 0 12px 0;color:#666;font-size:14px;">${label}</p>` : ''}
+            <input type="text" id="dialogInput" value="${defaultValue}" placeholder="${placeholder}" style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:16px;box-sizing:border-box;margin-bottom:16px;">
+            <div style="display:flex;gap:12px;justify-content:flex-end;">
+                <button id="cancelInputBtn" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:14px;">取消</button>
+                <button id="confirmInputBtn" style="padding:10px 20px;border:none;border-radius:8px;background:${confirmColor};color:white;cursor:pointer;font-size:14px;font-weight:bold;">${confirmText}</button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        const input = document.getElementById('dialogInput');
+        input.focus();
+        input.select();
+
+        // Enter 鍵確認
+        input.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const value = input.value.trim();
+                if (value) {
+                    document.body.removeChild(overlay);
+                    resolve(value);
+                }
+            }
+        });
+
+        document.getElementById('cancelInputBtn').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(null);
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                resolve(null);
+            }
+        });
+
+        document.getElementById('confirmInputBtn').addEventListener('click', () => {
+            const value = input.value.trim();
+            if (!value) {
+                showAlert('❌ 請輸入內容', 'danger');
+                return;
+            }
+            document.body.removeChild(overlay);
+            resolve(value);
+        });
+    });
+}
+
+// 通用原因選擇對話框
+function showReasonDialog(options) {
+    const {
+        title = '請選擇原因',
+        icon = '📋',
+        itemKey = '',
+        reasons = [],
+        confirmText = '確認',
+        confirmColor = '#1976d2',
+        placeholder = '輸入其他原因...'
+    } = options;
+
+    return new Promise((resolve) => {
+        // 創建對話框
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:10000;';
+
+        const dialog = document.createElement('div');
+        dialog.style.cssText = 'background:white;border-radius:12px;padding:24px;max-width:400px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+
+        dialog.innerHTML = `
+            <h3 style="margin:0 0 16px 0;color:#333;">${icon} ${title}${itemKey ? `「${itemKey}」` : ''}</h3>
+            <p style="margin:0 0 12px 0;color:#666;font-size:14px;">請選擇原因：</p>
+            <div id="reasonButtons" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+                ${reasons.map(r => `
+                    <button class="reason-option-btn" data-reason="${r}" style="padding:12px 16px;border:1px solid #ddd;border-radius:8px;background:#f9f9f9;cursor:pointer;text-align:left;font-size:14px;transition:all 0.2s;">
+                        ${r}
+                    </button>
+                `).join('')}
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="display:block;margin-bottom:6px;color:#666;font-size:14px;">或輸入自訂原因：</label>
+                <input type="text" id="customReasonInput" placeholder="${placeholder}" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;box-sizing:border-box;">
+            </div>
+            <div style="display:flex;gap:12px;justify-content:flex-end;">
+                <button id="cancelDialogBtn" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:14px;">取消</button>
+                <button id="confirmDialogBtn" style="padding:10px 20px;border:none;border-radius:8px;background:${confirmColor};color:white;cursor:pointer;font-size:14px;font-weight:bold;">${confirmText}</button>
+            </div>
+        `;
+
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        let selectedReason = '';
+
+        // 綁定選項按鈕事件
+        dialog.querySelectorAll('.reason-option-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                dialog.querySelectorAll('.reason-option-btn').forEach(b => {
+                    b.style.background = '#f9f9f9';
+                    b.style.borderColor = '#ddd';
+                    b.style.color = '#333';
+                });
+                this.style.background = '#e3f2fd';
+                this.style.borderColor = '#1976d2';
+                this.style.color = '#1976d2';
+                selectedReason = this.dataset.reason;
+                document.getElementById('customReasonInput').value = '';
+            });
+
+            btn.addEventListener('mouseenter', function() {
+                if (this.style.borderColor !== 'rgb(25, 118, 210)') {
+                    this.style.background = '#f0f0f0';
+                }
+            });
+            btn.addEventListener('mouseleave', function() {
+                if (this.style.borderColor !== 'rgb(25, 118, 210)') {
+                    this.style.background = '#f9f9f9';
+                }
+            });
+        });
+
+        document.getElementById('customReasonInput').addEventListener('input', function() {
+            if (this.value.trim()) {
+                dialog.querySelectorAll('.reason-option-btn').forEach(b => {
+                    b.style.background = '#f9f9f9';
+                    b.style.borderColor = '#ddd';
+                    b.style.color = '#333';
+                });
+                selectedReason = '';
+            }
+        });
+
+        document.getElementById('cancelDialogBtn').addEventListener('click', () => {
+            document.body.removeChild(overlay);
+            resolve(null);
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                document.body.removeChild(overlay);
+                resolve(null);
+            }
+        });
+
+        document.getElementById('confirmDialogBtn').addEventListener('click', () => {
+            const customReason = document.getElementById('customReasonInput').value.trim();
+            const finalReason = customReason || selectedReason;
+
+            if (!finalReason) {
+                showAlert('❌ 請選擇或輸入原因', 'danger');
+                return;
+            }
+
+            document.body.removeChild(overlay);
+            resolve(finalReason);
+        });
+    });
+}
+
 // 確認移除項目（不需要了）
 async function confirmRemoveItem(itemKey) {
     // 詢問操作人員
@@ -2866,28 +3141,39 @@ async function confirmRemoveItem(itemKey) {
     let person = personInput ? personInput.value.trim() : '';
 
     if (!person) {
-        person = prompt(`請輸入您的姓名：`);
-        if (person === null || !person.trim()) {
-            showAlert('❌ 請輸入操作人員姓名', 'danger');
+        person = await showInputDialog({
+            title: '請輸入姓名',
+            icon: '👤',
+            placeholder: '您的姓名',
+            confirmText: '下一步',
+            defaultValue: localStorage.getItem('lastOperatorName') || ''
+        });
+        if (!person) {
             return;
         }
-        person = person.trim();
+        // 記住姓名供下次使用
+        localStorage.setItem('lastOperatorName', person);
     }
 
-    // 詢問移除原因
-    const reason = prompt(`請輸入移除「${itemKey}」的原因：\n\n例如：已停用、不再需要、重複項目等`);
+    // 顯示移除原因選擇對話框
+    const reason = await showReasonDialog({
+        title: '移除',
+        icon: '🗑️',
+        itemKey: itemKey,
+        reasons: [
+            '已停用',
+            '不再需要',
+            '重複項目',
+            '規則調整',
+            '項目合併',
+            '庫存清空不再進貨'
+        ],
+        confirmText: '確認移除',
+        confirmColor: '#e53935'
+    });
 
     if (reason === null) {
         // 用戶按取消
-        return;
-    }
-
-    if (!reason.trim()) {
-        showAlert('❌ 請輸入移除原因', 'danger');
-        return;
-    }
-
-    if (!confirm(`確定要移除「${itemKey}」嗎？\n\n移除原因：${reason}\n操作人員：${person}\n\n這個項目將被標記為「已移除」。`)) {
         return;
     }
 
@@ -2913,7 +3199,10 @@ async function confirmRemoveItem(itemKey) {
         const result = await response.json();
 
         if (result.success) {
-            showAlert(`✅ ${itemKey} 已移除（操作人員：${person}）`, 'success');
+            showAlert(`✅ ${itemKey} 已永久移除（操作人員：${person}）`, 'success');
+
+            // 從本地項目資料中移除（真正刪除）
+            removeItemFromLocalData(itemKey);
 
             // 加入停用清單（盤點時會跳過）
             disabledItems.add(itemKey);
@@ -2946,7 +3235,10 @@ async function confirmRemoveItem(itemKey) {
                 body: JSON.stringify({ action: 'removeItem', itemKey: itemKey, reason: reason.trim(), person: person })
             });
 
-            showAlert(`✅ ${itemKey} 已移除（操作人員：${person}）`, 'success');
+            showAlert(`✅ ${itemKey} 已永久移除（操作人員：${person}）`, 'success');
+
+            // 從本地項目資料中移除（真正刪除）
+            removeItemFromLocalData(itemKey);
 
             // 加入停用清單（盤點時會跳過）
             disabledItems.add(itemKey);
@@ -2975,27 +3267,38 @@ async function cancelPurchase(itemKey) {
     let person = personInput ? personInput.value.trim() : '';
 
     if (!person) {
-        person = prompt(`請輸入您的姓名：`);
-        if (person === null || !person.trim()) {
-            showAlert('❌ 請輸入操作人員姓名', 'danger');
+        person = await showInputDialog({
+            title: '請輸入姓名',
+            icon: '👤',
+            placeholder: '您的姓名',
+            confirmText: '下一步',
+            defaultValue: localStorage.getItem('lastOperatorName') || ''
+        });
+        if (!person) {
             return;
         }
-        person = person.trim();
+        // 記住姓名供下次使用
+        localStorage.setItem('lastOperatorName', person);
     }
 
-    // 詢問取消原因
-    const reason = prompt(`請輸入取消採購「${itemKey}」的原因：\n\n例如：規則調整、庫存充足、安全庫存設太高等`);
+    // 顯示取消原因選擇對話框
+    const reason = await showReasonDialog({
+        title: '取消採購',
+        icon: '❌',
+        itemKey: itemKey,
+        reasons: [
+            '規則調整',
+            '庫存充足',
+            '安全庫存設太高',
+            '重複叫貨',
+            '暫時不需要',
+            '供應商缺貨改其他'
+        ],
+        confirmText: '確認取消',
+        confirmColor: '#ff9800'
+    });
 
     if (reason === null) {
-        return;
-    }
-
-    if (!reason.trim()) {
-        showAlert('❌ 請輸入取消原因', 'danger');
-        return;
-    }
-
-    if (!confirm(`確定要取消「${itemKey}」的採購嗎？\n\n取消原因：${reason}\n操作人員：${person}\n\n這次採購會標記為「已取消」，狀態改回「不用叫貨」。`)) {
         return;
     }
 
