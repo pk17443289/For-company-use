@@ -2317,6 +2317,11 @@ async function loadLastInventory() {
         if (isMobileView()) {
             initMobileSwipe();
         }
+
+        // 檢查待處理提醒（延遲一點顯示，避免和載入動畫衝突）
+        setTimeout(() => {
+            checkPendingAlerts();
+        }, 500);
     } catch (error) {
         console.error('載入資料失敗：', error);
         hideLoading();
@@ -3521,6 +3526,113 @@ function renderStatistics(data) {
     });
 
     tbody.innerHTML = html;
+}
+
+// ===== 待處理提醒功能 =====
+
+// 檢查並顯示待處理提醒
+async function checkPendingAlerts() {
+    if (!GOOGLE_SCRIPT_URL) return;
+
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getPendingAlerts');
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            const { alerts, settings } = result.data;
+
+            // 檢查是否啟用頁面提醒
+            if (!settings.pageAlertEnabled) {
+                console.log('頁面提醒已停用');
+                return;
+            }
+
+            // 如果有超時項目，顯示提醒
+            if (alerts && alerts.length > 0) {
+                showPendingAlertsDialog(alerts, settings.overdueDays);
+            }
+        }
+    } catch (error) {
+        console.error('檢查待處理提醒失敗：', error);
+    }
+}
+
+// 顯示待處理提醒彈窗
+function showPendingAlertsDialog(alerts, overdueDays) {
+    // 如果今天已經顯示過，不再重複顯示（每天只提醒一次）
+    const today = new Date().toDateString();
+    const lastAlertDate = localStorage.getItem('lastPendingAlertDate');
+    if (lastAlertDate === today) {
+        console.log('今天已經顯示過提醒');
+        return;
+    }
+
+    const categoryNames = {
+        ajun: '辦公室區域',
+        warehouse: '倉庫區',
+        meiban: '倉庫貼紙',
+        xiujuan: 'OPP袋子'
+    };
+
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;z-index:10000;';
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = 'background:white;border-radius:12px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,0.3);';
+
+    let html = `
+        <h3 style="margin:0 0 8px 0;color:#f44336;">⚠️ 待處理採購提醒</h3>
+        <p style="margin:0 0 16px 0;color:#666;font-size:14px;">
+            以下 <strong>${alerts.length}</strong> 個項目已超過 <strong>${overdueDays}</strong> 天未處理，請盡快處理！
+        </p>
+        <div style="max-height:300px;overflow-y:auto;margin-bottom:16px;">
+            <table style="width:100%;border-collapse:collapse;font-size:14px;">
+                <tr style="background:#f5f5f5;">
+                    <th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">項目</th>
+                    <th style="padding:10px;text-align:left;border-bottom:2px solid #ddd;">分類</th>
+                    <th style="padding:10px;text-align:center;border-bottom:2px solid #ddd;">狀態</th>
+                    <th style="padding:10px;text-align:center;border-bottom:2px solid #ddd;">等待</th>
+                </tr>
+    `;
+
+    alerts.forEach(alert => {
+        const categoryName = categoryNames[alert.category] || alert.category;
+        const statusColor = alert.status === '待採購' ? '#ff9800' : '#2196f3';
+        const daysColor = alert.waitingDays >= 3 ? '#f44336' : '#ff9800';
+
+        html += `
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:10px;">${alert.itemKey}</td>
+                <td style="padding:10px;color:#666;">${categoryName}</td>
+                <td style="padding:10px;text-align:center;"><span style="color:${statusColor};font-weight:bold;">${alert.status}</span></td>
+                <td style="padding:10px;text-align:center;"><span style="color:${daysColor};font-weight:bold;">${alert.waitingDays} 天</span></td>
+            </tr>
+        `;
+    });
+
+    html += `
+            </table>
+        </div>
+        <div style="display:flex;gap:12px;justify-content:flex-end;">
+            <button id="alertLaterBtn" style="padding:10px 20px;border:1px solid #ddd;border-radius:8px;background:#f5f5f5;cursor:pointer;font-size:14px;">稍後提醒</button>
+            <button id="alertGotItBtn" style="padding:10px 20px;border:none;border-radius:8px;background:#4CAF50;color:white;cursor:pointer;font-size:14px;font-weight:bold;">我知道了</button>
+        </div>
+    `;
+
+    dialog.innerHTML = html;
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    // 稍後提醒（關閉但不記錄，下次刷新還會顯示）
+    document.getElementById('alertLaterBtn').addEventListener('click', () => {
+        document.body.removeChild(overlay);
+    });
+
+    // 我知道了（記錄今天已提醒，今天不再顯示）
+    document.getElementById('alertGotItBtn').addEventListener('click', () => {
+        localStorage.setItem('lastPendingAlertDate', today);
+        document.body.removeChild(overlay);
+    });
 }
 
 // 頁面載入時初始化 Tab 功能

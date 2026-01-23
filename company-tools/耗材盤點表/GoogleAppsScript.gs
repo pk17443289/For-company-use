@@ -49,6 +49,10 @@ function doGet(e) {
       return getInventoryItems();
     }
 
+    if (action === 'getPendingAlerts') {
+      return getPendingAlerts();
+    }
+
     // 如果有 POST 資料透過 GET 傳來（備用方案）
     if (e.parameter && e.parameter.data) {
       const data = JSON.parse(e.parameter.data);
@@ -1618,4 +1622,364 @@ function deleteInventoryItem(itemKey) {
   } catch (error) {
     return { success: false, error: 'deleteInventoryItem 錯誤: ' + error.toString() };
   }
+}
+
+// ===== 提醒通知功能 =====
+
+/**
+ * 初始化「系統設定」工作表
+ * 在 Apps Script 編輯器中執行此函數來創建設定表
+ */
+function initSystemSettings() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName('系統設定');
+
+  if (sheet) {
+    SpreadsheetApp.getUi().alert('「系統設定」工作表已存在！');
+    return;
+  }
+
+  sheet = ss.insertSheet('系統設定');
+
+  // 設定標題和預設值
+  const settings = [
+    ['設定項目', '設定值', '說明'],
+    ['提醒信箱', '', '多人用逗號分隔，例如：a@gmail.com, b@gmail.com'],
+    ['提醒時間', '09:00', '每天幾點發送提醒（24小時制）'],
+    ['超時天數', '2', '超過幾天未處理就發送提醒'],
+    ['啟用Email提醒', 'TRUE', '是否啟用每日Email提醒（TRUE/FALSE）'],
+    ['啟用頁面提醒', 'TRUE', '是否啟用進入頁面時的彈窗提醒（TRUE/FALSE）'],
+  ];
+
+  sheet.getRange(1, 1, settings.length, 3).setValues(settings);
+  sheet.getRange('A1:C1').setFontWeight('bold');
+  sheet.setColumnWidth(1, 150);
+  sheet.setColumnWidth(2, 300);
+  sheet.setColumnWidth(3, 400);
+  sheet.setFrozenRows(1);
+
+  // 設定背景色
+  sheet.getRange('A1:C1').setBackground('#4285f4').setFontColor('white');
+
+  SpreadsheetApp.getUi().alert('「系統設定」工作表已創建！\n\n請填寫提醒信箱等設定。');
+}
+
+/**
+ * 讀取系統設定
+ */
+function getSystemSettings() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName('系統設定');
+
+    if (!sheet) {
+      return {
+        emails: [],
+        reminderTime: '09:00',
+        overduedays: 2,
+        emailEnabled: false,
+        pageAlertEnabled: true
+      };
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const settings = {};
+
+    for (let i = 1; i < data.length; i++) {
+      const key = data[i][0];
+      const value = data[i][1];
+
+      switch (key) {
+        case '提醒信箱':
+          settings.emails = value ? value.split(',').map(e => e.trim()).filter(e => e) : [];
+          break;
+        case '提醒時間':
+          settings.reminderTime = value || '09:00';
+          break;
+        case '超時天數':
+          settings.overdueDays = parseInt(value) || 2;
+          break;
+        case '啟用Email提醒':
+          settings.emailEnabled = value === 'TRUE' || value === true;
+          break;
+        case '啟用頁面提醒':
+          settings.pageAlertEnabled = value === 'TRUE' || value === true;
+          break;
+      }
+    }
+
+    return settings;
+  } catch (error) {
+    console.error('讀取系統設定失敗：', error);
+    return {
+      emails: [],
+      reminderTime: '09:00',
+      overdueDays: 2,
+      emailEnabled: false,
+      pageAlertEnabled: true
+    };
+  }
+}
+
+/**
+ * 取得待處理提醒清單（用於頁面提醒和Email）
+ */
+function getPendingAlerts() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+    const settings = getSystemSettings();
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: true, data: { alerts: [], settings: settings } });
+    }
+
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: true, data: { alerts: [], settings: settings } });
+    }
+
+    const data = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    const now = new Date();
+    const alerts = [];
+
+    data.forEach(row => {
+      const itemKey = row[0];
+      const category = row[1];
+      const itemName = row[2];
+      const status = row[3];
+      const orderTime = row[4];
+      const isAbnormal = row[9] === '異常' || row[9] === true;
+
+      // 只處理「待採購」或「補貨中」狀態（排除異常和已完成）
+      if (!itemKey || isAbnormal || (status !== '待採購' && status !== '補貨中')) {
+        return;
+      }
+
+      // 計算等待天數
+      let waitingDays = 0;
+      if (orderTime) {
+        const orderDate = new Date(orderTime);
+        waitingDays = Math.floor((now - orderDate) / (1000 * 60 * 60 * 24));
+      }
+
+      // 超過設定天數才加入提醒
+      if (waitingDays >= settings.overdueDays) {
+        alerts.push({
+          itemKey: itemKey,
+          category: category,
+          itemName: itemName,
+          status: status,
+          orderTime: orderTime ? new Date(orderTime).toISOString() : null,
+          waitingDays: waitingDays
+        });
+      }
+    });
+
+    // 按等待天數排序（最久的在前）
+    alerts.sort((a, b) => b.waitingDays - a.waitingDays);
+
+    return createJsonResponse({
+      success: true,
+      data: {
+        alerts: alerts,
+        settings: {
+          pageAlertEnabled: settings.pageAlertEnabled,
+          overdueDays: settings.overdueDays
+        }
+      }
+    });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'getPendingAlerts 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 發送每日提醒 Email
+ * 此函數會被定時觸發器呼叫
+ */
+function sendDailyReminder() {
+  try {
+    const settings = getSystemSettings();
+
+    // 檢查是否啟用 Email 提醒
+    if (!settings.emailEnabled || settings.emails.length === 0) {
+      console.log('Email 提醒未啟用或沒有設定收件人');
+      return;
+    }
+
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      console.log('找不到待採購工作表');
+      return;
+    }
+
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      console.log('待採購清單是空的');
+      return;
+    }
+
+    const data = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    const now = new Date();
+
+    // 分類統計
+    const categoryNames = {
+      ajun: '辦公室區域',
+      warehouse: '倉庫區',
+      meiban: '倉庫貼紙',
+      xiujuan: 'OPP袋子'
+    };
+
+    const pendingItems = [];
+    const overdueItems = [];
+
+    data.forEach(row => {
+      const itemKey = row[0];
+      const category = row[1];
+      const itemName = row[2];
+      const status = row[3];
+      const orderTime = row[4];
+      const isAbnormal = row[9] === '異常' || row[9] === true;
+
+      if (!itemKey || isAbnormal || (status !== '待採購' && status !== '補貨中')) {
+        return;
+      }
+
+      let waitingDays = 0;
+      if (orderTime) {
+        const orderDate = new Date(orderTime);
+        waitingDays = Math.floor((now - orderDate) / (1000 * 60 * 60 * 24));
+      }
+
+      const item = {
+        itemKey: itemKey,
+        category: categoryNames[category] || category,
+        status: status,
+        waitingDays: waitingDays
+      };
+
+      pendingItems.push(item);
+
+      if (waitingDays >= settings.overdueDays) {
+        overdueItems.push(item);
+      }
+    });
+
+    // 如果沒有待處理項目，不發送
+    if (pendingItems.length === 0) {
+      console.log('沒有待處理項目，不發送提醒');
+      return;
+    }
+
+    // 組成 Email 內容
+    const today = Utilities.formatDate(now, 'Asia/Taipei', 'yyyy-MM-dd');
+    let subject = `【耗材盤點】待採購提醒 (${today})`;
+
+    if (overdueItems.length > 0) {
+      subject = `⚠️ 【耗材盤點】${overdueItems.length} 項超時待處理 (${today})`;
+    }
+
+    let body = `<h2>耗材採購提醒</h2>`;
+    body += `<p>日期：${today}</p>`;
+    body += `<p>待處理項目共 <strong>${pendingItems.length}</strong> 項`;
+
+    if (overdueItems.length > 0) {
+      body += `，其中 <strong style="color:red;">${overdueItems.length}</strong> 項已超過 ${settings.overdueDays} 天未處理`;
+    }
+    body += `</p>`;
+
+    // 超時項目表格
+    if (overdueItems.length > 0) {
+      body += `<h3 style="color:red;">⚠️ 超時項目（請優先處理）</h3>`;
+      body += `<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;">`;
+      body += `<tr style="background:#f44336;color:white;"><th>項目</th><th>分類</th><th>狀態</th><th>等待天數</th></tr>`;
+
+      overdueItems.forEach(item => {
+        body += `<tr>`;
+        body += `<td>${item.itemKey}</td>`;
+        body += `<td>${item.category}</td>`;
+        body += `<td>${item.status}</td>`;
+        body += `<td style="color:red;font-weight:bold;">${item.waitingDays} 天</td>`;
+        body += `</tr>`;
+      });
+      body += `</table>`;
+    }
+
+    // 全部待處理項目
+    body += `<h3>📋 全部待處理項目</h3>`;
+    body += `<table border="1" cellpadding="8" cellspacing="0" style="border-collapse:collapse;">`;
+    body += `<tr style="background:#4285f4;color:white;"><th>項目</th><th>分類</th><th>狀態</th><th>等待天數</th></tr>`;
+
+    pendingItems.forEach(item => {
+      const isOverdue = item.waitingDays >= settings.overdueDays;
+      body += `<tr style="${isOverdue ? 'background:#ffebee;' : ''}">`;
+      body += `<td>${item.itemKey}</td>`;
+      body += `<td>${item.category}</td>`;
+      body += `<td>${item.status}</td>`;
+      body += `<td>${item.waitingDays} 天</td>`;
+      body += `</tr>`;
+    });
+    body += `</table>`;
+
+    body += `<br><p style="color:#666;">此郵件由耗材盤點系統自動發送。</p>`;
+    body += `<p style="color:#666;">如需修改提醒設定，請編輯 Google Sheets 的「系統設定」工作表。</p>`;
+
+    // 發送 Email
+    settings.emails.forEach(email => {
+      try {
+        MailApp.sendEmail({
+          to: email,
+          subject: subject,
+          htmlBody: body
+        });
+        console.log('已發送提醒到：' + email);
+      } catch (e) {
+        console.error('發送到 ' + email + ' 失敗：' + e.toString());
+      }
+    });
+
+    console.log('每日提醒發送完成');
+  } catch (error) {
+    console.error('sendDailyReminder 錯誤：', error);
+  }
+}
+
+/**
+ * 設定每日定時觸發器
+ * 在 Apps Script 編輯器中執行此函數來設定自動發送
+ */
+function setupDailyTrigger() {
+  // 先刪除舊的觸發器
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(trigger => {
+    if (trigger.getHandlerFunction() === 'sendDailyReminder') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+
+  // 讀取設定的時間
+  const settings = getSystemSettings();
+  const timeParts = settings.reminderTime.split(':');
+  const hour = parseInt(timeParts[0]) || 9;
+
+  // 創建新的每日觸發器
+  ScriptApp.newTrigger('sendDailyReminder')
+    .timeBased()
+    .atHour(hour)
+    .everyDays(1)
+    .inTimezone('Asia/Taipei')
+    .create();
+
+  SpreadsheetApp.getUi().alert(`已設定每日 ${hour}:00 發送提醒！\n\n提醒將發送到：\n${settings.emails.join('\n') || '（尚未設定收件人）'}`);
+}
+
+/**
+ * 手動測試發送提醒（用於測試）
+ */
+function testSendReminder() {
+  sendDailyReminder();
+  SpreadsheetApp.getUi().alert('測試提醒已發送！請檢查收件匣。');
 }
