@@ -2802,6 +2802,9 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
 
             // 重新生成盤點項目
             refreshInventoryItems();
+
+            // 重新載入儀表板數據
+            loadStatistics();
         } else {
             // 如果失敗，恢復原狀
             updateLocalAbnormalStatus(itemKey, !markAsAbnormal);
@@ -2839,6 +2842,9 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
 
             // 重新生成盤點項目
             refreshInventoryItems();
+
+            // 重新載入儀表板數據
+            loadStatistics();
         } catch (e) {
             // 恢復原狀
             updateLocalAbnormalStatus(itemKey, !markAsAbnormal);
