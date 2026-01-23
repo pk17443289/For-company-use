@@ -2627,6 +2627,9 @@ function renderPurchaseList(data) {
                         <button class="purchase-action-btn completed" onclick="updatePurchaseStatus('${item.itemKey}', '已補貨')">
                             ✅ 已到貨
                         </button>
+                        <button class="purchase-action-btn cancel-purchase" onclick="cancelPurchase('${item.itemKey}')">
+                            ❌ 取消採購
+                        </button>
                         <button class="purchase-action-btn abnormal" onclick="markItemAbnormal('${item.itemKey}', true)">
                             🚫 標記異常
                         </button>
@@ -2635,7 +2638,10 @@ function renderPurchaseList(data) {
                             ↩️ 取消異常
                         </button>
                         <button class="purchase-action-btn completed" onclick="updatePurchaseStatus('${item.itemKey}', '已補貨')">
-                            ✅ 確認完成
+                            ✅ 已補貨
+                        </button>
+                        <button class="purchase-action-btn remove" onclick="confirmRemoveItem('${item.itemKey}')">
+                            🗑️ 確認移除
                         </button>
                     `}
                 </div>
@@ -2849,6 +2855,191 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
             // 恢復原狀
             updateLocalAbnormalStatus(itemKey, !markAsAbnormal);
             showAlert('❌ 操作失敗：' + error.message, 'danger');
+        }
+    }
+}
+
+// 確認移除項目（不需要了）
+async function confirmRemoveItem(itemKey) {
+    // 詢問移除原因
+    const reason = prompt(`請輸入移除「${itemKey}」的原因：\n\n例如：已停用、不再需要、重複項目等`);
+
+    if (reason === null) {
+        // 用戶按取消
+        return;
+    }
+
+    if (!reason.trim()) {
+        showAlert('❌ 請輸入移除原因', 'danger');
+        return;
+    }
+
+    // 取得操作人員
+    const personInput = document.getElementById('personName');
+    const person = personInput ? personInput.value.trim() : '';
+
+    if (!person) {
+        showAlert('❌ 請先在上方填寫盤點人員姓名', 'danger');
+        return;
+    }
+
+    if (!confirm(`確定要移除「${itemKey}」嗎？\n\n移除原因：${reason}\n操作人員：${person}\n\n這個項目將被標記為「已移除」。`)) {
+        return;
+    }
+
+    showAlert(`⏳ 正在移除...`, 'warning');
+
+    try {
+        const payload = {
+            action: 'removeItem',
+            itemKey: itemKey,
+            reason: reason.trim(),
+            person: person
+        };
+
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert(`✅ ${itemKey} 已移除（操作人員：${person}）`, 'success');
+
+            // 從本地清單移除
+            if (purchaseListData) {
+                purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
+                renderPurchaseList(purchaseListData);
+            }
+
+            // 重新載入儀表板數據
+            loadStatistics();
+        } else {
+            throw new Error(result.error || '操作失敗');
+        }
+    } catch (error) {
+        console.error('移除項目失敗：', error);
+
+        // 嘗試 no-cors 模式
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify({ action: 'removeItem', itemKey: itemKey, reason: reason.trim(), person: person })
+            });
+
+            showAlert(`✅ ${itemKey} 已移除（操作人員：${person}）`, 'success');
+
+            // 從本地清單移除
+            if (purchaseListData) {
+                purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
+                renderPurchaseList(purchaseListData);
+            }
+
+            // 重新載入儀表板數據
+            loadStatistics();
+        } catch (e) {
+            showAlert('❌ 移除失敗：' + error.message, 'danger');
+        }
+    }
+}
+
+// 取消本次採購（規則設定問題，不需要實際採購）
+async function cancelPurchase(itemKey) {
+    // 詢問取消原因
+    const reason = prompt(`請輸入取消採購「${itemKey}」的原因：\n\n例如：規則調整、庫存充足、安全庫存設太高等`);
+
+    if (reason === null) {
+        return;
+    }
+
+    if (!reason.trim()) {
+        showAlert('❌ 請輸入取消原因', 'danger');
+        return;
+    }
+
+    // 取得操作人員
+    const personInput = document.getElementById('personName');
+    const person = personInput ? personInput.value.trim() : '';
+
+    if (!person) {
+        showAlert('❌ 請先在上方填寫盤點人員姓名', 'danger');
+        return;
+    }
+
+    if (!confirm(`確定要取消「${itemKey}」的採購嗎？\n\n取消原因：${reason}\n操作人員：${person}\n\n這次採購會標記為「已取消」，狀態改回「不用叫貨」。`)) {
+        return;
+    }
+
+    showAlert(`⏳ 正在取消採購...`, 'warning');
+
+    try {
+        const payload = {
+            action: 'cancelPurchase',
+            itemKey: itemKey,
+            reason: reason.trim(),
+            person: person
+        };
+
+        const response = await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8',
+            },
+            body: JSON.stringify(payload),
+            redirect: 'follow'
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAlert(`✅ ${itemKey} 已取消採購（操作人員：${person}）`, 'success');
+
+            // 從本地清單移除
+            if (purchaseListData) {
+                purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
+                renderPurchaseList(purchaseListData);
+            }
+
+            // 重新載入儀表板數據
+            loadStatistics();
+        } else {
+            throw new Error(result.error || '操作失敗');
+        }
+    } catch (error) {
+        console.error('取消採購失敗：', error);
+
+        // 嘗試 no-cors 模式
+        try {
+            await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify({ action: 'cancelPurchase', itemKey: itemKey, reason: reason.trim(), person: person })
+            });
+
+            showAlert(`✅ ${itemKey} 已取消採購（操作人員：${person}）`, 'success');
+
+            // 從本地清單移除
+            if (purchaseListData) {
+                purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
+                renderPurchaseList(purchaseListData);
+            }
+
+            // 重新載入儀表板數據
+            loadStatistics();
+        } catch (e) {
+            showAlert('❌ 取消採購失敗：' + error.message, 'danger');
         }
     }
 }

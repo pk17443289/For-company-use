@@ -115,6 +115,14 @@ function doPost(e) {
       return markAbnormal(data);
     }
 
+    if (action === 'removeItem') {
+      return removeItem(data);
+    }
+
+    if (action === 'cancelPurchase') {
+      return cancelPurchase(data);
+    }
+
     return createJsonResponse({ success: false, error: '未知的操作: ' + action });
 
   } catch (error) {
@@ -924,6 +932,229 @@ function markAbnormal(data) {
     });
   } catch (error) {
     return createJsonResponse({ success: false, error: 'markAbnormal 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 移除項目（確認不需要這個項目，從清單中永久移除）
+ * 資料會保留在工作表中，狀態改為「已移除」，方便日後查詢歷史
+ */
+function removeItem(data) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: false, error: '找不到待採購工作表' });
+    }
+
+    const itemKey = data.itemKey;
+    const reason = data.reason || '未填寫原因';
+    const person = data.person || '未知';
+    const timestamp = new Date();
+
+    // 找到該項目
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: false, error: '待採購清單是空的' });
+    }
+
+    // 檢查是否有「移除人員」和「移除原因」欄位，如果沒有就新增
+    const headers = purchaseSheet.getRange(1, 1, 1, 16).getValues()[0];
+    if (headers[13] !== '移除人員') {
+      purchaseSheet.getRange(1, 14).setValue('移除人員');
+      purchaseSheet.getRange(1, 14).setFontWeight('bold');
+    }
+    if (headers[14] !== '移除原因') {
+      purchaseSheet.getRange(1, 15).setValue('移除原因');
+      purchaseSheet.getRange(1, 15).setFontWeight('bold');
+    }
+    if (headers[15] !== '移除時間') {
+      purchaseSheet.getRange(1, 16).setValue('移除時間');
+      purchaseSheet.getRange(1, 16).setFontWeight('bold');
+    }
+
+    const purchaseData = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    let targetRow = -1;
+    let rowData = null;
+
+    for (let i = 0; i < purchaseData.length; i++) {
+      const rowItemKey = purchaseData[i][0];
+      const rowStatus = purchaseData[i][3];
+      const rowIsAbnormal = purchaseData[i][9] === '異常';
+
+      // 找到對應的項目（待採購、補貨中，或異常狀態）
+      if (rowItemKey === itemKey && (rowStatus === '待採購' || rowStatus === '補貨中' || rowIsAbnormal)) {
+        targetRow = i + 2;
+        rowData = purchaseData[i];
+        break;
+      }
+    }
+
+    if (targetRow === -1) {
+      return createJsonResponse({ success: false, error: '找不到該項目' });
+    }
+
+    // 將狀態改為「已移除」，並記錄移除資訊
+    purchaseSheet.getRange(targetRow, 4).setValue('已移除');
+    purchaseSheet.getRange(targetRow, 14).setValue(person);     // 移除人員
+    purchaseSheet.getRange(targetRow, 15).setValue(reason);     // 移除原因
+    purchaseSheet.getRange(targetRow, 16).setValue(timestamp);  // 移除時間
+    // 清除異常標記
+    purchaseSheet.getRange(targetRow, 10).setValue('');
+    purchaseSheet.getRange(targetRow, 11).setValue('');
+    purchaseSheet.getRange(targetRow, 13).setValue('');
+
+    // 記錄到「異常記錄」工作表（保留完整操作歷史）
+    let abnormalSheet = ss.getSheetByName('異常記錄');
+    if (!abnormalSheet) {
+      abnormalSheet = ss.insertSheet('異常記錄');
+      abnormalSheet.getRange('A1:F1').setValues([['時間', '項目Key', '操作', '原因', '操作人員', '備註']]);
+      abnormalSheet.getRange('A1:F1').setFontWeight('bold');
+      abnormalSheet.setFrozenRows(1);
+    } else {
+      // 檢查是否有「操作人員」欄位
+      const abnormalHeaders = abnormalSheet.getRange(1, 1, 1, 6).getValues()[0];
+      if (abnormalHeaders[4] !== '操作人員') {
+        abnormalSheet.getRange(1, 5).setValue('操作人員');
+        abnormalSheet.getRange(1, 5).setFontWeight('bold');
+      }
+      if (abnormalHeaders[5] !== '備註') {
+        abnormalSheet.getRange(1, 6).setValue('備註');
+        abnormalSheet.getRange(1, 6).setFontWeight('bold');
+      }
+    }
+
+    abnormalSheet.appendRow([
+      timestamp,
+      itemKey,
+      '確認移除',
+      reason,
+      person,
+      ''
+    ]);
+
+    // 同時更新「最新狀態」工作表
+    let statusSheet = ss.getSheetByName('最新狀態');
+    if (statusSheet) {
+      const statusData = statusSheet.getDataRange().getValues();
+      for (let i = 1; i < statusData.length; i++) {
+        if (statusData[i][0] === itemKey) {
+          statusSheet.getRange(i + 1, 2, 1, 2).setValues([['不用叫貨', timestamp]]);
+          break;
+        }
+      }
+    }
+
+    return createJsonResponse({
+      success: true,
+      message: '項目已移除'
+    });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'removeItem 錯誤: ' + error.toString() });
+  }
+}
+
+/**
+ * 取消本次採購（規則設定問題，不需要實際採購）
+ * 資料會保留，狀態改為「已取消」，補貨天數不記錄
+ */
+function cancelPurchase(data) {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const purchaseSheet = ss.getSheetByName('待採購');
+
+    if (!purchaseSheet) {
+      return createJsonResponse({ success: false, error: '找不到待採購工作表' });
+    }
+
+    const itemKey = data.itemKey;
+    const reason = data.reason || '規則調整';
+    const person = data.person || '未知';
+    const timestamp = new Date();
+
+    // 找到該項目
+    const lastRow = purchaseSheet.getLastRow();
+    if (lastRow <= 1) {
+      return createJsonResponse({ success: false, error: '待採購清單是空的' });
+    }
+
+    // 檢查是否有「取消人員」和「取消原因」欄位，如果沒有就新增
+    const headers = purchaseSheet.getRange(1, 1, 1, 19).getValues()[0];
+    if (headers[16] !== '取消人員') {
+      purchaseSheet.getRange(1, 17).setValue('取消人員');
+      purchaseSheet.getRange(1, 17).setFontWeight('bold');
+    }
+    if (headers[17] !== '取消原因') {
+      purchaseSheet.getRange(1, 18).setValue('取消原因');
+      purchaseSheet.getRange(1, 18).setFontWeight('bold');
+    }
+    if (headers[18] !== '取消時間') {
+      purchaseSheet.getRange(1, 19).setValue('取消時間');
+      purchaseSheet.getRange(1, 19).setFontWeight('bold');
+    }
+
+    const purchaseData = purchaseSheet.getRange(2, 1, lastRow - 1, 12).getValues();
+    let targetRow = -1;
+
+    for (let i = 0; i < purchaseData.length; i++) {
+      const rowItemKey = purchaseData[i][0];
+      const rowStatus = purchaseData[i][3];
+
+      // 找到對應的項目（待採購或補貨中）
+      if (rowItemKey === itemKey && (rowStatus === '待採購' || rowStatus === '補貨中')) {
+        targetRow = i + 2;
+        break;
+      }
+    }
+
+    if (targetRow === -1) {
+      return createJsonResponse({ success: false, error: '找不到該項目' });
+    }
+
+    // 將狀態改為「已取消」，並記錄取消資訊
+    purchaseSheet.getRange(targetRow, 4).setValue('已取消');
+    purchaseSheet.getRange(targetRow, 17).setValue(person);     // 取消人員
+    purchaseSheet.getRange(targetRow, 18).setValue(reason);     // 取消原因
+    purchaseSheet.getRange(targetRow, 19).setValue(timestamp);  // 取消時間
+    // 補貨天數不記錄（保持空白）
+
+    // 記錄到「異常記錄」工作表（保留完整操作歷史）
+    let abnormalSheet = ss.getSheetByName('異常記錄');
+    if (!abnormalSheet) {
+      abnormalSheet = ss.insertSheet('異常記錄');
+      abnormalSheet.getRange('A1:F1').setValues([['時間', '項目Key', '操作', '原因', '操作人員', '備註']]);
+      abnormalSheet.getRange('A1:F1').setFontWeight('bold');
+      abnormalSheet.setFrozenRows(1);
+    }
+
+    abnormalSheet.appendRow([
+      timestamp,
+      itemKey,
+      '取消採購',
+      reason,
+      person,
+      '規則設定問題'
+    ]);
+
+    // 同時更新「最新狀態」工作表為「不用叫貨」
+    let statusSheet = ss.getSheetByName('最新狀態');
+    if (statusSheet) {
+      const statusData = statusSheet.getDataRange().getValues();
+      for (let i = 1; i < statusData.length; i++) {
+        if (statusData[i][0] === itemKey) {
+          statusSheet.getRange(i + 1, 2, 1, 2).setValues([['不用叫貨', timestamp]]);
+          break;
+        }
+      }
+    }
+
+    return createJsonResponse({
+      success: true,
+      message: '已取消本次採購'
+    });
+  } catch (error) {
+    return createJsonResponse({ success: false, error: 'cancelPurchase 錯誤: ' + error.toString() });
   }
 }
 
