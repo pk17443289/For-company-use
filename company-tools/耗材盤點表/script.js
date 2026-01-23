@@ -3862,15 +3862,9 @@ const purchaseTutorialSteps = [
 // 數據儀表板教學步驟
 const dashboardTutorialSteps = [
     {
-        target: '.dashboard-summary',
-        title: '數據總覽',
-        content: '📦總項目 🔴每日 🔵每週 🟢每月 🟣異常',
-        position: 'bottom'
-    },
-    {
         target: '.summary-card',
-        title: '盤點頻率',
-        content: '系統自動計算建議的盤點頻率',
+        title: '數據總覽',
+        content: '統計卡片顯示項目總數和各頻率數量',
         position: 'bottom'
     },
     {
@@ -3882,7 +3876,7 @@ const dashboardTutorialSteps = [
     {
         target: '.help-btn',
         title: '完成！',
-        content: '點擊「❓ 說明」重新觀看教學',
+        content: '點擊「❓ 說明」重新觀看',
         position: 'bottom'
     }
 ];
