@@ -535,23 +535,29 @@ const defaultInventoryData = {
 // 實際使用的盤點項目資料（初始化時會從 Google Sheets 載入，若無則使用預設）
 let inventoryData = defaultInventoryData;
 
-// 取得項目的實際盤點頻率（統計數據優先，否則用預設）
+// 取得項目的實際盤點頻率（有統計數據時使用建議頻率，否則用項目清單的設定）
 function getItemFrequency(itemName) {
-    // 如果有統計數據，使用建議的頻率
+    // 先取得項目清單中的手動設定頻率
+    let manualFrequency = 'weekly';
+    for (const category in inventoryData) {
+        const item = inventoryData[category].find(i => i.name === itemName);
+        if (item) {
+            manualFrequency = item.frequency || 'weekly';
+            break;
+        }
+    }
+
+    // 如果有統計數據且有足夠數據計算出建議頻率，才使用建議頻率
     if (statisticsData && statisticsData.items) {
         const stats = statisticsData.items.find(s => s.itemKey === itemName || s.itemName === itemName);
+        // 只有當 suggestedFrequency 有值（表示有足夠數據）時才使用
         if (stats && stats.suggestedFrequency) {
             return stats.suggestedFrequency;
         }
     }
-    // 否則找預設頻率
-    for (const category in inventoryData) {
-        const item = inventoryData[category].find(i => i.name === itemName);
-        if (item) {
-            return item.frequency || 'weekly';
-        }
-    }
-    return 'weekly';
+
+    // 沒有足夠統計數據，使用項目清單的手動設定
+    return manualFrequency;
 }
 
 // 儲存上次盤點資料

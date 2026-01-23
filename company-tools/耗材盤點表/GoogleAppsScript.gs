@@ -1277,7 +1277,7 @@ function getStatistics() {
       const stats = itemStats[itemKey];
       let avgReplenishDays = null;
       let avgOrderInterval = null;  // 新增：平均叫貨間隔
-      let suggestedFrequency = 'weekly';  // 預設每週
+      let suggestedFrequency = null;  // 只有當有足夠數據時才設定，否則用項目清單的設定
 
       // 統計異常
       if (stats.isAbnormal) {
@@ -1289,7 +1289,7 @@ function getStatistics() {
           ...stats,
           avgReplenishDays: null,
           avgOrderInterval: null,
-          suggestedFrequency: 'weekly'  // 異常項目預設顯示每週
+          suggestedFrequency: null  // 異常項目使用項目清單的設定
         });
         continue;
       }
@@ -1321,9 +1321,10 @@ function getStatistics() {
       }
 
       // 根據叫貨間隔建議盤點頻率
-      // 叫貨間隔短 = 消耗快 → 需要更頻繁盤點
-      // 叫貨間隔長 = 消耗慢 → 不需要那麼頻繁盤點
-      if (avgOrderInterval !== null) {
+      // 條件：「平均補貨天數」和「平均叫貨間隔」都有值，且至少有 3 次完整補貨記錄
+      // 否則使用項目清單中的手動設定
+      if (avgOrderInterval !== null && avgReplenishDays !== null && stats.completedOrders >= 3) {
+        // 有足夠的補貨週期數據（3次以上），根據叫貨間隔建議頻率
         if (avgOrderInterval <= 7) {
           // 每週或更短就要叫一次 → 消耗很快，每日盤點
           suggestedFrequency = 'daily';
@@ -1337,13 +1338,8 @@ function getStatistics() {
           suggestedFrequency = 'monthly';
           monthlyCount++;
         }
-      } else if (stats.totalOrders === 1) {
-        // 只有一筆訂單，無法判斷間隔，先用預設
-        weeklyCount++;
-      } else {
-        // 沒有訂單記錄，預設每週
-        weeklyCount++;
       }
+      // 數據不足（少於3次完整補貨）時，suggestedFrequency 保持為 null，前端會使用項目清單的手動設定
 
       totalItems++;
 
