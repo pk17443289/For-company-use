@@ -3649,8 +3649,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ===== 互動式教學系統 =====
 
-// 教學步驟定義
-const tutorialSteps = [
+// 教學步驟定義（桌面版）
+const desktopTutorialSteps = [
     {
         target: '.header',
         title: '歡迎使用耗材盤點系統',
@@ -3670,7 +3670,7 @@ const tutorialSteps = [
         position: 'bottom'
     },
     {
-        target: '.category-section',
+        target: '.category-header',
         title: '盤點項目分類',
         content: '項目按負責區域分類，點擊分類標題可以<strong>展開/收起</strong>該區域的項目。',
         position: 'bottom',
@@ -3685,20 +3685,19 @@ const tutorialSteps = [
         }
     },
     {
-        target: '#ajun-items .item-row',
-        targetFallback: '.item-row',
+        target: '#ajun-items .item-row .status-options',
+        targetFallback: '.status-options',
         title: '填寫盤點狀態',
         content: '對每個項目選擇狀態：<br>✅ <strong>不用叫</strong>：庫存充足<br>⚠️ <strong>要叫貨</strong>：需要採購<br>🚚 <strong>補貨中</strong>：已訂購等待到貨<br>📦 <strong>已補貨</strong>：貨已到，盤點完成',
-        position: 'bottom',
+        position: 'top',
         beforeShow: function() {
             // 確保分類是展開的
-            document.querySelectorAll('.category-content').forEach((content, index) => {
-                const header = document.querySelectorAll('.category-header')[index];
-                if (content.classList.contains('collapsed')) {
-                    content.classList.remove('collapsed');
-                    if (header) header.classList.remove('collapsed');
-                }
-            });
+            const firstContent = document.querySelector('.category-content');
+            const firstHeader = document.querySelector('.category-header');
+            if (firstContent && firstContent.classList.contains('collapsed')) {
+                firstContent.classList.remove('collapsed');
+                if (firstHeader) firstHeader.classList.remove('collapsed');
+            }
         }
     },
     {
@@ -3708,7 +3707,8 @@ const tutorialSteps = [
         position: 'bottom'
     },
     {
-        target: '.button-group',
+        target: '#inventoryPanel .button-group',
+        targetFallback: '.button-group',
         title: '提交盤點表',
         content: '填寫完成後，點擊<strong>「✅ 提交盤點表」</strong>即可上傳資料。系統會自動儲存您的盤點記錄。',
         position: 'top'
@@ -3720,6 +3720,65 @@ const tutorialSteps = [
         position: 'bottom'
     }
 ];
+
+// 教學步驟定義（手機版）
+const mobileTutorialSteps = [
+    {
+        target: '.header',
+        title: '歡迎使用耗材盤點系統',
+        content: '這是杰特企業的耗材盤點系統，幫助您輕鬆管理日常耗材的庫存狀況。',
+        position: 'bottom'
+    },
+    {
+        target: '.info-section',
+        title: '填寫基本資訊',
+        content: '開始盤點前，請先選擇<strong>盤點日期</strong>和<strong>盤點人員</strong>。',
+        position: 'bottom'
+    },
+    {
+        target: '.mobile-today-suggestion',
+        targetFallback: '.today-suggestion',
+        title: '今日盤點建議',
+        content: '系統會自動建議您今天應該盤點哪些項目。',
+        position: 'bottom'
+    },
+    {
+        target: '.category-tabs',
+        title: '分類切換',
+        content: '點擊分類標籤可以快速切換到不同區域的項目。',
+        position: 'bottom'
+    },
+    {
+        target: '.swipe-card .status-options',
+        targetFallback: '.swipe-card',
+        title: '填寫盤點狀態',
+        content: '對每個項目選擇狀態：<br>✅ <strong>不用叫</strong><br>⚠️ <strong>要叫貨</strong><br>🚚 <strong>補貨中</strong><br>📦 <strong>已補貨</strong>',
+        position: 'top'
+    },
+    {
+        target: '.swipe-nav-buttons',
+        title: '切換項目',
+        content: '點擊<strong>上一項/下一項</strong>切換盤點項目。',
+        position: 'top'
+    },
+    {
+        target: '.main-tabs',
+        title: '功能分頁',
+        content: '📋 盤點 / 🛒 採購追蹤 / 📊 數據儀表板',
+        position: 'bottom'
+    },
+    {
+        target: '.help-btn',
+        title: '需要幫助？',
+        content: '點擊<strong>「❓ 說明」</strong>重新觀看教學！',
+        position: 'bottom'
+    }
+];
+
+// 取得當前應使用的教學步驟
+function getTutorialSteps() {
+    return window.innerWidth <= 768 ? mobileTutorialSteps : desktopTutorialSteps;
+}
 
 let currentTutorialStep = 0;
 let tutorialActive = false;
@@ -3778,6 +3837,7 @@ function showTutorialStep() {
 
     if (!overlay || !highlight || !tooltip) return;
 
+    const tutorialSteps = getTutorialSteps();
     const step = tutorialSteps[currentTutorialStep];
 
     // 執行 beforeShow 函數（如果有定義）
@@ -3818,6 +3878,7 @@ function showTutorialStep() {
 function updateHighlightPosition(targetElement, step) {
     const highlight = document.getElementById('tutorialHighlight');
     const tooltip = document.getElementById('tutorialTooltip');
+    const tutorialSteps = getTutorialSteps();
 
     if (!targetElement || !highlight) return;
 
@@ -3917,6 +3978,7 @@ function positionTooltipFixed(targetRect, preferredPosition) {
 // 下一步
 function nextTutorialStep() {
     currentTutorialStep++;
+    const tutorialSteps = getTutorialSteps();
 
     if (currentTutorialStep >= tutorialSteps.length) {
         endTutorial();
