@@ -3786,38 +3786,39 @@ const purchaseTutorialSteps = [
     {
         target: '.purchase-title',
         title: '採購追蹤',
-        content: '這裡顯示所有<strong>需要採購</strong>和<strong>補貨中</strong>的項目，方便追蹤採購進度。',
+        content: '這裡顯示所有<strong>需要採購</strong>和<strong>補貨中</strong>的項目。',
         position: 'bottom'
     },
     {
         target: '.purchase-filters',
         title: '篩選功能',
-        content: '可以按狀態篩選：<br>• <strong>全部</strong>：所有項目<br>• <strong>待採購</strong>：還沒開始處理<br>• <strong>補貨中</strong>：已訂購等待到貨<br>• <strong>超時</strong>：超過時間未處理<br>• <strong>異常</strong>：標記有問題的項目',
+        content: '按狀態篩選：全部/待採購/補貨中/超時/異常',
         position: 'bottom'
     },
     {
-        target: '.overdue-settings',
+        target: '.overdue-legend',
         title: '超時提示',
-        content: '系統會自動標記：<br>🟠 超過 2 天未處理<br>🔴 超過 3 天未處理<br>🟣 標記異常的項目',
+        content: '🟠 超過2天 / 🔴 超過3天 / 🟣 異常',
         position: 'bottom'
     },
     {
-        target: '.purchase-list',
-        title: '採購清單',
-        content: '每個項目會顯示：<br>• 項目名稱和分類<br>• 標記時間和等待天數<br>• 操作按鈕',
-        position: 'top'
+        target: '.purchase-item',
+        targetFallback: '.purchase-list',
+        title: '採購項目',
+        content: '顯示項目名稱、分類、等待天數',
+        position: 'bottom'
     },
     {
         target: '.purchase-item-actions',
-        targetFallback: '.purchase-list',
+        targetFallback: '.purchase-item',
         title: '操作按鈕',
-        content: '📦 <strong>補貨中</strong>：已下單，等待到貨<br>✅ <strong>已補貨</strong>：貨到了，完成採購<br>❌ <strong>取消採購</strong>：不需要了<br>🗑️ <strong>確認移除</strong>：永久刪除此項目',
+        content: '📦 補貨中 / ✅ 已補貨 / ❌ 取消 / 🗑️ 移除',
         position: 'top'
     },
     {
         target: '.help-btn',
-        title: '需要幫助？',
-        content: '隨時點擊<strong>「❓ 說明」</strong>重新觀看教學！',
+        title: '完成！',
+        content: '點擊「❓ 說明」可重新觀看教學',
         position: 'bottom'
     }
 ];
@@ -4037,41 +4038,39 @@ function positionTooltipFixed(targetRect, preferredPosition) {
     let top, left;
     let arrowClass = 'arrow-top';
 
-    const gap = 15; // 與目標元素的間距
-    const tooltipHeight = 200; // 預估高度
-    const tooltipWidth = Math.min(380, viewportWidth - 40);
+    const gap = 15;
+    const tooltipHeight = 180; // 減少預估高度
+    const tooltipWidth = Math.min(350, viewportWidth - 40);
 
-    // 根據偏好位置計算（使用視窗座標，因為是 fixed）
-    if (preferredPosition === 'bottom') {
+    // 計算目標元素中心位置
+    const targetCenterY = targetRect.top + targetRect.height / 2;
+
+    // 判斷目標在畫面上半部還是下半部
+    const isTargetInUpperHalf = targetCenterY < viewportHeight / 2;
+
+    if (isTargetInUpperHalf) {
+        // 目標在上半部，提示框放下面
         top = targetRect.bottom + gap;
-        left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2);
         arrowClass = 'arrow-top';
-
-        // 檢查是否超出下方邊界
-        if (top + tooltipHeight > viewportHeight - 20) {
-            top = targetRect.top - tooltipHeight - gap;
-            arrowClass = 'arrow-bottom';
-        }
     } else {
-        // top position
+        // 目標在下半部，提示框放上面
         top = targetRect.top - tooltipHeight - gap;
-        left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2);
         arrowClass = 'arrow-bottom';
-
-        // 檢查是否超出上方邊界
-        if (top < 20) {
-            top = targetRect.bottom + gap;
-            arrowClass = 'arrow-top';
-        }
     }
 
-    // 確保不超出左右邊界
-    if (left < 20) left = 20;
-    if (left + tooltipWidth > viewportWidth - 20) left = viewportWidth - tooltipWidth - 20;
+    // 計算水平位置（置中於目標）
+    left = targetRect.left + (targetRect.width / 2) - (tooltipWidth / 2);
 
-    // 確保不超出上下邊界
-    if (top < 20) top = 20;
-    if (top + tooltipHeight > viewportHeight - 20) top = viewportHeight - tooltipHeight - 20;
+    // 確保不超出左右邊界
+    if (left < 15) left = 15;
+    if (left + tooltipWidth > viewportWidth - 15) left = viewportWidth - tooltipWidth - 15;
+
+    // 確保不超出上下邊界（最重要：確保按鈕可見）
+    const minTop = 60; // 至少離頂部60px
+    const maxTop = viewportHeight - tooltipHeight - 20;
+
+    if (top < minTop) top = minTop;
+    if (top > maxTop) top = maxTop;
 
     tooltip.style.top = top + 'px';
     tooltip.style.left = left + 'px';
