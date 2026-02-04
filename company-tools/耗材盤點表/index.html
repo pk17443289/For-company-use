@@ -2264,20 +2264,26 @@
         }
 
         .login-permission-info {
-            margin-top: 15px;
-            padding: 12px 15px;
             border-radius: 8px;
             font-size: 0.95em;
             text-align: left;
         }
 
+        .login-permission-info:empty {
+            display: none;
+        }
+
         .login-permission-info.admin {
+            margin-top: 15px;
+            padding: 12px 15px;
             background: #e8f5e9;
             border: 1px solid #81c784;
             color: #2e7d32;
         }
 
         .login-permission-info.basic {
+            margin-top: 15px;
+            padding: 12px 15px;
             background: #fff3e0;
             border: 1px solid #ffb74d;
             color: #e65100;
