@@ -90,6 +90,35 @@
             border: 1px solid #e8eef2;
         }
 
+        /* 盤點日期簡潔顯示 */
+        .date-display-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 20px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .date-label {
+            font-weight: 600;
+            color: #1565c0;
+        }
+
+        .date-value {
+            font-weight: 700;
+            color: #1e88e5;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 768px) {
+            .date-display-bar {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+        }
+
         .info-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -570,11 +599,31 @@
             }
 
             .header {
-                padding: 20px 15px;
+                padding: 55px 15px 20px 15px; /* 上方留空間給按鈕 */
             }
 
             .header h1 {
-                font-size: 1.6em;
+                font-size: 1.5em;
+                margin-bottom: 8px;
+            }
+
+            .header p {
+                font-size: 0.95em;
+            }
+
+            /* 手機版按鈕縮小 */
+            .help-btn {
+                padding: 5px 10px;
+                font-size: 0.75em;
+            }
+
+            .lang-switch {
+                gap: 3px;
+            }
+
+            .lang-btn {
+                padding: 4px 8px;
+                font-size: 0.75em;
             }
 
             .content {
@@ -625,6 +674,50 @@
             color: #1565c0;
             text-align: center;
             line-height: 1.5;
+        }
+
+        /* 手機版頻率篩選按鈕 */
+        .mobile-freq-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+            justify-content: center;
+        }
+
+        .mobile-freq-btn {
+            padding: 6px 10px;
+            border: 2px solid #90caf9;
+            background: white;
+            border-radius: 16px;
+            font-size: 0.8em;
+            font-weight: 600;
+            color: #1565c0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mobile-freq-btn:hover {
+            background: #e3f2fd;
+        }
+
+        .mobile-freq-btn.active {
+            background: #1e88e5;
+            border-color: #1e88e5;
+            color: white;
+        }
+
+        .mobile-freq-btn .freq-count {
+            display: inline-block;
+            padding: 1px 5px;
+            background: rgba(0,0,0,0.1);
+            border-radius: 8px;
+            font-size: 0.85em;
+            margin-left: 3px;
+        }
+
+        .mobile-freq-btn.active .freq-count {
+            background: rgba(255,255,255,0.3);
         }
 
         .mobile-nav {
@@ -1986,10 +2079,331 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(30, 136, 229, 0.4);
         }
+
+        /* 全屏載入遮罩 */
+        .fullscreen-loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e88e5 0%, #1565c0 100%);
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .fullscreen-loading.hidden {
+            display: none;
+        }
+
+        /* 載入中禁止滾動 */
+        body.loading-active {
+            overflow: hidden !important;
+            height: 100vh !important;
+        }
+
+        .fullscreen-loading-content {
+            text-align: center;
+            color: white;
+        }
+
+        .fullscreen-loading-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 1s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .fullscreen-loading-title {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 30px;
+        }
+
+        .fullscreen-loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            animation: spin 1s linear infinite;
+        }
+
+        .fullscreen-loading-text {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            opacity: 0.9;
+        }
+
+        .fullscreen-loading-progress {
+            width: 250px;
+            margin: 0 auto 15px;
+        }
+
+        .fullscreen-progress-bar {
+            height: 6px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .fullscreen-progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .fullscreen-loading-hint {
+            font-size: 0.9em;
+            opacity: 0.7;
+        }
+
+        /* 登入選擇人員彈窗 */
+        .login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(30, 136, 229, 0.95);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-modal.show {
+            display: flex;
+        }
+
+        .login-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        .login-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .login-title {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: #1e88e5;
+            margin-bottom: 8px;
+        }
+
+        .login-message {
+            font-size: 1em;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .login-form {
+            margin-bottom: 20px;
+        }
+
+        .login-select {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 1.1em;
+            border: 2px solid #e0e7f0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .login-select:focus {
+            outline: none;
+            border-color: #1e88e5;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+
+        .login-password-group {
+            margin-top: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 14px 16px;
+            font-size: 1.1em;
+            border: 2px solid #e0e7f0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            transition: all 0.2s;
+        }
+
+        .login-input:focus {
+            outline: none;
+            border-color: #1e88e5;
+            box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.1);
+        }
+
+        .login-error {
+            color: #e53935;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+
+        .login-permission-info {
+            margin-top: 15px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            font-size: 0.95em;
+            text-align: left;
+        }
+
+        .login-permission-info.admin {
+            background: #e8f5e9;
+            border: 1px solid #81c784;
+            color: #2e7d32;
+        }
+
+        .login-permission-info.basic {
+            background: #fff3e0;
+            border: 1px solid #ffb74d;
+            color: #e65100;
+        }
+
+        .login-buttons {
+            display: flex;
+            justify-content: center;
+        }
+
+        .login-btn {
+            padding: 14px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .login-btn-confirm {
+            background: #1e88e5;
+            color: white;
+        }
+
+        .login-btn-confirm:hover:not(:disabled) {
+            background: #1976d2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 136, 229, 0.4);
+        }
+
+        .login-btn-confirm:disabled {
+            background: #bdbdbd;
+            cursor: not-allowed;
+        }
+
+        /* 已登入顯示在 header 標題下方 */
+        .current-user-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            color: white;
+            font-size: 0.9em;
+            transition: all 0.2s;
+            margin-top: 12px;
+            min-width: 200px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn {
+            padding: 5px 14px;
+            border: 1px solid rgba(255,255,255,0.5);
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: white;
+        }
+
+        .current-user-name {
+            font-weight: 600;
+        }
+
+        .current-user-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .current-user-badge.admin {
+            background: #4caf50;
+        }
+
+        .current-user-badge.basic {
+            background: #ff9800;
+        }
+
+        @media (max-width: 768px) {
+            .current-user-display {
+                margin-top: 10px;
+                font-size: 0.85em;
+            }
+        }
+
+        /* 登入彈窗顯示時禁止滾動 */
+        body.modal-active {
+            overflow: hidden !important;
+            height: 100vh !important;
+        }
     </style>
 </head>
-<body>
-    <!-- 全域載入指示器 -->
+<body class="loading-active">
+    <!-- 全屏載入遮罩（連接伺服器時顯示） -->
+    <div class="fullscreen-loading" id="fullscreenLoading">
+        <div class="fullscreen-loading-content">
+            <div class="fullscreen-loading-icon">🗂️</div>
+            <div class="fullscreen-loading-title">耗材盤點系統</div>
+            <div class="fullscreen-loading-spinner"></div>
+            <div class="fullscreen-loading-text" id="fullscreenLoadingText">正在連接伺服器...</div>
+            <div class="fullscreen-loading-progress">
+                <div class="fullscreen-progress-bar">
+                    <div class="fullscreen-progress-fill" id="fullscreenProgressFill"></div>
+                </div>
+            </div>
+            <div class="fullscreen-loading-hint">請稍候，系統正在載入資料</div>
+        </div>
+    </div>
+
+    <!-- 全域載入指示器（舊的，保留給其他操作用） -->
     <div class="global-loading" id="globalLoading">
         <div class="loading-spinner"></div>
         <div class="loading-text" id="loadingText">載入中...</div>
@@ -2014,6 +2428,15 @@
             </div>
             <h1>🗂️ <span data-i18n="pageTitle">耗材盤點表</span></h1>
             <p data-i18n="companyName">杰特企業有限公司</p>
+            <!-- 當前用戶顯示（在標題下方，獨立一行） -->
+            <div class="current-user-display" id="currentUserDisplay" style="display: none;">
+                <div class="user-info">
+                    <span>👤</span>
+                    <span class="current-user-name" id="currentUserName">未登入</span>
+                    <span class="current-user-badge" id="currentUserBadge"></span>
+                </div>
+                <button class="logout-btn" onclick="logout()">登出</button>
+            </div>
         </div>
 
         <!-- 主要 Tab 導航 -->
@@ -2035,21 +2458,11 @@
         <div class="content">
             <div id="alertContainer"></div>
 
-            <!-- 基本資訊 -->
-            <div class="info-section">
-                <div class="info-row">
-                    <div class="form-group">
-                        <label for="inventoryDate"><span data-i18n="inventoryDate">盤點日期</span> <span class="required">*</span></label>
-                        <input type="date" id="inventoryDate" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="inventoryPerson"><span data-i18n="inventoryPerson">盤點人員</span> <span class="required">*</span></label>
-                        <select id="inventoryPerson" required>
-                            <option value="" data-i18n="pleaseSelect">請選擇...</option>
-                            <!-- 人員清單由 Google Sheets 載入 -->
-                        </select>
-                    </div>
-                </div>
+            <!-- 盤點日期（簡潔顯示） -->
+            <div class="date-display-bar" id="dateDisplayBar">
+                <span class="date-label">📅 盤點日期：</span>
+                <span class="date-value" id="dateDisplayValue">今天</span>
+                <input type="hidden" id="inventoryDate" required>
             </div>
 
             <!-- 統計區域已移除，改為在今日盤點建議區塊顯示關鍵數據 -->
@@ -2117,6 +2530,8 @@
                 <!-- 手機版今日盤點建議 -->
                 <div class="mobile-today-suggestion" id="mobileTodaySuggestion">
                     <div class="mobile-suggestion-text" id="mobileSuggestionText">📅 載入中...</div>
+                    <!-- 手機版頻率篩選按鈕 -->
+                    <div class="mobile-freq-filters" id="mobileFreqFilters"></div>
                 </div>
 
                 <div class="mobile-nav">
@@ -2291,6 +2706,47 @@
             <div class="welcome-buttons">
                 <button class="welcome-btn welcome-btn-skip" onclick="skipWelcome()">跳過</button>
                 <button class="welcome-btn welcome-btn-start" onclick="startTutorialFromWelcome()">🎓 開始教學</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 登入選擇人員彈窗 -->
+    <div id="loginModal" class="login-modal">
+        <div class="login-modal-content">
+            <div class="login-icon">👤</div>
+            <div class="login-title">請選擇您的身份</div>
+            <div class="login-message">選擇您的名字以開始使用系統</div>
+            <div class="login-form">
+                <select id="loginPersonSelect" class="login-select">
+                    <option value="">請選擇...</option>
+                </select>
+                <div id="loginPasswordGroup" class="login-password-group" style="display: none;">
+                    <input type="password" id="loginPasswordInput" class="login-input" placeholder="請輸入密碼">
+                    <p id="loginPasswordError" class="login-error" style="display: none;">密碼錯誤，請重試</p>
+                </div>
+                <div id="loginPermissionInfo" class="login-permission-info"></div>
+            </div>
+            <div class="login-buttons">
+                <button class="login-btn login-btn-confirm" id="loginConfirmBtn" onclick="confirmLogin()" disabled>確認</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 密碼驗證彈窗 -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content" style="max-width: 350px;">
+            <div class="modal-header">🔐 權限驗證</div>
+            <div class="modal-body">
+                <p id="passwordModalText" style="margin-bottom: 15px; color: #666;">請輸入密碼以進入此頁面</p>
+                <div class="form-group">
+                    <label for="passwordInput">密碼</label>
+                    <input type="password" id="passwordInput" placeholder="請輸入您的密碼" style="width: 100%;" onkeypress="if(event.key==='Enter')verifyPassword()">
+                </div>
+                <p id="passwordError" style="color: #e53935; font-size: 0.9em; margin-top: 10px; display: none;">密碼錯誤，請重試</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePasswordModal()">取消</button>
+                <button class="btn btn-primary" onclick="verifyPassword()">確認</button>
             </div>
         </div>
     </div>

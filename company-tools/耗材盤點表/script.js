@@ -566,7 +566,30 @@ let lastInventoryData = {};
 // 儲存被停用（標記異常）的項目
 let disabledItems = new Set();
 
-// ===== 全域載入指示器 =====
+// ===== 全屏載入遮罩（初始載入時使用） =====
+function showFullscreenLoading() {
+    const el = document.getElementById('fullscreenLoading');
+    if (el) el.classList.remove('hidden');
+    document.body.classList.add('loading-active'); // 禁止滾動
+}
+
+function hideFullscreenLoading() {
+    const el = document.getElementById('fullscreenLoading');
+    if (el) el.classList.add('hidden');
+    document.body.classList.remove('loading-active'); // 恢復滾動
+}
+
+function updateFullscreenLoadingText(text) {
+    const textEl = document.getElementById('fullscreenLoadingText');
+    if (textEl) textEl.textContent = text;
+}
+
+function updateFullscreenProgress(percent) {
+    const fillEl = document.getElementById('fullscreenProgressFill');
+    if (fillEl) fillEl.style.width = percent + '%';
+}
+
+// ===== 全域載入指示器（其他操作時使用） =====
 function showLoading() {
     const el = document.getElementById('globalLoading');
     if (el) {
@@ -597,26 +620,21 @@ function updateLoadingProgressDirect(percent) {
     }
 }
 
-// 填充人員下拉選單
+// 載入人員權限資料（從 Google Sheets 人員清單）
 function populatePersonnelDropdown(personnelList) {
-    const select = document.getElementById('inventoryPerson');
-    if (!select) return;
+    // 清空權限資料
+    personnelPermissions = {};
 
-    // 保留第一個「請選擇」選項
-    const firstOption = select.options[0];
-    select.innerHTML = '';
-    select.appendChild(firstOption);
-
-    // 加入從 Google Sheets 讀取的人員
+    // 儲存人員權限資訊
     personnelList.forEach(person => {
-        const option = document.createElement('option');
-        option.value = person.name;
-        option.textContent = person.name;
-        if (person.note) {
-            option.title = person.note; // 滑鼠懸停顯示備註
-        }
-        select.appendChild(option);
+        // hasAdminAccess: 是否有管理權限（可進入採購追蹤、儀表板）
+        // password: 該人員的密碼（用於驗證）
+        personnelPermissions[person.name] = {
+            hasAdminAccess: person.hasAdminAccess === true || person.hasAdminAccess === 'true' || person.hasAdminAccess === '是',
+            password: person.password || ''
+        };
     });
+    // 登入系統會在 initLoginSystem() 中處理 Tab 顯示更新
 }
 
 // 初始化頁面
@@ -630,6 +648,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 設定今天的日期
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('inventoryDate').value = today;
+    updateDateDisplay();
 
     // 生成所有項目
     generateItems();
@@ -650,12 +669,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 監聽基本資訊變化
+    // 監聽盤點日期變化（目前日期固定為今天，此監聽保留供未來擴充）
     document.getElementById('inventoryDate').addEventListener('change', function() {
-        updateButtonStates();
-        autoSave();
-    });
-    document.getElementById('inventoryPerson').addEventListener('change', function() {
+        updateDateDisplay();
         updateButtonStates();
         autoSave();
     });
@@ -805,8 +821,8 @@ function generateItems() {
 function filterByFrequency(frequency) {
     currentFrequencyFilter = frequency;
 
-    // 更新按鈕狀態（支援新的 freq-filter-btn 和舊的 freq-btn）
-    document.querySelectorAll('.freq-btn, .freq-filter-btn').forEach(btn => {
+    // 更新按鈕狀態（支援桌面版和手機版的所有按鈕）
+    document.querySelectorAll('.freq-btn, .freq-filter-btn, .mobile-freq-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.dataset.freq === frequency) {
             btn.classList.add('active');
@@ -1120,10 +1136,38 @@ function updateStats() {
     // 統計區域已移除，不再需要更新 DOM
 }
 
+// 更新盤點日期顯示
+function updateDateDisplay() {
+    const dateInput = document.getElementById('inventoryDate');
+    const dateValue = document.getElementById('dateDisplayValue');
+
+    if (!dateInput || !dateValue) return;
+
+    const selectedDate = dateInput.value;
+    const today = new Date().toISOString().split('T')[0];
+
+    if (selectedDate === today) {
+        dateValue.textContent = '今天 (' + formatDateChinese(selectedDate) + ')';
+    } else {
+        dateValue.textContent = formatDateChinese(selectedDate);
+    }
+}
+
+// 格式化日期為中文格式
+function formatDateChinese(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekdays = ['日', '一', '二', '三', '四', '五', '六'];
+    const weekday = weekdays[date.getDay()];
+    return `${month}月${day}日 (週${weekday})`;
+}
+
 // 檢查是否所有項目都已填寫
 function checkAllFilled() {
     const date = document.getElementById('inventoryDate').value;
-    const person = document.getElementById('inventoryPerson').value;
+    const person = currentLoggedInUser;
 
     const allRadios = document.querySelectorAll('input[type="radio"]');
     const uniqueNames = new Set();
@@ -1159,7 +1203,7 @@ function autoSave() {
 function saveData(silent = false) {
     const data = {
         date: document.getElementById('inventoryDate').value,
-        person: document.getElementById('inventoryPerson').value,
+        person: currentLoggedInUser || '',
         items: {}
     };
 
@@ -1191,9 +1235,7 @@ function loadData() {
             document.getElementById('inventoryDate').value = data.date;
         }
 
-        if (data.person) {
-            document.getElementById('inventoryPerson').value = data.person;
-        }
+        // person 現在由登入系統管理，不再從 localStorage 載入
 
         if (data.items) {
             // 新格式：items 直接是 { itemName: status } 的對應
@@ -1221,7 +1263,7 @@ function exportData() {
     }
 
     const date = document.getElementById('inventoryDate').value;
-    const person = document.getElementById('inventoryPerson').value;
+    const person = currentLoggedInUser || '';
 
     let csvContent = '\uFEFF'; // UTF-8 BOM
     csvContent += '盤點日期,盤點人員,分類,項目名稱,補貨條件,狀態\n';
@@ -1395,10 +1437,10 @@ function closeSuccessModal() {
 
 // 提交資料
 async function submitData() {
-    const person = document.getElementById('inventoryPerson').value;
+    const person = currentLoggedInUser;
     if (!person) {
         showAlert(t('pleaseSelectPerson'), 'warning');
-        document.getElementById('inventoryPerson').focus();
+        showLoginModal();
         return;
     }
 
@@ -1630,6 +1672,7 @@ function initMobileSwipe() {
 // 更新手機版今日盤點建議顯示
 function updateMobileTodaySuggestion(todayFreqs) {
     const textEl = document.getElementById('mobileSuggestionText');
+    const filtersEl = document.getElementById('mobileFreqFilters');
     if (!textEl) return;
 
     const todayDesc = getTodayDescription();
@@ -1641,19 +1684,45 @@ function updateMobileTodaySuggestion(todayFreqs) {
 
     const freqList = todayFreqs.map(f => freqNames[f]).join(' + ');
 
-    // 計算今日需盤點的項目數
-    let itemCount = 0;
+    // 計算各頻率的項目數
+    const freqCounts = { daily: 0, weekly: 0, monthly: 0 };
     Object.keys(inventoryData).forEach(category => {
         inventoryData[category].forEach(item => {
             if (disabledItems.has(item.name)) return;
             const freq = getItemFrequency(item.name);
-            if (todayFreqs.includes(freq)) {
-                itemCount++;
-            }
+            freqCounts[freq]++;
         });
     });
 
+    // 計算今日需盤點的項目數
+    let itemCount = 0;
+    todayFreqs.forEach(f => {
+        itemCount += freqCounts[f];
+    });
+
     textEl.innerHTML = `📅 ${todayDesc}<br><strong>${freqList}</strong> 共 <strong>${itemCount}</strong> 項`;
+
+    // 渲染手機版頻率篩選按鈕
+    if (filtersEl) {
+        const totalCount = freqCounts.daily + freqCounts.weekly + freqCounts.monthly;
+        filtersEl.innerHTML = `
+            <button class="mobile-freq-btn ${currentFrequencyFilter === 'all' ? 'active' : ''}" onclick="filterByFrequency('all')" data-freq="all">
+                全部 <span class="freq-count">${totalCount}</span>
+            </button>
+            <button class="mobile-freq-btn ${currentFrequencyFilter === 'today' ? 'active' : ''}" onclick="filterByFrequency('today')" data-freq="today">
+                📅 今日
+            </button>
+            <button class="mobile-freq-btn ${currentFrequencyFilter === 'daily' ? 'active' : ''}" onclick="filterByFrequency('daily')" data-freq="daily">
+                🔴 每日 <span class="freq-count">${freqCounts.daily}</span>
+            </button>
+            <button class="mobile-freq-btn ${currentFrequencyFilter === 'weekly' ? 'active' : ''}" onclick="filterByFrequency('weekly')" data-freq="weekly">
+                🔵 每週 <span class="freq-count">${freqCounts.weekly}</span>
+            </button>
+            <button class="mobile-freq-btn ${currentFrequencyFilter === 'monthly' ? 'active' : ''}" onclick="filterByFrequency('monthly')" data-freq="monthly">
+                🟢 每月 <span class="freq-count">${freqCounts.monthly}</span>
+            </button>
+        `;
+    }
 }
 
 // 根據指定頻率初始化手機版（用於手動篩選）
@@ -1668,8 +1737,19 @@ function initMobileSwipeWithFilter(frequency) {
         filterFreqs = [frequency];
     }
 
+    // 計算各頻率的項目數
+    const freqCounts = { daily: 0, weekly: 0, monthly: 0 };
+    Object.keys(inventoryData).forEach(category => {
+        inventoryData[category].forEach(item => {
+            if (disabledItems.has(item.name)) return;
+            const freq = getItemFrequency(item.name);
+            freqCounts[freq]++;
+        });
+    });
+
     // 更新手機版建議顯示
     const textEl = document.getElementById('mobileSuggestionText');
+    const filtersEl = document.getElementById('mobileFreqFilters');
     if (textEl) {
         const freqNames = {
             daily: '🔴每日',
@@ -1680,14 +1760,8 @@ function initMobileSwipeWithFilter(frequency) {
 
         // 計算篩選後的項目數
         let itemCount = 0;
-        Object.keys(inventoryData).forEach(category => {
-            inventoryData[category].forEach(item => {
-                if (disabledItems.has(item.name)) return;
-                const freq = getItemFrequency(item.name);
-                if (filterFreqs.includes(freq)) {
-                    itemCount++;
-                }
-            });
+        filterFreqs.forEach(f => {
+            itemCount += freqCounts[f];
         });
 
         if (frequency === 'all') {
@@ -1698,6 +1772,28 @@ function initMobileSwipeWithFilter(frequency) {
         } else {
             textEl.innerHTML = `🔍 篩選：<strong>${freqList}</strong><br>共 <strong>${itemCount}</strong> 項`;
         }
+    }
+
+    // 更新手機版頻率篩選按鈕狀態
+    if (filtersEl) {
+        const totalCount = freqCounts.daily + freqCounts.weekly + freqCounts.monthly;
+        filtersEl.innerHTML = `
+            <button class="mobile-freq-btn ${frequency === 'all' ? 'active' : ''}" onclick="filterByFrequency('all')" data-freq="all">
+                全部 <span class="freq-count">${totalCount}</span>
+            </button>
+            <button class="mobile-freq-btn ${frequency === 'today' ? 'active' : ''}" onclick="filterByFrequency('today')" data-freq="today">
+                📅 今日
+            </button>
+            <button class="mobile-freq-btn ${frequency === 'daily' ? 'active' : ''}" onclick="filterByFrequency('daily')" data-freq="daily">
+                🔴 每日 <span class="freq-count">${freqCounts.daily}</span>
+            </button>
+            <button class="mobile-freq-btn ${frequency === 'weekly' ? 'active' : ''}" onclick="filterByFrequency('weekly')" data-freq="weekly">
+                🔵 每週 <span class="freq-count">${freqCounts.weekly}</span>
+            </button>
+            <button class="mobile-freq-btn ${frequency === 'monthly' ? 'active' : ''}" onclick="filterByFrequency('monthly')" data-freq="monthly">
+                🟢 每月 <span class="freq-count">${freqCounts.monthly}</span>
+            </button>
+        `;
     }
 
     // 建立篩選後的項目列表
@@ -2238,12 +2334,13 @@ async function testGoogleSheetsConnection() {
 async function loadLastInventory() {
     if (!GOOGLE_SCRIPT_URL) {
         console.log('未設定 Google Sheets URL，跳過載入');
-        hideLoading();
+        hideFullscreenLoading();
         return;
     }
 
-    showLoading();
-    updateLoadingText('正在連接伺服器...');
+    // 使用全屏遮罩
+    updateFullscreenLoadingText('正在連接伺服器...');
+    updateFullscreenProgress(10);
 
     try {
         // 並行載入所有資料（速度快很多）
@@ -2256,8 +2353,8 @@ async function loadLastInventory() {
             fetch(GOOGLE_SCRIPT_URL + '?action=getPersonnelList')
         ]);
 
-        updateLoadingText('處理資料中...');
-        updateLoadingProgressDirect(50);
+        updateFullscreenLoadingText('處理資料中...');
+        updateFullscreenProgress(50);
 
         // 解析所有回應
         const [lastInvData, disabledData, purchaseResult, statsData, itemsData, personnelData] = await Promise.all([
@@ -2275,7 +2372,7 @@ async function loadLastInventory() {
             console.log('成功載入人員清單', personnelData.data);
         }
 
-        updateLoadingProgressDirect(80);
+        updateFullscreenProgress(80);
 
         // 處理盤點項目清單（優先處理，因為其他功能依賴它）
         if (itemsData.success && itemsData.data && Object.keys(itemsData.data).length > 0) {
@@ -2319,8 +2416,8 @@ async function loadLastInventory() {
             console.log('成功載入統計數據', statisticsData);
         }
 
-        updateLoadingText('載入完成！');
-        updateLoadingProgressDirect(100);
+        updateFullscreenLoadingText('載入完成！');
+        updateFullscreenProgress(100);
 
         // 重新生成項目以顯示上次盤點數量（會過濾掉停用項目）
         document.querySelectorAll('.items-grid').forEach(grid => grid.innerHTML = '');
@@ -2339,6 +2436,9 @@ async function loadLastInventory() {
         // 重新載入本地儲存的資料
         loadData();
 
+        // 初始化登入系統（在人員清單載入後）
+        initLoginSystem();
+
         // 重新更新今日盤點建議（因為統計數據載入後頻率可能有變動，但保持用戶選擇的篩選）
         updateTodaySuggestion();
         applyFrequencyFilter();
@@ -2354,8 +2454,9 @@ async function loadLastInventory() {
         }, 500);
     } catch (error) {
         console.error('載入資料失敗：', error);
-        hideLoading();
-        // 不顯示錯誤訊息，因為可能是第一次使用
+        hideFullscreenLoading();
+        // 如果載入失敗，仍然顯示登入彈窗讓用戶可以使用預設資料
+        showLoginModal();
     }
 }
 
@@ -2423,7 +2524,7 @@ async function submitToGoogleSheets() {
     }
 
     const date = document.getElementById('inventoryDate').value;
-    const person = document.getElementById('inventoryPerson').value;
+    const person = currentLoggedInUser || '';
 
     // 收集所有項目資料
     const items = [];
@@ -2515,8 +2616,349 @@ let purchaseListData = [];
 let statisticsData = null;
 let currentPurchaseFilter = 'all';
 
-// 切換主要 Tab
+// ===== 權限控制 =====
+// 儲存人員權限資料（從 Google Sheets 載入）
+let personnelPermissions = {};  // { 人員名稱: { hasAdminAccess: true/false, password: string } }
+let pendingTabSwitch = null;    // 等待密碼驗證後要切換的 Tab
+let verifiedSession = {};       // 已驗證的人員（本次工作階段內有效）
+let currentLoggedInUser = null; // 當前登入的用戶
+let isLoggedIn = false;         // 是否已登入
+
+// 檢查當前登入的人員是否有管理權限
+function hasAdminAccess() {
+    if (!currentLoggedInUser) return false;
+
+    const personData = personnelPermissions[currentLoggedInUser];
+    return personData && personData.hasAdminAccess === true;
+}
+
+// 檢查是否已通過密碼驗證（本次工作階段）
+function isVerified() {
+    if (!currentLoggedInUser) return false;
+    return verifiedSession[currentLoggedInUser] === true;
+}
+
+// 顯示權限不足提示（沒有管理權限的人員）
+function showPermissionDenied() {
+    const personText = currentLoggedInUser ? `「${currentLoggedInUser}」` : '您';
+
+    showAlert(`${personText} 沒有權限進入此頁面。\n如需權限，請聯繫管理員。`, 'warning');
+}
+
+// 顯示密碼驗證彈窗
+function showPasswordModal(targetTab) {
+    pendingTabSwitch = targetTab;
+
+    const modal = document.getElementById('passwordModal');
+    const textEl = document.getElementById('passwordModalText');
+    const inputEl = document.getElementById('passwordInput');
+    const errorEl = document.getElementById('passwordError');
+
+    textEl.textContent = `請輸入「${currentLoggedInUser}」的密碼以進入此頁面`;
+    inputEl.value = '';
+    errorEl.style.display = 'none';
+
+    modal.classList.add('show');
+    setTimeout(() => inputEl.focus(), 100);
+}
+
+// 關閉密碼彈窗
+function closePasswordModal() {
+    const modal = document.getElementById('passwordModal');
+    modal.classList.remove('show');
+    pendingTabSwitch = null;
+}
+
+// 驗證密碼
+function verifyPassword() {
+    const inputEl = document.getElementById('passwordInput');
+    const errorEl = document.getElementById('passwordError');
+    const enteredPassword = inputEl.value.trim();
+
+    if (!currentLoggedInUser) {
+        closePasswordModal();
+        return;
+    }
+
+    const personData = personnelPermissions[currentLoggedInUser];
+    const correctPassword = personData?.password;
+
+    if (enteredPassword === correctPassword) {
+        // 密碼正確，標記為已驗證
+        verifiedSession[currentLoggedInUser] = true;
+        closePasswordModal();
+        updateCurrentUserDisplay(); // 更新顯示為管理員
+        updateTabAccessDisplay();
+
+        // 切換到目標 Tab
+        if (pendingTabSwitch) {
+            doSwitchMainTab(pendingTabSwitch);
+            pendingTabSwitch = null;
+        }
+    } else {
+        // 密碼錯誤
+        errorEl.style.display = 'block';
+        inputEl.value = '';
+        inputEl.focus();
+    }
+}
+
+// ===== 登入系統 =====
+
+// 顯示登入彈窗
+function showLoginModal() {
+    const modal = document.getElementById('loginModal');
+    const select = document.getElementById('loginPersonSelect');
+    const passwordGroup = document.getElementById('loginPasswordGroup');
+    const permissionInfo = document.getElementById('loginPermissionInfo');
+    const confirmBtn = document.getElementById('loginConfirmBtn');
+
+    // 清空並填充人員選項
+    select.innerHTML = '<option value="">請選擇...</option>';
+    Object.keys(personnelPermissions).forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        select.appendChild(option);
+    });
+
+    // 重置表單狀態
+    passwordGroup.style.display = 'none';
+    permissionInfo.innerHTML = '';
+    confirmBtn.disabled = true;
+
+    // 禁止頁面滾動
+    document.body.classList.add('modal-active');
+
+    modal.classList.add('show');
+}
+
+// 登入人員選擇變化
+function onLoginPersonChange() {
+    const select = document.getElementById('loginPersonSelect');
+    const passwordGroup = document.getElementById('loginPasswordGroup');
+    const passwordInput = document.getElementById('loginPasswordInput');
+    const passwordError = document.getElementById('loginPasswordError');
+    const permissionInfo = document.getElementById('loginPermissionInfo');
+    const confirmBtn = document.getElementById('loginConfirmBtn');
+
+    const selectedPerson = select.value;
+    passwordError.style.display = 'none';
+    passwordInput.value = '';
+
+    if (!selectedPerson) {
+        passwordGroup.style.display = 'none';
+        permissionInfo.innerHTML = '';
+        confirmBtn.disabled = true;
+        return;
+    }
+
+    const personData = personnelPermissions[selectedPerson];
+    const hasAdmin = personData?.hasAdminAccess;
+
+    if (hasAdmin) {
+        // 有管理權限，需要輸入密碼
+        passwordGroup.style.display = 'block';
+        permissionInfo.className = 'login-permission-info admin';
+        permissionInfo.innerHTML = `
+            <strong>✅ 管理員權限</strong><br>
+            <span style="font-size: 0.9em;">可使用：盤點、採購追蹤、數據儀表板</span>
+        `;
+        confirmBtn.disabled = true; // 需要輸入密碼後才能啟用
+    } else {
+        // 沒有管理權限
+        passwordGroup.style.display = 'none';
+        permissionInfo.className = 'login-permission-info basic';
+        permissionInfo.innerHTML = `
+            <strong>📋 一般權限</strong><br>
+            <span style="font-size: 0.9em;">可使用：盤點功能</span>
+        `;
+        confirmBtn.disabled = false;
+    }
+}
+
+// 登入密碼輸入變化
+function onLoginPasswordInput() {
+    const select = document.getElementById('loginPersonSelect');
+    const passwordInput = document.getElementById('loginPasswordInput');
+    const confirmBtn = document.getElementById('loginConfirmBtn');
+
+    const selectedPerson = select.value;
+    const password = passwordInput.value.trim();
+
+    if (selectedPerson && password) {
+        confirmBtn.disabled = false;
+    } else {
+        confirmBtn.disabled = true;
+    }
+}
+
+// 確認登入
+function confirmLogin() {
+    const select = document.getElementById('loginPersonSelect');
+    const passwordInput = document.getElementById('loginPasswordInput');
+    const passwordError = document.getElementById('loginPasswordError');
+
+    const selectedPerson = select.value;
+    if (!selectedPerson) return;
+
+    const personData = personnelPermissions[selectedPerson];
+    const hasAdmin = personData?.hasAdminAccess;
+
+    // 如果有管理權限，需要驗證密碼
+    if (hasAdmin) {
+        const enteredPassword = passwordInput.value.trim();
+        const correctPassword = personData?.password;
+
+        if (enteredPassword !== correctPassword) {
+            passwordError.style.display = 'block';
+            passwordInput.value = '';
+            passwordInput.focus();
+            return;
+        }
+
+        // 密碼正確，標記為已驗證
+        verifiedSession[selectedPerson] = true;
+    }
+
+    // 登入成功
+    currentLoggedInUser = selectedPerson;
+    isLoggedIn = true;
+
+    // 關閉登入彈窗
+    document.getElementById('loginModal').classList.remove('show');
+
+    // 恢復頁面滾動
+    document.body.classList.remove('modal-active');
+
+    // 更新 header 顯示
+    updateCurrentUserDisplay();
+
+    // 更新 Tab 權限顯示
+    updateTabAccessDisplay();
+
+    // 儲存到 localStorage
+    localStorage.setItem('lastLoggedInUser', selectedPerson);
+}
+
+// 登出
+function logout() {
+    // 清除登入狀態
+    currentLoggedInUser = null;
+    isLoggedIn = false;
+
+    // 清除所有已驗證的 session
+    verifiedSession = {};
+
+    // 清除 localStorage 記錄
+    localStorage.removeItem('lastLoggedInUser');
+
+    // 隱藏用戶顯示
+    updateCurrentUserDisplay();
+
+    // 更新 Tab 權限顯示（隱藏受限 Tab）
+    updateTabAccessDisplay();
+
+    // 切回盤點頁面（如果在受限頁面）
+    if (currentTab === 'purchase' || currentTab === 'dashboard') {
+        doSwitchMainTab('inventory');
+    }
+
+    // 顯示登入彈窗
+    showLoginModal();
+}
+
+// 更新 header 的用戶顯示
+function updateCurrentUserDisplay() {
+    const display = document.getElementById('currentUserDisplay');
+    const nameEl = document.getElementById('currentUserName');
+    const badgeEl = document.getElementById('currentUserBadge');
+
+    if (!currentLoggedInUser) {
+        display.style.display = 'none';
+        return;
+    }
+
+    display.style.display = 'flex';
+    nameEl.textContent = currentLoggedInUser;
+
+    const personData = personnelPermissions[currentLoggedInUser];
+    if (personData?.hasAdminAccess && verifiedSession[currentLoggedInUser]) {
+        badgeEl.textContent = '管理員';
+        badgeEl.className = 'current-user-badge admin';
+    } else {
+        badgeEl.textContent = '一般';
+        badgeEl.className = 'current-user-badge basic';
+    }
+}
+
+// 初始化登入系統（在人員清單載入後呼叫）
+function initLoginSystem() {
+    // 綁定登入表單事件
+    const loginSelect = document.getElementById('loginPersonSelect');
+    const loginPasswordInput = document.getElementById('loginPasswordInput');
+
+    if (loginSelect) {
+        loginSelect.addEventListener('change', onLoginPersonChange);
+    }
+    if (loginPasswordInput) {
+        loginPasswordInput.addEventListener('input', onLoginPasswordInput);
+        loginPasswordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                confirmLogin();
+            }
+        });
+    }
+
+    // 檢查是否有上次登入的用戶
+    const lastUser = localStorage.getItem('lastLoggedInUser');
+    if (lastUser && personnelPermissions[lastUser]) {
+        // 有上次登入記錄，但需要重新驗證密碼（如果是管理員）
+        const personData = personnelPermissions[lastUser];
+        if (personData?.hasAdminAccess) {
+            // 管理員需要重新輸入密碼
+            hideFullscreenLoading(); // 先隱藏全屏遮罩
+            showLoginModal();
+            document.getElementById('loginPersonSelect').value = lastUser;
+            onLoginPersonChange();
+        } else {
+            // 一般用戶直接登入
+            currentLoggedInUser = lastUser;
+            isLoggedIn = true;
+            updateCurrentUserDisplay();
+            updateTabAccessDisplay();
+            hideFullscreenLoading(); // 隱藏全屏遮罩
+        }
+    } else {
+        // 沒有登入記錄，顯示登入彈窗
+        hideFullscreenLoading(); // 先隱藏全屏遮罩
+        showLoginModal();
+    }
+}
+
+// 切換主要 Tab（含權限檢查）
 function switchMainTab(tabName) {
+    // 權限檢查：採購追蹤和儀表板需要管理權限
+    if (tabName === 'purchase' || tabName === 'dashboard') {
+        // 檢查是否有管理權限
+        if (!hasAdminAccess()) {
+            showPermissionDenied();
+            return; // 阻止切換
+        }
+
+        // 有權限但尚未驗證密碼，顯示密碼彈窗
+        if (!isVerified()) {
+            showPasswordModal(tabName);
+            return; // 等待密碼驗證
+        }
+    }
+
+    // 執行實際的 Tab 切換
+    doSwitchMainTab(tabName);
+}
+
+// 執行實際的 Tab 切換（不含權限檢查）
+function doSwitchMainTab(tabName) {
     currentTab = tabName;
 
     // 更新 Tab 按鈕狀態
@@ -2550,6 +2992,60 @@ function switchMainTab(tabName) {
         setTimeout(() => {
             checkFirstTimeDashboardUser();
         }, 500);
+    }
+}
+
+// 更新 Tab 按鈕的顯示狀態（沒權限直接隱藏）
+function updateTabAccessDisplay() {
+    const hasAccess = hasAdminAccess();
+    const verified = isVerified();
+    const purchaseTab = document.querySelector('.main-tab[data-tab="purchase"]');
+    const dashboardTab = document.querySelector('.main-tab[data-tab="dashboard"]');
+
+    if (purchaseTab) {
+        if (!hasAccess) {
+            // 沒有權限：直接隱藏
+            purchaseTab.style.display = 'none';
+        } else {
+            // 有權限：顯示
+            purchaseTab.style.display = 'flex';
+            purchaseTab.innerHTML = '🛒 採購追蹤 <span class="tab-badge zero" id="purchaseBadge">0</span>';
+            purchaseTab.style.opacity = '1';
+            purchaseTab.title = '';
+        }
+    }
+
+    if (dashboardTab) {
+        if (!hasAccess) {
+            // 沒有權限：直接隱藏
+            dashboardTab.style.display = 'none';
+        } else {
+            // 有權限：顯示
+            dashboardTab.style.display = 'flex';
+            dashboardTab.innerHTML = '📊 數據儀表板';
+            dashboardTab.style.opacity = '1';
+            dashboardTab.title = '';
+        }
+    }
+
+    // 如果當前在受限頁面但沒有權限，自動切回盤點頁面
+    if (!hasAccess && (currentTab === 'purchase' || currentTab === 'dashboard')) {
+        doSwitchMainTab('inventory');
+    }
+
+    // 更新採購徽章數字
+    updatePurchaseBadge();
+}
+
+// 更新採購追蹤的徽章數字
+function updatePurchaseBadge() {
+    const badge = document.getElementById('purchaseBadge');
+    if (badge && purchaseListData) {
+        const pendingCount = purchaseListData.filter(item =>
+            item.status === '待採購' || item.status === '補貨中'
+        ).length;
+        badge.textContent = pendingCount;
+        badge.classList.toggle('zero', pendingCount === 0);
     }
 }
 
@@ -2826,7 +3322,7 @@ async function updatePurchaseStatus(itemKey, newStatus) {
             action: 'updatePurchaseStatus',
             itemKey: itemKey,
             status: newStatus,
-            person: document.getElementById('inventoryPerson')?.value || ''
+            person: currentLoggedInUser || ''
         };
 
         const response = await fetch(GOOGLE_SCRIPT_URL, {

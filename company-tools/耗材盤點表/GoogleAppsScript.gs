@@ -1991,6 +1991,7 @@ function testSendReminder() {
 /**
  * 取得人員清單
  * 從「人員清單」工作表讀取，如不存在則建立預設清單
+ * 欄位：姓名 | 備註 | 管理權限 | 密碼
  */
 function getPersonnelList() {
   try {
@@ -2000,33 +2001,48 @@ function getPersonnelList() {
     // 如果工作表不存在，建立預設人員清單
     if (!sheet) {
       sheet = ss.insertSheet('人員清單');
-      sheet.getRange('A1:B1').setValues([['姓名', '備註']]);
-      sheet.getRange('A1:B1').setFontWeight('bold');
+      sheet.getRange('A1:D1').setValues([['姓名', '備註', '管理權限', '密碼']]);
+      sheet.getRange('A1:D1').setFontWeight('bold');
       sheet.setFrozenRows(1);
 
-      // 預設人員清單
+      // 預設人員清單（預設都沒有管理權限）
       const defaultPersonnel = [
-        ['洪杰', ''],
-        ['翁嘉駿', ''],
-        ['李紫伶', ''],
-        ['曾紫淇', ''],
-        ['陳佳雯', ''],
-        ['沈鈴鈺', ''],
-        ['楊秀娟', ''],
-        ['李泓霖', ''],
-        ['吳佩真', ''],
-        ['李宗泓', ''],
-        ['Dar Maji', ''],
-        ['Meri Kurniasari', ''],
-        ['Sari Indah Purnama', ''],
-        ['Qoirul Anwar', '']
+        ['洪杰', '', '是', ''],
+        ['翁嘉駿', '', '', ''],
+        ['李紫伶', '', '', ''],
+        ['曾紫淇', '', '', ''],
+        ['陳佳雯', '', '', ''],
+        ['沈鈴鈺', '', '', ''],
+        ['楊秀娟', '', '', ''],
+        ['李泓霖', '', '', ''],
+        ['吳佩真', '', '', ''],
+        ['李宗泓', '', '', ''],
+        ['Dar Maji', '', '', ''],
+        ['Meri Kurniasari', '', '', ''],
+        ['Sari Indah Purnama', '', '', ''],
+        ['Qoirul Anwar', '', '', '']
       ];
 
-      sheet.getRange(2, 1, defaultPersonnel.length, 2).setValues(defaultPersonnel);
+      sheet.getRange(2, 1, defaultPersonnel.length, 4).setValues(defaultPersonnel);
 
       // 設定欄寬
       sheet.setColumnWidth(1, 150);
       sheet.setColumnWidth(2, 200);
+      sheet.setColumnWidth(3, 80);
+      sheet.setColumnWidth(4, 100);
+    } else {
+      // 檢查是否有「管理權限」和「密碼」欄位，沒有就新增
+      const headers = sheet.getRange(1, 1, 1, 4).getValues()[0];
+      if (headers[2] !== '管理權限') {
+        sheet.getRange(1, 3).setValue('管理權限');
+        sheet.getRange(1, 3).setFontWeight('bold');
+        sheet.setColumnWidth(3, 80);
+      }
+      if (headers[3] !== '密碼') {
+        sheet.getRange(1, 4).setValue('密碼');
+        sheet.getRange(1, 4).setFontWeight('bold');
+        sheet.setColumnWidth(4, 100);
+      }
     }
 
     // 讀取人員清單
@@ -2035,12 +2051,14 @@ function getPersonnelList() {
       return createJsonResponse({ success: true, data: [] });
     }
 
-    const data = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+    const data = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
     const personnel = data
       .filter(row => row[0] && row[0].toString().trim() !== '')
       .map(row => ({
         name: row[0].toString().trim(),
-        note: row[1] ? row[1].toString().trim() : ''
+        note: row[1] ? row[1].toString().trim() : '',
+        hasAdminAccess: row[2] === '是' || row[2] === 'TRUE' || row[2] === true,
+        password: row[3] ? row[3].toString() : ''
       }));
 
     return createJsonResponse({ success: true, data: personnel });
