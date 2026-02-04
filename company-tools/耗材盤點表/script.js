@@ -2775,9 +2775,6 @@ function confirmLogin() {
 
     // 更新 Tab 權限顯示
     updateTabAccessDisplay();
-
-    // 儲存到 localStorage
-    localStorage.setItem('lastLoggedInUser', selectedPerson);
 }
 
 // 登出
@@ -2788,9 +2785,6 @@ function logout() {
 
     // 清除所有已驗證的 session
     verifiedSession = {};
-
-    // 清除 localStorage 記錄
-    localStorage.removeItem('lastLoggedInUser');
 
     // 隱藏用戶顯示
     updateCurrentUserDisplay();
@@ -2849,30 +2843,9 @@ function initLoginSystem() {
         });
     }
 
-    // 檢查是否有上次登入的用戶
-    const lastUser = localStorage.getItem('lastLoggedInUser');
-    if (lastUser && personnelPermissions[lastUser]) {
-        // 有上次登入記錄，但需要重新驗證密碼（如果是管理員）
-        const personData = personnelPermissions[lastUser];
-        if (personData?.hasAdminAccess) {
-            // 管理員需要重新輸入密碼
-            hideFullscreenLoading(); // 先隱藏全屏遮罩
-            showLoginModal();
-            document.getElementById('loginPersonSelect').value = lastUser;
-            onLoginPersonChange();
-        } else {
-            // 一般用戶直接登入
-            currentLoggedInUser = lastUser;
-            isLoggedIn = true;
-            updateCurrentUserDisplay();
-            updateTabAccessDisplay();
-            hideFullscreenLoading(); // 隱藏全屏遮罩
-        }
-    } else {
-        // 沒有登入記錄，顯示登入彈窗
-        hideFullscreenLoading(); // 先隱藏全屏遮罩
-        showLoginModal();
-    }
+    // 每次進入頁面都需要重新登入
+    hideFullscreenLoading();
+    showLoginModal();
 }
 
 // 切換主要 Tab（含權限檢查）
