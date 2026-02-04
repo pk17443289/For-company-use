@@ -1602,71 +1602,10 @@ function getCategoryInfo() {
     };
 }
 
-// 初始化手機版滑動模式（按區域分類：辦公室→倉庫→貼紙→OPP袋，自動套用今日建議）
+// 初始化手機版滑動模式（按區域分類：辦公室→倉庫→貼紙→OPP袋，使用目前選擇的篩選）
 function initMobileSwipe() {
-    // 取得今日應盤點的頻率
-    const todayFreqs = getTodayFrequencies();
-
-    // 更新手機版今日建議顯示
-    updateMobileTodaySuggestion(todayFreqs);
-
-    // 建立所有項目的扁平列表（按區域分類排序，只包含今日該盤的項目）
-    allItemsFlat = [];
-
-    // 依區域順序加入項目
-    const categoryOrder = ['ajun', 'warehouse', 'meiban', 'xiujuan'];
-
-    categoryOrder.forEach(category => {
-        if (!inventoryData[category]) return;
-
-        inventoryData[category].forEach((item, index) => {
-            // 跳過被標記異常（停用）的項目
-            if (disabledItems.has(item.name)) {
-                return;
-            }
-
-            const itemKey = item.name;
-            const frequency = getItemFrequency(itemKey);
-
-            // 只加入今日該盤的項目
-            if (!todayFreqs.includes(frequency)) {
-                return;
-            }
-
-            allItemsFlat.push({
-                ...item,
-                category: category,
-                frequency: frequency,
-                index: index,
-                itemKey: itemKey
-            });
-
-            // 根據補貨模式設定預設值（如果尚未設定）
-            if (!mobileSelections[itemKey]) {
-                if (isReplenishMode(itemKey)) {
-                    mobileSelections[itemKey] = '補貨中';
-                } else {
-                    mobileSelections[itemKey] = '不用叫貨';
-                }
-            }
-        });
-    });
-
-    // 從桌面版同步選擇狀態到 mobileSelections
-    syncFromDesktop();
-
-    // 生成分類標籤
-    generateCategoryTabs();
-
-    // 顯示第一個項目
-    currentItemIndex = 0;
-    showCurrentItem();
-
-    // 更新導航按鈕狀態
-    updateNavButtons();
-
-    // 綁定觸控滑動事件
-    bindSwipeEvents();
+    // 使用目前選擇的篩選條件（而不是自動切換到今日建議）
+    initMobileSwipeWithFilter(currentFrequencyFilter);
 }
 
 // 更新手機版今日盤點建議顯示
