@@ -376,7 +376,11 @@ function t(key, replacements = {}) {
 
 // 取得項目名稱翻譯（顯示用）
 function getItemNameDisplay(name) {
-    return t('item_' + name);
+    const key = 'item_' + name;
+    const translated = i18n[currentLang] && i18n[currentLang][key];
+    if (translated) return translated;
+    // 翻譯表沒有此項目時，直接顯示原始名稱（不顯示 item_ 前綴）
+    return name;
 }
 
 // 取得補貨條件（顯示用）
