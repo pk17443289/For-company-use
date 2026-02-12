@@ -1,73 +1,54 @@
-# ===== IDE / 編輯器 =====
-.idea/
-.vscode/
-*.swp
-*.swo
-*~
+# ===== 此 repo 只保留耗材盤點表 =====
+# 其他公司工具已搬到 company-private repo
+# 個人書架已搬到 personal-workspace repo
 
-# ===== Python =====
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-build/
-dist/
-*.egg-info/
-
-# ===== Node.js =====
-node_modules/
-npm-debug.log
-yarn-error.log
-package-lock.json
-
-# ===== 作業系統 =====
-.DS_Store
-Thumbs.db
-desktop.ini
-nul
-
-# ===== 備份檔案 =====
-*.bak
-*.backup
-*.tmp
-*.log
-
-# ===== 敏感資訊 =====
-.env
-.env.*
-config.json
-inventory_config.json
-credentials.json
-secrets.json
-*.key
-*.pem
-
-# ===== 壓縮檔 =====
-*.zip
-*.rar
-*.7z
-
-# ===== 已搬到其他 repo 的資料夾 =====
-# → company-private repo
-company-tools/小工具/*.py
-company-tools/小工具/*.bat
-company-tools/小工具/inventory_config.json
-company-tools/短期問題整理區/專案/
-company-tools/短期問題整理區/每日修改/
-company-tools/短期問題整理區/退貨/
-company-tools/短期問題整理區/倉庫貨架使用率分析.html
-company-tools/短期問題整理區/新竹支出表.html
-company-tools/短期問題整理區/雜七雜八問題/
-
-# → personal-workspace repo
+# ===== 排除所有已搬走的資料夾 =====
+company-tools/company-2025/
+company-tools/pt-attendance/
+company-tools/time-report/
+company-tools/人員管理表/
+company-tools/品目查詢問題/
+company-tools/小工具/
+company-tools/短期問題整理區/
 personal-tools/
 給我自己用的/
 給我自己的/
 scratchpad/
 
-# ===== config.js（含 API keys）=====
+# ===== 敏感資訊 =====
+config.json
 config.js
+inventory_config.json
+*.env
+.env.*
+credentials.json
+secrets.json
+*.key
+*.pem
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.py
+*.bat
+
+# ===== IDE =====
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+desktop.ini
+nul
+
+# ===== 備份 =====
+*.bak
+*.backup
+*.tmp
+*.log
+*.zip
+*.rar
+*.7z
