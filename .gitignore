@@ -1,54 +1,10 @@
-# ===== 此 repo 只保留耗材盤點表 =====
-# 其他公司工具已搬到 company-private repo
-# 個人書架已搬到 personal-workspace repo
+# ===== 此 repo 只保留耗材盤點表 index.html =====
+# 其他檔案已搬到 company-private / personal-workspace repo
 
-# ===== 排除所有已搬走的資料夾 =====
-company-tools/company-2025/
-company-tools/pt-attendance/
-company-tools/time-report/
-company-tools/人員管理表/
-company-tools/品目查詢問題/
-company-tools/小工具/
-company-tools/短期問題整理區/
-personal-tools/
-給我自己用的/
-給我自己的/
-scratchpad/
-
-# ===== 敏感資訊 =====
-config.json
-config.js
-inventory_config.json
-*.env
-.env.*
-credentials.json
-secrets.json
-*.key
-*.pem
-
-# ===== Python =====
-__pycache__/
-*.py[cod]
-*.py
-*.bat
-
-# ===== IDE =====
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# ===== OS =====
-.DS_Store
-Thumbs.db
-desktop.ini
-nul
-
-# ===== 備份 =====
-*.bak
-*.backup
-*.tmp
-*.log
-*.zip
-*.rar
-*.7z
+# 排除一切，只允許特定檔案
+*
+!.gitignore
+!CLAUDE.md
+!company-tools/
+!company-tools/耗材盤點表/
+!company-tools/耗材盤點表/index.html
