@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>零模糊新人日報表 - 主管填寫版</title>
+    <style>
+        /* 基礎樣式 */
+        body {
+            font-family: 'Arial', 'Microsoft JhengHei', sans-serif;
+            margin: 30px auto;
+            max-width: 1400px;
+            font-size: 14pt;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .report-title {
+            text-align: center;
+            font-size: 20pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: auto;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+            vertical-align: top;
+            word-wrap: break-word;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+            white-space: normal;
+            font-size: 13pt;
+            line-height: 1.6;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+        .section-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            font-size: 15pt;
+        }
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        /* 輸入框的標準樣式 */
+        input[type="text"], input[type="date"], input[type="number"], select {
+            width: 98%;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 13pt;
+            font-family: 'Arial', 'Microsoft JhengHei', sans-serif;
+            transition: border-color 0.3s;
+        }
+        /* 自動計算的欄位樣式 */
+        input.auto-calc {
+            background-color: #f5f5f5;
+            color: #666;
+            cursor: not-allowed;
+        }
+        input[type="text"]:focus, input[type="date"]:focus,
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        select {
+            cursor: pointer;
+        }
+        /* 列印樣式 */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 8mm 6mm 8mm 6mm;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+                font-size: 9pt;
+                background-color: white;
+                max-width: none;
+            }
+            .report-title {
+                font-size: 14pt;
+                font-weight: bold;
+                margin-bottom: 8px;
+                box-shadow: none;
+                border-radius: 0;
+                padding: 8px;
+                border: 2px solid #2c3e50;
+                background-color: #ecf0f1;
+                color: #2c3e50;
+            }
+            table {
+                box-shadow: none;
+                border-radius: 0;
+                margin-bottom: 12px;
+                border: 2px solid #333;
+            }
+            .section-header {
+                background-color: #5a6c7d !important;
+                color: white !important;
+                padding: 10px !important;
+                font-size: 11pt !important;
+                font-weight: bold !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            th {
+                background-color: #34495e !important;
+                color: white !important;
+                font-weight: bold !important;
+                padding: 5px 6px !important;
+                font-size: 9pt !important;
+                border: 1px solid #2c3e50 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            td {
+                padding: 4px 6px;
+                word-wrap: break-word;
+                word-break: keep-all;
+                overflow-wrap: break-word;
+                white-space: normal;
+                font-size: 8.5pt;
+                line-height: 1.4;
+                border: 1px solid #666 !important;
+            }
+            input[type="text"], input[type="date"], input[type="number"], select {
+                border: none !important;
+                background: none !important;
+                padding: 0 !important;
+                color: black !important;
+                height: auto !important;
+            }
+            .submit-container, button {
+                display: none !important;
+            }
+            #total-time, #time-warning {
+                font-weight: bold;
+            }
+            table {
+                page-break-inside: auto;
+                table-layout: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+        }
+    </style>
+    <script>
+        // 設定日期為今天
+        window.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const dateString = `${year}-${month}-${day}`;
+            document.querySelector('input[name="report_date"]').value = dateString;
+
+            // 計算總時間
+            function calculateTotalTime() {
+                const timeInputs = document.querySelectorAll('.time-input');
+                let total = 0;
+                timeInputs.forEach(input => {
+                    total += parseFloat(input.value) || 0;
+                });
+
+                const totalSpan = document.getElementById('total-time');
+                const warningSpan = document.getElementById('time-warning');
+
+                totalSpan.textContent = total;
+
+                // 自動計算今日工時（分鐘轉小時，四捨五入到小數點第1位）
+                const hoursWorked = (total / 60).toFixed(1);
+                document.querySelector('input[name="hours_worked"]').value = hoursWorked;
+
+                if (total >= 480) {
+                    warningSpan.textContent = '✓ 正確';
+                    warningSpan.style.color = 'green';
+                } else if (total > 0) {
+                    warningSpan.textContent = '⚠ 需大於等於480分鐘';
+                    warningSpan.style.color = 'red';
+                } else {
+                    warningSpan.textContent = '';
+                }
+            }
+
+            document.querySelectorAll('.time-input').forEach(input => {
+                input.addEventListener('input', calculateTotalTime);
+            });
+
+            // 自動計算預計時間
+            function autoCalculateTime() {
+                document.querySelectorAll('.quantity-input').forEach(input => {
+                    const quantity = parseFloat(input.value) || 0;
+                    const unitTime = parseFloat(input.dataset.unitTime) || 0;
+                    const task = input.dataset.task;
+                    const timeInput = document.querySelector(`input[name="commit_${task}_minutes"]`);
+
+                    if (timeInput && timeInput.classList.contains('auto-calc')) {
+                        const totalTime = Math.round(quantity * unitTime);
+                        timeInput.value = totalTime;
+                        calculateTotalTime();
+                    }
+                });
+            }
+
+            // 監聽數量輸入框
+            document.querySelectorAll('.quantity-input').forEach(input => {
+                input.addEventListener('input', autoCalculateTime);
+            });
+
+            // 初始化時計算總時間
+            calculateTotalTime();
+
+            // 匯出JSON給員工
+            window.exportToEmployee = function() {
+                // 驗證必填欄位
+                const weekNumber = document.querySelector('input[name="week_number"]').value;
+                const newHireName = document.querySelector('input[name="new_hire_name"]').value;
+                const managerName = document.querySelector('select[name="manager_name"]').value;
+
+                if (!weekNumber || !newHireName || !managerName) {
+                    alert('❌ 無法匯出！\n請填寫以下必填欄位：\n' +
+                        (!weekNumber ? '• 試用期週數\n' : '') +
+                        (!newHireName ? '• 新人姓名\n' : '') +
+                        (!managerName ? '• 主管\n' : ''));
+                    return;
+                }
+
+                // 驗證總計時間是否滿480分鐘
+                const totalTime = parseFloat(document.getElementById('total-time').textContent) || 0;
+                if (totalTime < 480) {
+                    const confirmed = confirm('⚠️ 警告：總計時間不足8小時\n\n' +
+                        '目前總計：' + totalTime + ' 分鐘（' + (totalTime / 60).toFixed(1) + ' 小時）\n' +
+                        '標準工時：480 分鐘（8.0 小時）\n\n' +
+                        '確定要繼續匯出嗎？');
+                    if (!confirmed) {
+                        return;
+                    }
+                }
+
+                const data = {
+                    week_number: weekNumber,
+                    new_hire_name: newHireName,
+                    report_date: document.querySelector('input[name="report_date"]').value,
+                    manager_name: managerName,
+                    hours_worked: document.querySelector('input[name="hours_worked"]').value,
+                    tasks: {
+                        rcv: {
+                            task: document.querySelector('input[name="commit_rcv_task"]').value,
+                            target: document.querySelector('input[name="commit_rcv_target"]').value,
+                            minutes: document.querySelector('input[name="commit_rcv_minutes"]').value
+                        },
+                        exc: {
+                            task: document.querySelector('input[name="commit_exc_task"]').value,
+                            target: document.querySelector('input[name="commit_exc_target"]').value,
+                            minutes: document.querySelector('input[name="commit_exc_minutes"]').value
+                        },
+                        rma: {
+                            task: document.querySelector('input[name="commit_rma_task"]').value,
+                            target: document.querySelector('input[name="commit_rma_target"]').value,
+                            minutes: document.querySelector('input[name="commit_rma_minutes"]').value
+                        },
+                        rtp: {
+                            task: document.querySelector('input[name="commit_rtp_task"]').value,
+                            target: document.querySelector('input[name="commit_rtp_target"]').value,
+                            minutes: document.querySelector('input[name="commit_rtp_minutes"]').value
+                        },
+                        pac: {
+                            task: document.querySelector('input[name="commit_pac_task"]').value,
+                            target: document.querySelector('input[name="commit_pac_target"]').value,
+                            minutes: document.querySelector('input[name="commit_pac_minutes"]').value
+                        },
+                        sec: {
+                            task: document.querySelector('input[name="commit_sec_task"]').value,
+                            target: document.querySelector('input[name="commit_sec_target"]').value,
+                            minutes: document.querySelector('input[name="commit_sec_minutes"]').value
+                        },
+                        inv: {
+                            task: document.querySelector('input[name="commit_inv_task"]').value,
+                            target: document.querySelector('input[name="commit_inv_target"]').value,
+                            minutes: document.querySelector('input[name="commit_inv_minutes"]').value
+                        },
+                        snk: {
+                            task: document.querySelector('input[name="commit_snk_task"]').value,
+                            target: document.querySelector('input[name="commit_snk_target"]').value,
+                            minutes: document.querySelector('input[name="commit_snk_minutes"]').value
+                        },
+                        cnt: {
+                            task: document.querySelector('input[name="commit_cnt_task"]').value,
+                            target: document.querySelector('input[name="commit_cnt_target"]').value,
+                            minutes: document.querySelector('input[name="commit_cnt_minutes"]').value
+                        },
+                        stk: {
+                            task: document.querySelector('input[name="commit_stk_task"]').value,
+                            target: document.querySelector('input[name="commit_stk_target"]').value,
+                            minutes: document.querySelector('input[name="commit_stk_minutes"]').value
+                        }
+                    }
+                };
+
+                const jsonStr = JSON.stringify(data, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `新人手冊_${data.new_hire_name}_${data.report_date}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('✓ 資料已匯出！請將檔案傳給員工。');
+            };
+
+            // 匯出Excel
+            window.exportToExcel = function() {
+                // 驗證必填欄位
+                const weekNumber = document.querySelector('input[name="week_number"]').value;
+                const newHireName = document.querySelector('input[name="new_hire_name"]').value;
+                const managerName = document.querySelector('select[name="manager_name"]').value;
+
+                if (!weekNumber || !newHireName || !managerName) {
+                    alert('❌ 無法匯出！\n請填寫以下必填欄位：\n' +
+                        (!weekNumber ? '• 試用期週數\n' : '') +
+                        (!newHireName ? '• 新人姓名\n' : '') +
+                        (!managerName ? '• 主管\n' : ''));
+                    return;
+                }
+
+                // 驗證總計時間是否滿480分鐘
+                const totalTime = parseFloat(document.getElementById('total-time').textContent) || 0;
+                if (totalTime < 480) {
+                    const confirmed = confirm('⚠️ 警告：總計時間不足8小時\n\n' +
+                        '目前總計：' + totalTime + ' 分鐘（' + (totalTime / 60).toFixed(1) + ' 小時）\n' +
+                        '標準工時：480 分鐘（8.0 小時）\n\n' +
+                        '確定要繼續匯出嗎？');
+                    if (!confirmed) {
+                        return;
+                    }
+                }
+
+                const data = [];
+
+                // 基本資訊
+                data.push(['零模糊新人日報表 - 主管填寫版']);
+                data.push(['試用期第', document.querySelector('input[name="week_number"]').value, '週']);
+                data.push([]);
+                data.push(['新人姓名', document.querySelector('input[name="new_hire_name"]').value]);
+                data.push(['日期', document.querySelector('input[name="report_date"]').value]);
+                data.push(['主管', document.querySelector('select[name="manager_name"]').value]);
+                data.push(['今日工時', document.querySelector('input[name="hours_worked"]').value, '小時']);
+                data.push([]);
+
+                // 第一部分
+                data.push(['第一部分：今日任務承諾與量化目標']);
+                data.push(['任務類別', '核心任務', '預計完成數量', '預計時間（分鐘）']);
+                data.push(['進貨簽收',
+                    document.querySelector('input[name="commit_rcv_task"]').value,
+                    document.querySelector('input[name="commit_rcv_target"]').value,
+                    document.querySelector('input[name="commit_rcv_minutes"]').value
+                ]);
+                data.push(['進貨異常',
+                    document.querySelector('input[name="commit_exc_task"]').value,
+                    document.querySelector('input[name="commit_exc_target"]').value,
+                    document.querySelector('input[name="commit_exc_minutes"]').value
+                ]);
+                data.push(['退貨處理',
+                    document.querySelector('input[name="commit_rma_task"]').value,
+                    document.querySelector('input[name="commit_rma_target"]').value,
+                    document.querySelector('input[name="commit_rma_minutes"]').value
+                ]);
+                data.push(['退貨上架',
+                    document.querySelector('input[name="commit_rtp_task"]').value,
+                    document.querySelector('input[name="commit_rtp_target"]').value,
+                    document.querySelector('input[name="commit_rtp_minutes"]').value
+                ]);
+                data.push(['包裝機操作',
+                    document.querySelector('input[name="commit_pac_task"]').value,
+                    document.querySelector('input[name="commit_pac_target"]').value,
+                    document.querySelector('input[name="commit_pac_minutes"]').value
+                ]);
+                data.push(['貼標／黑貼',
+                    document.querySelector('input[name="commit_sec_task"]').value,
+                    document.querySelector('input[name="commit_sec_target"]').value,
+                    document.querySelector('input[name="commit_sec_minutes"]').value
+                ]);
+                data.push(['盤點',
+                    document.querySelector('input[name="commit_inv_task"]').value,
+                    document.querySelector('input[name="commit_inv_target"]').value,
+                    document.querySelector('input[name="commit_inv_minutes"]').value
+                ]);
+                data.push(['拆蛇皮',
+                    document.querySelector('input[name="commit_snk_task"]').value,
+                    document.querySelector('input[name="commit_snk_target"]').value,
+                    document.querySelector('input[name="commit_snk_minutes"]').value
+                ]);
+                data.push(['數數量',
+                    document.querySelector('input[name="commit_cnt_task"]').value,
+                    document.querySelector('input[name="commit_cnt_target"]').value,
+                    document.querySelector('input[name="commit_cnt_minutes"]').value
+                ]);
+                data.push(['進貨上架',
+                    document.querySelector('input[name="commit_stk_task"]').value,
+                    document.querySelector('input[name="commit_stk_target"]').value,
+                    document.querySelector('input[name="commit_stk_minutes"]').value
+                ]);
+                data.push(['總計時間', '', '', document.getElementById('total-time').textContent]);
+
+                // 轉換為CSV
+                const csv = data.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+                const bom = '\uFEFF'; // UTF-8 BOM for Excel
+                const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const fileName = `新人手冊_主管_${document.querySelector('input[name="new_hire_name"]').value}_${document.querySelector('input[name="report_date"]').value}.csv`;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('✓ Excel檔案已匯出！');
+            };
+        });
+    </script>
+</head>
+<body>
+
+<form action="[YOUR_SUBMIT_URL]" method="POST">
+
+<div class="report-title">零模糊新人日報表 - 主管填寫版 - 試用期第 <input type="number" name="week_number" style="width: 50px;" required min="1"> 週</div>
+
+<table>
+    <tr>
+        <th style="width: 15%;">新人姓名</th>
+        <td><input type="text" name="new_hire_name"></td>
+        <th style="width: 10%;">日期</th>
+        <td><input type="date" name="report_date"></td>
+    </tr>
+    <tr>
+        <th>主管</th>
+        <td>
+            <select name="manager_name" style="width: 100%; padding: 3px; font-size: 10pt;">
+                <option value="">請選擇主管</option>
+                <option value="鈴鈺">鈴鈺</option>
+                <option value="嘉駿">嘉駿</option>
+            </select>
+        </td>
+        <th>今日工時</th>
+        <td><input type="number" name="hours_worked" class="auto-calc" readonly style="width: 100px;"> 小時</td>
+    </tr>
+</table>
+
+<table>
+    <thead>
+        <tr>
+            <th colspan="4" class="section-header">第一部分：今日任務承諾與量化目標</th>
+        </tr>
+        <tr>
+            <th>任務類別</th>
+            <th>核心任務</th>
+            <th>預計完成數量</th>
+            <th>預計時間<br>（分鐘）</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>進貨簽收</td>
+            <td><input type="text" name="commit_rcv_task" value="確認商品完全無誤"></td>
+            <td><input type="number" name="commit_rcv_target" class="quantity-input" data-task="rcv" data-unit-time="0.63"></td>
+            <td><input type="number" name="commit_rcv_minutes" class="time-input auto-calc" min="0" readonly></td>
+        </tr>
+        <tr>
+            <td>進貨異常</td>
+            <td><input type="text" name="commit_exc_task" value="確認商品貨源哪裡出問題"></td>
+            <td><input type="number" name="commit_exc_target" data-task="exc"></td>
+            <td><input type="number" name="commit_exc_minutes" class="time-input" min="0" placeholder="手動輸入"></td>
+        </tr>
+        <tr>
+            <td>退貨處理</td>
+            <td><input type="text" name="commit_rma_task" value="確保退的貨都正確無異常"></td>
+            <td><input type="number" name="commit_rma_target" class="quantity-input" data-task="rma" data-unit-time="3"></td>
+            <td><input type="number" name="commit_rma_minutes" class="time-input auto-calc" min="0" readonly></td>
+        </tr>
+        <tr>
+            <td>退貨上架</td>
+            <td><input type="text" name="commit_rtp_task" value="確保商品可以馬上出貨(無髒污無外袋)"></td>
+            <td><input type="number" name="commit_rtp_target" class="quantity-input" data-task="rtp" data-unit-time="0.66"></td>
+            <td><input type="number" name="commit_rtp_minutes" class="time-input auto-calc" min="0" readonly></td>
+        </tr>
+        <tr>
+            <td>包裝機操作</td>
+            <td><input type="text" name="commit_pac_task" value="確保商品過包裝機無異常,正確並確認"></td>
+            <td><input type="number" name="commit_pac_target" class="quantity-input" data-task="pac" data-unit-time="0.2"></td>
+            <td><input type="number" name="commit_pac_minutes" class="time-input auto-calc" min="0" readonly></td>
+        </tr>
+        <tr>
+            <td>貼標／黑貼</td>
+            <td><input type="text" name="commit_sec_task" value="確保包裝機的商品都有貼上黑貼"></td>
+            <td><input type="number" name="commit_sec_target" class="quantity-input" data-task="sec" data-unit-time="0.2"></td>
+            <td><input type="number" name="commit_sec_minutes" class="time-input auto-calc" min="0" readonly></td>
+        </tr>
+        <tr>
+            <td>盤點</td>
+            <td><input type="text" name="commit_inv_task" value="確保備貨商品跟倉位商品數量正確,沒有放錯商品"></td>
+            <td><input type="number" name="commit_inv_target" class="quantity-input" data-task="inv" data-unit-time="45"></td>
+            <td><input type="number" name="commit_inv_minutes" class="time-input auto-calc" min="0" readonly></td>
+        </tr>
+        <tr>
+            <td>拆蛇皮</td>
+            <td><input type="text" name="commit_snk_task" value="拆解蛇皮袋並分類整理"></td>
+            <td><input type="number" name="commit_snk_target" data-task="snk"></td>
+            <td><input type="number" name="commit_snk_minutes" class="time-input" min="0" placeholder="手動輸入"></td>
+        </tr>
+        <tr>
+            <td>數數量</td>
+            <td><input type="text" name="commit_cnt_task" value="清點商品數量並核對"></td>
+            <td><input type="number" name="commit_cnt_target" data-task="cnt"></td>
+            <td><input type="number" name="commit_cnt_minutes" class="time-input" min="0" placeholder="手動輸入"></td>
+        </tr>
+        <tr>
+            <td>進貨上架</td>
+            <td><input type="text" name="commit_stk_task" value="將進貨商品正確上架至指定倉位"></td>
+            <td><input type="number" name="commit_stk_target" data-task="stk"></td>
+            <td><input type="number" name="commit_stk_minutes" class="time-input" min="0" placeholder="手動輸入"></td>
+        </tr>
+        <tr style="background-color: #ffe6e6; font-weight: bold;">
+            <td colspan="3" style="text-align: right;">總計時間：</td>
+            <td><span id="total-time">0</span> 分鐘 <span id="time-warning" style="color: red;"></span></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="submit-container" style="text-align: center; margin-top: 30px;">
+    <button type="button" onclick="exportToEmployee()" style="padding: 15px 40px; font-size: 16pt; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s; margin-right: 15px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">📤 匯出給員工</button>
+    <button type="button" onclick="window.print()" style="padding: 15px 40px; font-size: 16pt; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">🖨️ 列印</button>
+</div>
+
+</form>
+</body>
+</html>

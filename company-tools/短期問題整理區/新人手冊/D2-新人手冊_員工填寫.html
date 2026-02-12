@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>零模糊新人日報表 - 員工填寫版</title>
+    <style>
+        /* 基礎樣式 */
+        body {
+            font-family: 'Arial', 'Microsoft JhengHei', sans-serif;
+            margin: 30px auto;
+            max-width: 1400px;
+            font-size: 14pt;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        .report-title {
+            text-align: center;
+            font-size: 20pt;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            table-layout: auto;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+            vertical-align: top;
+            word-wrap: break-word;
+            word-break: keep-all;
+            overflow-wrap: break-word;
+            white-space: normal;
+            font-size: 13pt;
+            line-height: 1.6;
+        }
+        th {
+            background-color: #34495e;
+            color: white;
+            font-weight: bold;
+        }
+        .section-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            padding: 15px;
+            font-size: 15pt;
+        }
+        .quality-cell {
+            background-color: #b3e5fc;
+        }
+        /* 放大勾選框 */
+        .quality-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        .quality-label {
+            display: inline-block;
+            margin-right: 15px;
+            font-size: 12pt;
+            white-space: nowrap;
+        }
+        .manager-review {
+            background-color: #fff3cd;
+        }
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        /* 輸入框的標準樣式 */
+        input[type="text"], input[type="date"], input[type="number"], textarea, select {
+            width: 98%;
+            box-sizing: border-box;
+            padding: 8px 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 4px;
+            font-size: 13pt;
+            font-family: 'Arial', 'Microsoft JhengHei', sans-serif;
+            transition: border-color 0.3s;
+        }
+        /* 唯讀區域樣式 */
+        .readonly-section {
+            background-color: #e8e8e8;
+            position: relative;
+        }
+        .readonly-section input, .readonly-section select {
+            background-color: #d3d3d3;
+            color: #666;
+            cursor: not-allowed;
+            border-color: #bbb;
+        }
+        .readonly-note {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #856404;
+            text-align: center;
+        }
+        input[type="text"]:focus, input[type="date"]:focus,
+        input[type="number"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        select {
+            cursor: pointer;
+        }
+        /* 完成率顯示樣式 */
+        .completion-rate {
+            display: inline-block;
+            padding: 5px 10px;
+            font-weight: bold;
+            font-size: 14pt;
+            border-radius: 4px;
+            background-color: #f0f0f0;
+        }
+        /* 列印樣式 */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 8mm 6mm 8mm 6mm;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+                font-size: 9pt;
+                background-color: white;
+                max-width: none;
+            }
+            .report-title {
+                font-size: 14pt;
+                font-weight: bold;
+                margin-bottom: 8px;
+                box-shadow: none;
+                border-radius: 0;
+                padding: 8px;
+                border: 2px solid #2c3e50;
+                background-color: #ecf0f1;
+                color: #2c3e50;
+            }
+            table {
+                box-shadow: none;
+                border-radius: 0;
+                margin-bottom: 12px;
+                border: 2px solid #333;
+            }
+            .section-header {
+                background-color: #5a6c7d !important;
+                color: white !important;
+                padding: 10px !important;
+                font-size: 11pt !important;
+                font-weight: bold !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            th {
+                background-color: #34495e !important;
+                color: white !important;
+                font-weight: bold !important;
+                padding: 5px 6px !important;
+                font-size: 9pt !important;
+                border: 1px solid #2c3e50 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            td {
+                padding: 4px 6px;
+                word-wrap: break-word;
+                word-break: keep-all;
+                overflow-wrap: break-word;
+                white-space: normal;
+                font-size: 8.5pt;
+                line-height: 1.4;
+                border: 1px solid #666 !important;
+            }
+            .quality-cell {
+                background-color: #b3e5fc !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .manager-review {
+                background-color: #fff3cd !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .completion-rate {
+                padding: 2px 5px;
+                font-size: 9pt;
+            }
+            .readonly-note {
+                display: none !important;
+            }
+            input[type="text"], input[type="date"], input[type="number"], textarea, select {
+                border: none !important;
+                background: none !important;
+                padding: 0 !important;
+                color: black !important;
+                height: auto !important;
+            }
+            /* 列印時顯示checkbox */
+            input[type="checkbox"] {
+                width: 16px;
+                height: 16px;
+                margin-right: 3px;
+                vertical-align: middle;
+            }
+            .quality-label {
+                font-size: 9pt;
+                margin-right: 10px;
+            }
+            .submit-container, button {
+                display: none !important;
+            }
+            table {
+                page-break-inside: auto;
+                table-layout: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+        }
+    </style>
+    <script>
+        // 設定日期為今天
+        window.addEventListener('DOMContentLoaded', function() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const dateString = `${year}-${month}-${day}`;
+            document.querySelector('input[name="report_date"]').value = dateString;
+
+            // 計算完成率
+            function calculateCompletionRate() {
+                const tasks = ['rcv', 'exc', 'rma', 'rtp', 'pac', 'sec', 'inv', 'snk', 'cnt', 'stk'];
+                tasks.forEach(task => {
+                    const targetInput = document.querySelector(`.target-input[data-task="${task}"]`);
+                    const actualInput = document.querySelector(`.actual-input[data-task="${task}"]`);
+                    const rateSpan = document.querySelector(`.completion-rate[data-task="${task}"]`);
+                    const quality1Checkbox = document.querySelector(`input[name="actual_${task}_quality_1"]`);
+                    const quality2Checkbox = document.querySelector(`input[name="actual_${task}_quality_2"]`);
+
+                    if (targetInput && actualInput && rateSpan) {
+                        const target = parseFloat(targetInput.value) || 0;
+                        const actual = parseFloat(actualInput.value) || 0;
+                        const quality1Checked = quality1Checkbox ? quality1Checkbox.checked : false;
+                        const quality2Checked = quality2Checkbox ? quality2Checkbox.checked : false;
+
+                        // 檢查異常：主管沒設定預計數量，但員工填了實際數量或勾選了品質檢核
+                        if (target === 0 && (actual > 0 || quality1Checked || quality2Checked)) {
+                            rateSpan.textContent = '⚠️ 異常';
+                            rateSpan.style.color = '#1565c0';
+                            rateSpan.style.fontWeight = 'bold';
+                            actualInput.style.backgroundColor = '#e3f2fd';
+                            actualInput.style.border = '2px solid #2196f3';
+                            // 標記品質檢核勾選框
+                            if (quality1Checkbox) {
+                                quality1Checkbox.parentElement.style.backgroundColor = '#e3f2fd';
+                                quality1Checkbox.parentElement.style.padding = '5px 8px';
+                                quality1Checkbox.parentElement.style.borderRadius = '4px';
+                            }
+                            if (quality2Checkbox) {
+                                quality2Checkbox.parentElement.style.backgroundColor = '#e3f2fd';
+                                quality2Checkbox.parentElement.style.padding = '5px 8px';
+                                quality2Checkbox.parentElement.style.borderRadius = '4px';
+                            }
+                            return;
+                        } else {
+                            // 恢復正常樣式
+                            actualInput.style.backgroundColor = '';
+                            actualInput.style.border = '2px solid #e0e0e0';
+                            if (quality1Checkbox) {
+                                quality1Checkbox.parentElement.style.backgroundColor = '';
+                                quality1Checkbox.parentElement.style.padding = '';
+                                quality1Checkbox.parentElement.style.borderRadius = '';
+                            }
+                            if (quality2Checkbox) {
+                                quality2Checkbox.parentElement.style.backgroundColor = '';
+                                quality2Checkbox.parentElement.style.padding = '';
+                                quality2Checkbox.parentElement.style.borderRadius = '';
+                            }
+                        }
+
+                        if (target > 0) {
+                            const rate = Math.round((actual / target) * 100);
+                            rateSpan.textContent = rate + '%';
+
+                            // 根據完成率改變顏色
+                            if (rate >= 100) {
+                                rateSpan.style.color = 'green';
+                                rateSpan.style.fontWeight = 'bold';
+                            } else if (rate >= 80) {
+                                rateSpan.style.color = 'orange';
+                                rateSpan.style.fontWeight = 'bold';
+                            } else {
+                                rateSpan.style.color = 'red';
+                                rateSpan.style.fontWeight = 'bold';
+                            }
+                        } else {
+                            rateSpan.textContent = '0%';
+                            rateSpan.style.color = 'black';
+                        }
+                    }
+                });
+            }
+
+            // 監聽所有輸入框
+            document.querySelectorAll('.target-input, .actual-input').forEach(input => {
+                input.addEventListener('input', calculateCompletionRate);
+            });
+
+            // 監聽所有品質檢核勾選框
+            document.querySelectorAll('.quality-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', calculateCompletionRate);
+            });
+
+            // 匯入主管資料
+            window.importManagerData = function() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json';
+                input.onchange = function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        try {
+                            const data = JSON.parse(event.target.result);
+
+                            // 填入基本資訊
+                            document.querySelector('input[name="week_number"]').value = data.week_number || '';
+                            document.querySelector('input[name="new_hire_name"]').value = data.new_hire_name || '';
+                            document.querySelector('input[name="report_date"]').value = data.report_date || '';
+                            document.querySelector('input[name="manager_name"]').value = data.manager_name || '';
+                            document.querySelector('input[name="hours_worked"]').value = data.hours_worked || '';
+
+                            // 填入任務資料
+                            const tasks = data.tasks || {};
+                            ['rcv', 'exc', 'rma', 'rtp', 'pac', 'sec', 'inv', 'snk', 'cnt', 'stk'].forEach(task => {
+                                if (tasks[task]) {
+                                    document.querySelector(`input[name="commit_${task}_task"]`).value = tasks[task].task || '';
+                                    document.querySelector(`input[name="commit_${task}_target"]`).value = tasks[task].target || '';
+                                    document.querySelector(`input[name="commit_${task}_minutes"]`).value = tasks[task].minutes || '';
+                                }
+                            });
+
+                            alert('✓ 主管資料已成功載入！');
+                        } catch (error) {
+                            alert('❌ 檔案格式錯誤，請確認是否為正確的JSON檔案。');
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            };
+
+            // 提交到 Google Sheets
+            window.submitToGoogleSheets = function() {
+                const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzPoOQEk30yv-iDsytmw6SLPYzGv53MHnwY9oTH0F-ssGE6bKDciS-LFRcaclV9prA2/exec';
+
+                if (SCRIPT_URL === 'YOUR_GOOGLE_SCRIPT_URL_HERE') {
+                    alert('⚠️ 請先設定 Google Sheets URL！\n\n請在程式碼中找到 SCRIPT_URL 並替換成您的 Web App URL。');
+                    return;
+                }
+
+                // 檢查是否有異常：主管沒設定預計數量，但員工填了實際數量或勾選品質檢核
+                const tasks = ['rcv', 'exc', 'rma', 'rtp', 'pac', 'sec', 'inv', 'snk', 'cnt', 'stk'];
+                const taskNames = {
+                    'rcv': '進貨簽收',
+                    'exc': '進貨異常',
+                    'rma': '退貨處理',
+                    'rtp': '退貨上架',
+                    'pac': '包裝機操作',
+                    'sec': '貼標／黑貼',
+                    'inv': '盤點',
+                    'snk': '拆蛇皮',
+                    'cnt': '數數量',
+                    'stk': '進貨上架'
+                };
+                const anomalies = [];
+
+                tasks.forEach(task => {
+                    const target = parseFloat(document.querySelector(`.target-input[data-task="${task}"]`).value) || 0;
+                    const actual = parseFloat(document.querySelector(`.actual-input[data-task="${task}"]`).value) || 0;
+                    const quality1 = document.querySelector(`input[name="actual_${task}_quality_1"]`).checked;
+                    const quality2 = document.querySelector(`input[name="actual_${task}_quality_2"]`).checked;
+                    if (target === 0 && (actual > 0 || quality1 || quality2)) {
+                        anomalies.push(taskNames[task]);
+                    }
+                });
+
+                if (anomalies.length > 0) {
+                    const confirmed = confirm('⚠️ 偵測到異常情況\n\n' +
+                        '以下任務主管沒有設定預計數量，但您填寫了實際數量或勾選了品質檢核：\n' +
+                        anomalies.map(name => '• ' + name).join('\n') +
+                        '\n\n這可能表示您填寫了不在計畫內的任務。\n確定要繼續提交嗎？');
+                    if (!confirmed) {
+                        return;
+                    }
+                }
+
+                // 收集所有資料
+                const data = {
+                    week_number: document.querySelector('input[name="week_number"]').value,
+                    new_hire_name: document.querySelector('input[name="new_hire_name"]').value,
+                    report_date: document.querySelector('input[name="report_date"]').value,
+                    manager_name: document.querySelector('input[name="manager_name"]').value,
+                    hours_worked: document.querySelector('input[name="hours_worked"]').value,
+                    tasks: {
+                        rcv: {
+                            task: document.querySelector('input[name="commit_rcv_task"]').value,
+                            target: document.querySelector('input[name="commit_rcv_target"]').value,
+                            minutes: document.querySelector('input[name="commit_rcv_minutes"]').value
+                        },
+                        exc: {
+                            task: document.querySelector('input[name="commit_exc_task"]').value,
+                            target: document.querySelector('input[name="commit_exc_target"]').value,
+                            minutes: document.querySelector('input[name="commit_exc_minutes"]').value
+                        },
+                        rma: {
+                            task: document.querySelector('input[name="commit_rma_task"]').value,
+                            target: document.querySelector('input[name="commit_rma_target"]').value,
+                            minutes: document.querySelector('input[name="commit_rma_minutes"]').value
+                        },
+                        rtp: {
+                            task: document.querySelector('input[name="commit_rtp_task"]').value,
+                            target: document.querySelector('input[name="commit_rtp_target"]').value,
+                            minutes: document.querySelector('input[name="commit_rtp_minutes"]').value
+                        },
+                        pac: {
+                            task: document.querySelector('input[name="commit_pac_task"]').value,
+                            target: document.querySelector('input[name="commit_pac_target"]').value,
+                            minutes: document.querySelector('input[name="commit_pac_minutes"]').value
+                        },
+                        sec: {
+                            task: document.querySelector('input[name="commit_sec_task"]').value,
+                            target: document.querySelector('input[name="commit_sec_target"]').value,
+                            minutes: document.querySelector('input[name="commit_sec_minutes"]').value
+                        },
+                        inv: {
+                            task: document.querySelector('input[name="commit_inv_task"]').value,
+                            target: document.querySelector('input[name="commit_inv_target"]').value,
+                            minutes: document.querySelector('input[name="commit_inv_minutes"]').value
+                        },
+                        snk: {
+                            task: document.querySelector('input[name="commit_snk_task"]').value,
+                            target: document.querySelector('input[name="commit_snk_target"]').value,
+                            minutes: document.querySelector('input[name="commit_snk_minutes"]').value
+                        },
+                        cnt: {
+                            task: document.querySelector('input[name="commit_cnt_task"]').value,
+                            target: document.querySelector('input[name="commit_cnt_target"]').value,
+                            minutes: document.querySelector('input[name="commit_cnt_minutes"]').value
+                        },
+                        stk: {
+                            task: document.querySelector('input[name="commit_stk_task"]').value,
+                            target: document.querySelector('input[name="commit_stk_target"]').value,
+                            minutes: document.querySelector('input[name="commit_stk_minutes"]').value
+                        }
+                    },
+                    actual: {
+                        rcv: {
+                            output: document.querySelector('input[name="actual_rcv_output"]').value,
+                            minutes: document.querySelector('input[name="actual_rcv_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_rcv_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_rcv_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="rcv"]').textContent,
+                            gap: document.querySelector('input[name="actual_rcv_gap"]').value
+                        },
+                        exc: {
+                            output: document.querySelector('input[name="actual_exc_output"]').value,
+                            minutes: document.querySelector('input[name="actual_exc_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_exc_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_exc_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="exc"]').textContent,
+                            gap: document.querySelector('input[name="actual_exc_gap"]').value
+                        },
+                        rma: {
+                            output: document.querySelector('input[name="actual_rma_output"]').value,
+                            minutes: document.querySelector('input[name="actual_rma_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_rma_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_rma_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="rma"]').textContent,
+                            gap: document.querySelector('input[name="actual_rma_gap"]').value
+                        },
+                        rtp: {
+                            output: document.querySelector('input[name="actual_rtp_output"]').value,
+                            minutes: document.querySelector('input[name="actual_rtp_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_rtp_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_rtp_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="rtp"]').textContent,
+                            gap: document.querySelector('input[name="actual_rtp_gap"]').value
+                        },
+                        pac: {
+                            output: document.querySelector('input[name="actual_pac_output"]').value,
+                            minutes: document.querySelector('input[name="actual_pac_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_pac_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_pac_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="pac"]').textContent,
+                            gap: document.querySelector('input[name="actual_pac_gap"]').value
+                        },
+                        sec: {
+                            output: document.querySelector('input[name="actual_sec_output"]').value,
+                            minutes: document.querySelector('input[name="actual_sec_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_sec_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_sec_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="sec"]').textContent,
+                            gap: document.querySelector('input[name="actual_sec_gap"]').value
+                        },
+                        inv: {
+                            output: document.querySelector('input[name="actual_inv_output"]').value,
+                            minutes: document.querySelector('input[name="actual_inv_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_inv_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_inv_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="inv"]').textContent,
+                            gap: document.querySelector('input[name="actual_inv_gap"]').value
+                        },
+                        snk: {
+                            output: document.querySelector('input[name="actual_snk_output"]').value,
+                            minutes: document.querySelector('input[name="actual_snk_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_snk_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_snk_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="snk"]').textContent,
+                            gap: document.querySelector('input[name="actual_snk_gap"]').value
+                        },
+                        cnt: {
+                            output: document.querySelector('input[name="actual_cnt_output"]').value,
+                            minutes: document.querySelector('input[name="actual_cnt_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_cnt_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_cnt_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="cnt"]').textContent,
+                            gap: document.querySelector('input[name="actual_cnt_gap"]').value
+                        },
+                        stk: {
+                            output: document.querySelector('input[name="actual_stk_output"]').value,
+                            minutes: document.querySelector('input[name="actual_stk_minutes"]').value,
+                            quality: (document.querySelector('input[name="actual_stk_quality_1"]').checked ? '✓' : '✗') + ' ' + (document.querySelector('input[name="actual_stk_quality_2"]').checked ? '✓' : '✗'),
+                            rate: document.querySelector('.completion-rate[data-task="stk"]').textContent,
+                            gap: document.querySelector('input[name="actual_stk_gap"]').value
+                        }
+                    },
+                    questions: {
+                        log1: {
+                            target: document.querySelector('input[name="q_log1_target"]').value,
+                            content: document.querySelector('input[name="q_log1_content"]').value,
+                            solution: document.querySelector('input[name="q_log1_solution"]').value
+                        },
+                        log2: {
+                            target: document.querySelector('input[name="q_log2_target"]').value,
+                            content: document.querySelector('input[name="q_log2_content"]').value,
+                            solution: document.querySelector('input[name="q_log2_solution"]').value
+                        },
+                        opt: {
+                            target: document.querySelector('input[name="q_log_opt_target"]').value,
+                            content: document.querySelector('input[name="q_log_opt_content"]').value,
+                            solution: document.querySelector('input[name="q_log_opt_solution"]').value
+                        },
+                        learn: {
+                            target: document.querySelector('input[name="q_log_learn_target"]').value,
+                            content: document.querySelector('input[name="q_log_learn_content"]').value,
+                            solution: document.querySelector('input[name="q_log_learn_solution"]').value
+                        }
+                    },
+                    evaluation: {
+                        discipline: {
+                            score: document.querySelector('input[name="eval_discipline"]').value,
+                            note: document.querySelector('input[name="eval_discipline_note"]').value
+                        },
+                        efficiency: {
+                            score: document.querySelector('input[name="eval_efficiency"]').value,
+                            note: document.querySelector('input[name="eval_efficiency_note"]').value
+                        },
+                        value_fit: {
+                            score: document.querySelector('input[name="eval_value_fit"]').value,
+                            note: document.querySelector('input[name="eval_value_fit_note"]').value
+                        },
+                        commitment: {
+                            score: document.querySelector('input[name="eval_commitment"]').value,
+                            note: document.querySelector('input[name="eval_commitment_note"]').value
+                        }
+                    },
+                    weekly: {
+                        learnings: document.querySelector('textarea[name="weekly_learnings"]').value,
+                        relationship: document.querySelector('textarea[name="weekly_relationship_issues"]').value,
+                        feedback: document.querySelector('textarea[name="manager_feedback"]').value
+                    }
+                };
+
+                // 顯示載入中
+                const submitBtn = event.target;
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = '⏳ 提交中...';
+                submitBtn.disabled = true;
+
+                // 發送到 Google Sheets
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                })
+                .then(() => {
+                    alert('✓ 資料已成功提交到 Google Sheets！\n\n主管可以在 Google Sheets 中查看您的資料。');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                })
+                .catch((error) => {
+                    alert('❌ 提交失敗：' + error.message + '\n\n請確認網路連線和 Google Script URL 是否正確。');
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                });
+            };
+
+            // 匯出完整報表到Excel
+            window.exportToExcel = function() {
+                const data = [];
+
+                // 基本資訊
+                data.push(['零模糊新人日報表 - 完整版']);
+                data.push(['試用期第', document.querySelector('input[name="week_number"]').value, '週']);
+                data.push([]);
+                data.push(['新人姓名', document.querySelector('input[name="new_hire_name"]').value]);
+                data.push(['日期', document.querySelector('input[name="report_date"]').value]);
+                data.push(['主管', document.querySelector('input[name="manager_name"]').value]);
+                data.push(['今日工時', document.querySelector('input[name="hours_worked"]').value, '小時']);
+                data.push([]);
+
+                // 第一部分
+                data.push(['第一部分：今日任務承諾與量化目標（主管填寫）']);
+                data.push(['任務類別', '核心任務', '預計完成數量', '預計時間（分鐘）']);
+                const taskNames = ['進貨簽收', '進貨異常', '退貨處理', '退貨上架', '包裝機操作', '貼標／黑貼', '盤點', '拆蛇皮', '數數量', '進貨上架'];
+                const taskCodes = ['rcv', 'exc', 'rma', 'rtp', 'pac', 'sec', 'inv', 'snk', 'cnt', 'stk'];
+                taskCodes.forEach((code, index) => {
+                    data.push([taskNames[index],
+                        document.querySelector(`input[name="commit_${code}_task"]`).value,
+                        document.querySelector(`input[name="commit_${code}_target"]`).value,
+                        document.querySelector(`input[name="commit_${code}_minutes"]`).value
+                    ]);
+                });
+                data.push([]);
+
+                // 第二部分
+                data.push(['第二部分：實際產出、品質與紀律分析']);
+                data.push(['任務類別', '實際完成數量', '實際時間（分鐘）', '品質檢核（照SOP/品質）', '完成率', '差距分析']);
+                taskCodes.forEach((code, index) => {
+                    const rate = document.querySelector(`.completion-rate[data-task="${code}"]`).textContent;
+                    const quality1 = document.querySelector(`input[name="actual_${code}_quality_1"]`).checked ? '✓' : '✗';
+                    const quality2 = document.querySelector(`input[name="actual_${code}_quality_2"]`).checked ? '✓' : '✗';
+                    data.push([taskNames[index],
+                        document.querySelector(`input[name="actual_${code}_output"]`).value,
+                        document.querySelector(`input[name="actual_${code}_minutes"]`).value,
+                        quality1 + ' ' + quality2,
+                        rate,
+                        document.querySelector(`input[name="actual_${code}_gap"]`).value
+                    ]);
+                });
+                data.push([]);
+
+                // 第三部分
+                data.push(['第三部分：透明化與紀律強制紀錄']);
+                data.push(['問題類型', '對象', '問題內容', '解決方案']);
+                data.push(['請益記錄 1',
+                    document.querySelector('input[name="q_log1_target"]').value,
+                    document.querySelector('input[name="q_log1_content"]').value,
+                    document.querySelector('input[name="q_log1_solution"]').value
+                ]);
+                data.push(['請益記錄 2',
+                    document.querySelector('input[name="q_log2_target"]').value,
+                    document.querySelector('input[name="q_log2_content"]').value,
+                    document.querySelector('input[name="q_log2_solution"]').value
+                ]);
+                data.push(['自我發現的流程優化機會',
+                    document.querySelector('input[name="q_log_opt_target"]').value,
+                    document.querySelector('input[name="q_log_opt_content"]').value,
+                    document.querySelector('input[name="q_log_opt_solution"]').value
+                ]);
+                data.push(['今日學習到的新知識/SOP',
+                    document.querySelector('input[name="q_log_learn_target"]').value,
+                    document.querySelector('input[name="q_log_learn_content"]').value,
+                    document.querySelector('input[name="q_log_learn_solution"]').value
+                ]);
+                data.push([]);
+
+                // 第四部分
+                data.push(['第四部分：文化與情緒自評']);
+                data.push(['評估項目', '評分（1-5分）', '說明']);
+                data.push(['1. 我今日有意識地遵循了所有流程與規範。',
+                    document.querySelector('input[name="eval_discipline"]').value,
+                    document.querySelector('input[name="eval_discipline_note"]').value
+                ]);
+                data.push(['2. 我覺得我今天的工作速度達到了公司要求的效率。',
+                    document.querySelector('input[name="eval_efficiency"]').value,
+                    document.querySelector('input[name="eval_efficiency_note"]').value
+                ]);
+                data.push(['3. 我對今日的量化目標感到興奮而非壓力。',
+                    document.querySelector('input[name="eval_value_fit"]').value,
+                    document.querySelector('input[name="eval_value_fit_note"]').value
+                ]);
+                data.push(['4. 我認為這份工作內容是適合我的。',
+                    document.querySelector('input[name="eval_commitment"]').value,
+                    document.querySelector('input[name="eval_commitment_note"]').value
+                ]);
+                data.push([]);
+
+                // 第五部分
+                data.push(['第五部分：每週總結與主管回饋']);
+                data.push(['本週學習與優化建議', document.querySelector('textarea[name="weekly_learnings"]').value]);
+                data.push(['跨部門問題', document.querySelector('textarea[name="weekly_relationship_issues"]').value]);
+                data.push(['主管回饋', document.querySelector('textarea[name="manager_feedback"]').value]);
+
+                // 轉換為CSV
+                const csv = data.map(row => row.map(cell => `"${cell || ''}"`).join(',')).join('\n');
+                const bom = '\uFEFF'; // UTF-8 BOM for Excel
+                const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const fileName = `新人手冊_完整_${document.querySelector('input[name="new_hire_name"]').value}_${document.querySelector('input[name="report_date"]').value}.csv`;
+                a.download = fileName;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert('✓ Excel檔案已匯出！');
+            };
+        });
+    </script>
+</head>
+<body>
+
+<form action="[YOUR_SUBMIT_URL]" method="POST">
+
+<div class="report-title">零模糊新人日報表 - 員工填寫版 - 試用期第 <input type="number" name="week_number" style="width: 50px;" readonly> 週</div>
+
+<div style="text-align: center; margin-bottom: 15px;">
+    <button type="button" onclick="importManagerData()" style="padding: 12px 30px; font-size: 14pt; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">📥 匯入主管資料</button>
+</div>
+
+<div class="readonly-note">
+    ⚠️ 以下灰色區域由主管填寫，僅供您參考，請勿修改
+</div>
+
+<table>
+    <tr>
+        <th style="width: 15%;">新人姓名</th>
+        <td><input type="text" name="new_hire_name" readonly></td>
+        <th style="width: 10%;">日期</th>
+        <td><input type="date" name="report_date" readonly></td>
+    </tr>
+    <tr>
+        <th>主管</th>
+        <td><input type="text" name="manager_name" readonly></td>
+        <th>今日工時</th>
+        <td><input type="text" name="hours_worked" readonly> 小時</td>
+    </tr>
+</table>
+
+<table class="readonly-section">
+    <thead>
+        <tr>
+            <th colspan="4" class="section-header">第一部分：今日任務承諾與量化目標（主管已填寫）</th>
+        </tr>
+        <tr>
+            <th>任務類別</th>
+            <th>核心任務</th>
+            <th>預計完成數量</th>
+            <th>預計時間<br>（分鐘）</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>進貨簽收</td>
+            <td><input type="text" name="commit_rcv_task" readonly></td>
+            <td><input type="number" name="commit_rcv_target" class="target-input" data-task="rcv" readonly></td>
+            <td><input type="number" name="commit_rcv_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>進貨異常</td>
+            <td><input type="text" name="commit_exc_task" readonly></td>
+            <td><input type="number" name="commit_exc_target" class="target-input" data-task="exc" readonly></td>
+            <td><input type="number" name="commit_exc_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>退貨處理</td>
+            <td><input type="text" name="commit_rma_task" readonly></td>
+            <td><input type="number" name="commit_rma_target" class="target-input" data-task="rma" readonly></td>
+            <td><input type="number" name="commit_rma_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>退貨上架</td>
+            <td><input type="text" name="commit_rtp_task" readonly></td>
+            <td><input type="number" name="commit_rtp_target" class="target-input" data-task="rtp" readonly></td>
+            <td><input type="number" name="commit_rtp_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>包裝機操作</td>
+            <td><input type="text" name="commit_pac_task" readonly></td>
+            <td><input type="number" name="commit_pac_target" class="target-input" data-task="pac" readonly></td>
+            <td><input type="number" name="commit_pac_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>貼標／黑貼</td>
+            <td><input type="text" name="commit_sec_task" readonly></td>
+            <td><input type="number" name="commit_sec_target" class="target-input" data-task="sec" readonly></td>
+            <td><input type="number" name="commit_sec_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>盤點</td>
+            <td><input type="text" name="commit_inv_task" readonly></td>
+            <td><input type="number" name="commit_inv_target" class="target-input" data-task="inv" readonly></td>
+            <td><input type="number" name="commit_inv_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>拆蛇皮</td>
+            <td><input type="text" name="commit_snk_task" readonly></td>
+            <td><input type="number" name="commit_snk_target" class="target-input" data-task="snk" readonly></td>
+            <td><input type="number" name="commit_snk_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>數數量</td>
+            <td><input type="text" name="commit_cnt_task" readonly></td>
+            <td><input type="number" name="commit_cnt_target" class="target-input" data-task="cnt" readonly></td>
+            <td><input type="number" name="commit_cnt_minutes" readonly></td>
+        </tr>
+        <tr>
+            <td>進貨上架</td>
+            <td><input type="text" name="commit_stk_task" readonly></td>
+            <td><input type="number" name="commit_stk_target" class="target-input" data-task="stk" readonly></td>
+            <td><input type="number" name="commit_stk_minutes" readonly></td>
+        </tr>
+        <tr style="background-color: #ffe6e6; font-weight: bold;">
+            <td colspan="3" style="text-align: right;">總計時間：</td>
+            <td><span id="total-time">0</span> 分鐘</td>
+        </tr>
+    </tbody>
+</table>
+
+<div style="background-color: #d4edda; border: 2px solid #28a745; padding: 10px 15px; margin-bottom: 15px; border-radius: 8px; font-weight: bold; color: #155724; text-align: center;">
+    ✏️ 以下是您需要填寫的部分
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th colspan="6" class="section-header">第二部分：實際產出、品質與紀律分析（<span style="background-color: #2196f3; padding: 2px 6px; border-radius: 3px; color: white; font-size: 11pt;">藍色</span> 表示異常）</th>
+        </tr>
+        <tr>
+            <th>任務類別</th>
+            <th>實際完成數量</th>
+            <th>實際時間<br>（分鐘）</th>
+            <th class="quality-cell">品質檢核<br>（照SOP執行/品質合格）</th>
+            <th>完成率</th>
+            <th>差距分析</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr><td>進貨簽收</td><td><input type="number" name="actual_rcv_output" class="actual-input" data-task="rcv"></td><td><input type="number" name="actual_rcv_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_rcv_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_rcv_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="rcv">0%</span></td><td><input type="text" name="actual_rcv_gap"></td></tr>
+        <tr><td>進貨異常</td><td><input type="number" name="actual_exc_output" class="actual-input" data-task="exc"></td><td><input type="number" name="actual_exc_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_exc_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_exc_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="exc">0%</span></td><td><input type="text" name="actual_exc_gap"></td></tr>
+        <tr><td>退貨處理</td><td><input type="number" name="actual_rma_output" class="actual-input" data-task="rma"></td><td><input type="number" name="actual_rma_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_rma_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_rma_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="rma">0%</span></td><td><input type="text" name="actual_rma_gap"></td></tr>
+        <tr><td>退貨上架</td><td><input type="number" name="actual_rtp_output" class="actual-input" data-task="rtp"></td><td><input type="number" name="actual_rtp_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_rtp_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_rtp_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="rtp">0%</span></td><td><input type="text" name="actual_rtp_gap"></td></tr>
+        <tr><td>包裝機操作</td><td><input type="number" name="actual_pac_output" class="actual-input" data-task="pac"></td><td><input type="number" name="actual_pac_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_pac_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_pac_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="pac">0%</span></td><td><input type="text" name="actual_pac_gap"></td></tr>
+        <tr><td>貼標／黑貼</td><td><input type="number" name="actual_sec_output" class="actual-input" data-task="sec"></td><td><input type="number" name="actual_sec_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_sec_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_sec_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="sec">0%</span></td><td><input type="text" name="actual_sec_gap"></td></tr>
+        <tr><td>盤點</td><td><input type="number" name="actual_inv_output" class="actual-input" data-task="inv"></td><td><input type="number" name="actual_inv_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_inv_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_inv_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="inv">0%</span></td><td><input type="text" name="actual_inv_gap"></td></tr>
+        <tr><td>拆蛇皮</td><td><input type="number" name="actual_snk_output" class="actual-input" data-task="snk"></td><td><input type="number" name="actual_snk_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_snk_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_snk_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="snk">0%</span></td><td><input type="text" name="actual_snk_gap"></td></tr>
+        <tr><td>數數量</td><td><input type="number" name="actual_cnt_output" class="actual-input" data-task="cnt"></td><td><input type="number" name="actual_cnt_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_cnt_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_cnt_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="cnt">0%</span></td><td><input type="text" name="actual_cnt_gap"></td></tr>
+        <tr><td>進貨上架</td><td><input type="number" name="actual_stk_output" class="actual-input" data-task="stk"></td><td><input type="number" name="actual_stk_minutes" min="0"></td><td class="quality-cell"><label class="quality-label"><input type="checkbox" name="actual_stk_quality_1" class="quality-checkbox" checked> 照SOP執行</label><label class="quality-label"><input type="checkbox" name="actual_stk_quality_2" class="quality-checkbox" checked> 品質合格</label></td><td><span class="completion-rate" data-task="stk">0%</span></td><td><input type="text" name="actual_stk_gap"></td></tr>
+    </tbody>
+</table>
+
+<table>
+    <thead>
+        <tr>
+            <th colspan="4" class="section-header">第三部分：透明化與紀律強制紀錄</th>
+        </tr>
+        <tr>
+            <th>問題類型</th>
+            <th>對象</th>
+            <th>問題內容</th>
+            <th>解決方案</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>請益記錄 1</td>
+            <td><input type="text" name="q_log1_target"></td>
+            <td><input type="text" name="q_log1_content"></td>
+            <td><input type="text" name="q_log1_solution"></td>
+        </tr>
+        <tr>
+            <td>請益記錄 2</td>
+            <td><input type="text" name="q_log2_target"></td>
+            <td><input type="text" name="q_log2_content"></td>
+            <td><input type="text" name="q_log2_solution"></td>
+        </tr>
+        <tr>
+            <td>自我發現的流程優化機會</td>
+            <td><input type="text" name="q_log_opt_target"></td>
+            <td><input type="text" name="q_log_opt_content"></td>
+            <td><input type="text" name="q_log_opt_solution"></td>
+        </tr>
+        <tr>
+            <td>今日學習到的新知識/SOP</td>
+            <td><input type="text" name="q_log_learn_target"></td>
+            <td><input type="text" name="q_log_learn_content"></td>
+            <td><input type="text" name="q_log_learn_solution"></td>
+        </tr>
+        <tr>
+            <td colspan="4">
+                <span class="red-note">【零模糊規範】</span>
+                若「請益記錄」欄位空白，則視為您未遵循透明化報告的紀律要求。這將直接影響您在試用期內「紀律遵循」評估項目的得分。
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<table>
+    <thead>
+        <tr>
+            <th colspan="3" class="section-header">第四部分：文化與情緒自評</th>
+        </tr>
+        <tr>
+            <th>評估項目</th>
+            <th>評分<br>1分=完全沒有<br>5分=完全有</th>
+            <th>說明</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>1. 我今日有意識地遵循了所有流程與規範。</td>
+            <td><input type="number" name="eval_discipline" min="1" max="5"></td>
+            <td><input type="text" name="eval_discipline_note"></td>
+        </tr>
+        <tr>
+            <td>2. 我覺得我今天的工作速度達到了公司要求的效率。</td>
+            <td><input type="number" name="eval_efficiency" min="1" max="5"></td>
+            <td><input type="text" name="eval_efficiency_note"></td>
+        </tr>
+        <tr>
+            <td>3. 我對今日的量化目標感到興奮而非壓力。</td>
+            <td><input type="number" name="eval_value_fit" min="1" max="5"></td>
+            <td><input type="text" name="eval_value_fit_note"></td>
+        </tr>
+        <tr>
+            <td>4. 我認為這份工作內容是適合我的。</td>
+            <td><input type="number" name="eval_commitment" min="1" max="5"></td>
+            <td><input type="text" name="eval_commitment_note"></td>
+        </tr>
+    </tbody>
+</table>
+
+<table class="page-break">
+    <thead>
+        <tr>
+            <th colspan="2" class="section-header">第五部分：每週總結與主管回饋</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <th>本週學習與優化建議</th>
+            <td><textarea name="weekly_learnings" rows="3"></textarea></td>
+        </tr>
+        <tr>
+            <th>跨部門問題</th>
+            <td><textarea name="weekly_relationship_issues" rows="2"></textarea></td>
+        </tr>
+        <tr class="manager-review">
+            <th>主管回饋</th>
+            <td><textarea name="manager_feedback" rows="4" readonly placeholder="由主管填寫"></textarea></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="submit-container" style="text-align: center; margin-top: 30px;">
+    <button type="button" onclick="submitToGoogleSheets()" style="padding: 15px 40px; font-size: 16pt; background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">✅ 提交到 Google Sheets</button>
+</div>
+
+</form>
+</body>
+</html>
