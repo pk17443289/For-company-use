@@ -28,6 +28,7 @@ package-lock.json
 .DS_Store
 Thumbs.db
 desktop.ini
+nul
 
 # ===== 備份檔案 =====
 *.bak
@@ -37,13 +38,36 @@ desktop.ini
 
 # ===== 敏感資訊 =====
 .env
-.env.local
+.env.*
+config.json
+inventory_config.json
 credentials.json
 secrets.json
 *.key
 *.pem
 
-# ===== 其他 =====
+# ===== 壓縮檔 =====
 *.zip
 *.rar
 *.7z
+
+# ===== 已搬到其他 repo 的資料夾 =====
+# → company-private repo
+company-tools/小工具/*.py
+company-tools/小工具/*.bat
+company-tools/小工具/inventory_config.json
+company-tools/短期問題整理區/專案/
+company-tools/短期問題整理區/每日修改/
+company-tools/短期問題整理區/退貨/
+company-tools/短期問題整理區/倉庫貨架使用率分析.html
+company-tools/短期問題整理區/新竹支出表.html
+company-tools/短期問題整理區/雜七雜八問題/
+
+# → personal-workspace repo
+personal-tools/
+給我自己用的/
+給我自己的/
+scratchpad/
+
+# ===== config.js（含 API keys）=====
+config.js
