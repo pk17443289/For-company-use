@@ -1,10 +1,13 @@
-# ===== 此 repo 只保留耗材盤點表 index.html =====
+# ===== 此 repo 只保留耗材盤點表（供 GitHub Pages 部署） =====
 # 其他檔案已搬到 company-private / personal-workspace repo
 
 # 排除一切，只允許特定檔案
 *
 !.gitignore
-!CLAUDE.md
 !company-tools/
 !company-tools/耗材盤點表/
 !company-tools/耗材盤點表/index.html
+!company-tools/耗材盤點表/script.js
+
+# CLAUDE.md 含個人資訊，不上傳到公開 repo
+CLAUDE.md
