@@ -1,6 +1,136 @@
 // Google Sheets API 設定（稍後填入）
 const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrVsJRSAtuLWsjoTGakg7OSoeNgUnZOZDtGtFRdFuLTCs4_kUkvvfr2BqxJ4EAl6U/exec'; // 這裡填入你的 Google Apps Script 網址
 
+// ===== S2：統一 GAS 呼叫函式（含重試 + 離線佇列） =====
+
+let isOffline = !navigator.onLine;
+
+// 統一的 GAS POST 呼叫（取代所有零散的 fetch + no-cors fallback）
+async function callGAS(payload, { maxRetries = 2, timeout = 30000 } = {}) {
+    if (!GOOGLE_SCRIPT_URL) {
+        throw new Error('未設定 Google Sheets URL');
+    }
+
+    // 如果離線，存入佇列
+    if (!navigator.onLine) {
+        addToOfflineQueue(payload);
+        updateOfflineIndicator();
+        throw new Error('目前離線，資料已暫存');
+    }
+
+    let lastError;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeout);
+
+            const response = await fetch(GOOGLE_SCRIPT_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload),
+                redirect: 'follow',
+                signal: controller.signal
+            });
+
+            clearTimeout(timer);
+
+            const result = await response.json();
+            return result;
+        } catch (error) {
+            lastError = error;
+            if (attempt < maxRetries) {
+                // 等待後重試（指數退避：1s, 2s）
+                await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            }
+        }
+    }
+
+    // 所有重試失敗
+    if (!navigator.onLine) {
+        addToOfflineQueue(payload);
+        updateOfflineIndicator();
+    }
+    throw lastError;
+}
+
+// 離線佇列管理
+function addToOfflineQueue(payload) {
+    const queue = JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+    queue.push({ payload, timestamp: new Date().toISOString() });
+    localStorage.setItem('offlineQueue', JSON.stringify(queue));
+}
+
+function getOfflineQueue() {
+    return JSON.parse(localStorage.getItem('offlineQueue') || '[]');
+}
+
+function clearOfflineQueue() {
+    localStorage.removeItem('offlineQueue');
+}
+
+// 恢復連線後自動重送離線佇列
+async function processOfflineQueue() {
+    const queue = getOfflineQueue();
+    if (queue.length === 0) return;
+
+    console.log(`恢復連線，處理 ${queue.length} 筆離線資料...`);
+    showAlert(`🔄 恢復連線，正在重送 ${queue.length} 筆離線資料...`, 'warning');
+
+    let successCount = 0;
+    const failedItems = [];
+
+    for (const item of queue) {
+        try {
+            await callGAS(item.payload, { maxRetries: 1 });
+            successCount++;
+        } catch (error) {
+            failedItems.push(item);
+        }
+    }
+
+    if (failedItems.length > 0) {
+        localStorage.setItem('offlineQueue', JSON.stringify(failedItems));
+        showAlert(`✅ 成功重送 ${successCount} 筆，❌ ${failedItems.length} 筆仍失敗`, 'warning');
+    } else {
+        clearOfflineQueue();
+        showAlert(`✅ 全部 ${successCount} 筆離線資料已成功重送`, 'success');
+    }
+
+    updateOfflineIndicator();
+}
+
+// 離線/上線狀態監聽
+function updateOfflineIndicator() {
+    const indicator = document.getElementById('offlineIndicator');
+    if (!indicator) return;
+
+    const queue = getOfflineQueue();
+    if (!navigator.onLine) {
+        isOffline = true;
+        indicator.style.display = 'flex';
+        indicator.querySelector('.offline-text').textContent =
+            queue.length > 0 ? `離線中（${queue.length} 筆待送）` : '離線中';
+    } else if (queue.length > 0) {
+        isOffline = false;
+        indicator.style.display = 'flex';
+        indicator.querySelector('.offline-text').textContent = `${queue.length} 筆待重送`;
+    } else {
+        isOffline = false;
+        indicator.style.display = 'none';
+    }
+}
+
+window.addEventListener('online', () => {
+    isOffline = false;
+    updateOfflineIndicator();
+    processOfflineQueue();
+});
+
+window.addEventListener('offline', () => {
+    isOffline = true;
+    updateOfflineIndicator();
+});
+
 // ===== 多語言設定 =====
 let currentLang = localStorage.getItem('inventoryLang') || 'zh';
 
@@ -399,9 +529,11 @@ function switchLanguage(lang) {
     document.querySelectorAll('.items-grid').forEach(grid => grid.innerHTML = '');
     generateItems();
 
-    // 重新綁定事件
+    // 重新綁定事件（S3：加入 inventoryState 同步）
     document.querySelectorAll('.items-grid input[type="radio"]').forEach(radio => {
         radio.addEventListener('change', function() {
+            const key = this.dataset.itemKey;
+            if (key) inventoryState.set(key, this.value);
             updateItemStatus(this);
             updateStats();
             updateButtonStates();
@@ -492,47 +624,51 @@ const defaultInventoryData = {
         { name: '地球貼', threshold: '', unit: '張', warningValue: null, frequency: 'monthly' }
     ],
     xiujuan: [
-        { name: '破壞袋（40╳50）無光粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
-        { name: '破壞袋（32╳40）薄荷綠', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
-        { name: '破壞袋（35╳45）藍色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
-        { name: '破壞袋（20╳30）杏色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
-        { name: '破壞袋（25╳35）全新粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
-        { name: '破壞袋（15╳25）紫色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
-        { name: '破壞袋（15╳40）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
-        { name: '破壞袋（60╳70）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly' },
-        { name: '１號 6×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２號 7×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '３號 8×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '４號 9×14 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '５號 10×27 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '６號 10×20 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '７號 12×14 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '８號 12×20 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '９號 12×28 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１０號 13×23 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１１號 13×29 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１２號 15×22 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１３號 15×39 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１４號 16×19 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１５號 6×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１６號 17×22 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１７號 18×49 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１８號 20×30 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '１９號 20×39 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２０號 24×65 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２１號 27×30 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２２號 28×49 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２３號 28×54 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２４號 30×65 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２５號 35×45 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２６號 35×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２７號 35×85 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２８號 40×44 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '２９號 40×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '３０號 45×54 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '３１號 50×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '３２號 55×69 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' },
-        { name: '３３號 74×55 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly' }
+        // S8：破壞袋子分類
+        { name: '破壞袋（40╳50）無光粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly', subcategory: '破壞袋' },
+        { name: '破壞袋（32╳40）薄荷綠', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly', subcategory: '破壞袋' },
+        { name: '破壞袋（35╳45）藍色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly', subcategory: '破壞袋' },
+        { name: '破壞袋（20╳30）杏色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly', subcategory: '破壞袋' },
+        { name: '破壞袋（25╳35）全新粉', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly', subcategory: '破壞袋' },
+        { name: '破壞袋（15╳25）紫色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly', subcategory: '破壞袋' },
+        { name: '破壞袋（15╳40）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly', subcategory: '破壞袋' },
+        { name: '破壞袋（60╳70）白色', threshold: '剩五綑就要叫', unit: '綑', warningValue: 5, frequency: 'weekly', subcategory: '破壞袋' },
+        // S8：OPP 小（1-10號）
+        { name: '１號 6×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '２號 7×10 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '３號 8×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '４號 9×14 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '５號 10×27 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '６號 10×20 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '７號 12×14 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '８號 12×20 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '９號 12×28 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        { name: '１０號 13×23 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP小(1-10號)' },
+        // S8：OPP 中（11-20號）
+        { name: '１１號 13×29 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '１２號 15×22 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '１３號 15×39 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '１４號 16×19 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '１５號 6×25 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '１６號 17×22 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '１７號 18×49 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '１８號 20×30 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '１９號 20×39 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        { name: '２０號 24×65 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP中(11-20號)' },
+        // S8：OPP 大（21-33號）
+        { name: '２１號 27×30 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '２２號 28×49 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '２３號 28×54 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '２４號 30×65 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '２５號 35×45 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '２６號 35×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '２７號 35×85 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '２８號 40×44 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '２９號 40×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '３０號 45×54 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '３１號 50×74 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '３２號 55×69 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' },
+        { name: '３３號 74×55 OPP袋', threshold: '剩五捆就要叫', unit: '捆', warningValue: 5, frequency: 'weekly', subcategory: 'OPP大(21-33號)' }
     ]
 };
 
@@ -629,13 +765,10 @@ function populatePersonnelDropdown(personnelList) {
     // 清空權限資料
     personnelPermissions = {};
 
-    // 儲存人員權限資訊
+    // 儲存人員權限資訊（S1：不再儲存密碼，密碼驗證改走後端 API）
     personnelList.forEach(person => {
-        // hasAdminAccess: 是否有管理權限（可進入採購追蹤、儀表板）
-        // password: 該人員的密碼（用於驗證）
         personnelPermissions[person.name] = {
-            hasAdminAccess: person.hasAdminAccess === true || person.hasAdminAccess === 'true' || person.hasAdminAccess === '是',
-            password: person.password || ''
+            hasAdminAccess: person.hasAdminAccess === true || person.hasAdminAccess === 'true' || person.hasAdminAccess === '是'
         };
     });
     // 登入系統會在 initLoginSystem() 中處理 Tab 顯示更新
@@ -663,9 +796,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // 更新統計
     updateStats();
 
-    // 監聽單選按鈕變化
+    // 監聽單選按鈕變化（S3：同步寫入 inventoryState）
     document.querySelectorAll('input[type="radio"]').forEach(radio => {
         radio.addEventListener('change', function() {
+            const key = this.dataset.itemKey;
+            if (key) inventoryState.set(key, this.value);
             updateItemStatus(this);
             updateStats();
             updateButtonStates();
@@ -716,8 +851,18 @@ function generateItems() {
     // 為每個區域生成項目
     Object.keys(inventoryData).forEach(category => {
         const containerId = categoryContainers[category];
-        const container = document.getElementById(containerId);
-        if (!container) return;
+
+        // S8：xiujuan 分類按 subcategory 分組到不同容器
+        const isSubcategorized = category === 'xiujuan';
+
+        // 非子分類的，用原本的容器
+        const defaultContainer = document.getElementById(containerId);
+        if (!isSubcategorized && !defaultContainer) return;
+
+        // 子分類的，先清空所有子容器
+        if (isSubcategorized) {
+            document.querySelectorAll('[id^="xiujuan-items-"]').forEach(el => { el.innerHTML = ''; });
+        }
 
         inventoryData[category].forEach((item, index) => {
             // 跳過被標記異常（停用）的項目
@@ -795,6 +940,21 @@ function generateItems() {
                 `;
             }
 
+            // S4：數量輸入框
+            const savedQty = inventoryState.getQuantity(itemKey);
+            const warningClass = (savedQty !== null && item.warningValue !== null && savedQty <= item.warningValue) ? 'qty-warning' : '';
+            const quantityHtml = `
+                <div class="item-quantity">
+                    <label class="qty-label">數量：</label>
+                    <input type="number" class="qty-input ${warningClass}" min="0" step="0.1"
+                           data-item-key="${itemKey}" data-warning="${item.warningValue || ''}"
+                           placeholder="${item.unit || '數量'}"
+                           value="${savedQty !== null ? savedQty : ''}"
+                           onchange="onQuantityChange(this)">
+                    <span class="qty-unit">${item.unit || ''}</span>
+                </div>
+            `;
+
             itemDiv.innerHTML = `
                 <div class="item-header">
                     <div class="item-name">${displayName} ${freqTag}</div>
@@ -802,10 +962,19 @@ function generateItems() {
                     ${avgDaysInfo}
                     ${lastInfo}
                 </div>
+                ${quantityHtml}
                 ${statusOptionsHtml}
             `;
 
-            container.appendChild(itemDiv);
+            // S8：xiujuan 按 subcategory 放到對應子容器
+            if (isSubcategorized && item.subcategory) {
+                const subContainer = document.getElementById(`xiujuan-items-${item.subcategory}`);
+                if (subContainer) {
+                    subContainer.appendChild(itemDiv);
+                }
+            } else {
+                if (defaultContainer) defaultContainer.appendChild(itemDiv);
+            }
         });
     });
 
@@ -819,6 +988,39 @@ function generateItems() {
 
     // 套用目前的篩選
     applyFrequencyFilter();
+}
+
+// S4：手機版 +/- 按鈕
+function adjustMobileQty(itemKey, delta, warningValue) {
+    const input = document.getElementById(`mobile-qty-${itemKey}`);
+    if (!input) return;
+    let current = parseFloat(input.value) || 0;
+    current = Math.max(0, current + delta);
+    input.value = current;
+    onQuantityChange(input);
+}
+
+// S4：數量變更處理
+function onQuantityChange(input) {
+    const itemKey = input.dataset.itemKey;
+    const warningValue = parseFloat(input.dataset.warning);
+    const qty = parseFloat(input.value);
+
+    if (!isNaN(qty)) {
+        inventoryState.setQuantity(itemKey, qty);
+
+        // 低於警示值時顯示黃色警告
+        if (!isNaN(warningValue) && qty <= warningValue) {
+            input.classList.add('qty-warning');
+        } else {
+            input.classList.remove('qty-warning');
+        }
+    } else {
+        inventoryState.setQuantity(itemKey, null);
+        input.classList.remove('qty-warning');
+    }
+
+    autoSave();
 }
 
 // 頻率篩選功能
@@ -1203,22 +1405,23 @@ function autoSave() {
     }, 1000);
 }
 
-// 儲存資料
+// 儲存資料（S3：改用 inventoryState 為資料來源）
 function saveData(silent = false) {
+    // 先從 DOM 同步（確保桌面版手動選的也有存）
+    document.querySelectorAll('.items-grid input[type="radio"]:checked').forEach(radio => {
+        const key = radio.dataset.itemKey;
+        if (key && !inventoryState.get(key)) {
+            inventoryState.set(key, radio.value);
+        }
+    });
+
     const data = {
         date: document.getElementById('inventoryDate').value,
         person: currentLoggedInUser || '',
-        items: {}
+        items: inventoryState.getAll(),
+        quantities: inventoryState.getAllQuantities(),
+        timestamp: new Date().toISOString()
     };
-
-    document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-        const itemKey = radio.dataset.itemKey;
-        const value = radio.value;
-
-        if (itemKey) {
-            data.items[itemKey] = value;
-        }
-    });
 
     localStorage.setItem('inventoryData', JSON.stringify(data));
 
@@ -1227,7 +1430,7 @@ function saveData(silent = false) {
     }
 }
 
-// 載入資料
+// 載入資料（S3：恢復到 inventoryState + DOM）
 function loadData() {
     const saved = localStorage.getItem('inventoryData');
     if (!saved) return;
@@ -1239,17 +1442,22 @@ function loadData() {
             document.getElementById('inventoryDate').value = data.date;
         }
 
-        // person 現在由登入系統管理，不再從 localStorage 載入
-
         if (data.items) {
-            // 新格式：items 直接是 { itemName: status } 的對應
             Object.keys(data.items).forEach(itemKey => {
                 const value = data.items[itemKey];
+                inventoryState.set(itemKey, value);
                 const radio = document.querySelector(`input[name="${itemKey}"][value="${value}"]`);
                 if (radio) {
                     radio.checked = true;
                     updateItemStatus(radio);
                 }
+            });
+        }
+
+        // S4：恢復數量
+        if (data.quantities) {
+            Object.keys(data.quantities).forEach(itemKey => {
+                inventoryState.setQuantity(itemKey, data.quantities[itemKey]);
             });
         }
 
@@ -1270,7 +1478,7 @@ function exportData() {
     const person = currentLoggedInUser || '';
 
     let csvContent = '\uFEFF'; // UTF-8 BOM
-    csvContent += '盤點日期,盤點人員,分類,項目名稱,補貨條件,狀態\n';
+    csvContent += '盤點日期,盤點人員,盤點時間,分類,項目名稱,補貨條件,實際數量,單位,狀態\n';
 
     const categoryNames = {
         ajun: '辦公室區域',
@@ -1279,13 +1487,16 @@ function exportData() {
         xiujuan: 'OPP袋子盤點'
     };
 
+    const timestamp = new Date().toLocaleString('zh-TW');
+
     Object.keys(inventoryData).forEach(category => {
         inventoryData[category].forEach((item, index) => {
             const itemKey = item.name;
-            const selected = document.querySelector(`input[name="${itemKey}"]:checked`);
-            const status = selected ? selected.value : '未填寫';
+            const status = inventoryState.get(itemKey) || '未填寫';
+            const quantity = inventoryState.getQuantity(itemKey);
+            const qtyStr = quantity !== null ? quantity : '';
 
-            csvContent += `${date},${person},${categoryNames[category]},${item.name},${item.threshold},${status}\n`;
+            csvContent += `${date},${person},${timestamp},${categoryNames[category]},${item.name},${item.threshold},${qtyStr},${item.unit || ''},${status}\n`;
         });
     });
 
@@ -1439,13 +1650,61 @@ function closeSuccessModal() {
     location.reload();
 }
 
-// 提交資料
-async function submitData() {
-    const person = currentLoggedInUser;
-    if (!person) {
-        showAlert(t('pleaseSelectPerson'), 'warning');
+// S5：Promise-based 登入彈窗（讓 submitData 可以 await）
+function showLoginModalAsync() {
+    return new Promise((resolve) => {
+        // 先開登入彈窗
         showLoginModal();
-        return;
+
+        // 加「稍後再說」按鈕（如果還沒有的話）
+        const loginBtns = document.querySelector('.login-buttons');
+        let cancelBtn = document.getElementById('loginCancelBtn');
+        if (!cancelBtn && loginBtns) {
+            cancelBtn = document.createElement('button');
+            cancelBtn.id = 'loginCancelBtn';
+            cancelBtn.className = 'login-btn';
+            cancelBtn.style.cssText = 'background: #f5f5f5; color: #666; border: 1px solid #ddd;';
+            cancelBtn.textContent = '稍後再說';
+            loginBtns.insertBefore(cancelBtn, loginBtns.firstChild);
+        }
+
+        // 稍後再說 = 取消
+        if (cancelBtn) {
+            cancelBtn.onclick = () => {
+                document.getElementById('loginModal').classList.remove('show');
+                document.body.classList.remove('modal-active');
+                resolve(false);
+            };
+        }
+
+        // 監聽登入成功
+        const checkLogin = setInterval(() => {
+            if (currentLoggedInUser) {
+                clearInterval(checkLogin);
+                resolve(true);
+            }
+        }, 300);
+
+        // 超時自動取消（60 秒）
+        setTimeout(() => {
+            clearInterval(checkLogin);
+            if (!currentLoggedInUser) {
+                document.getElementById('loginModal').classList.remove('show');
+                document.body.classList.remove('modal-active');
+                resolve(false);
+            }
+        }, 60000);
+    });
+}
+
+// 提交資料（S5：未登入時提交才跳登入窗）
+async function submitData() {
+    let person = currentLoggedInUser;
+    if (!person) {
+        showAlert('📋 提交前需要登入，請選擇您的身份', 'warning');
+        const loggedIn = await showLoginModalAsync();
+        if (!loggedIn) return;
+        person = currentLoggedInUser;
     }
 
     if (!checkAllFilled()) {
@@ -1570,6 +1829,13 @@ function toggleCategory(category) {
     header.classList.toggle('collapsed');
 }
 
+// S8：切換子分類摺疊
+function toggleSubcategory(headerEl) {
+    headerEl.classList.toggle('collapsed');
+    const content = headerEl.nextElementSibling;
+    if (content) content.classList.toggle('collapsed');
+}
+
 // 點擊彈窗外部關閉
 document.addEventListener('click', function(event) {
     const modal = document.getElementById('orderModal');
@@ -1584,8 +1850,67 @@ document.addEventListener('click', function(event) {
 let allItemsFlat = [];
 let currentItemIndex = 0;
 
-// 手機版選擇狀態儲存（獨立於 DOM）
-let mobileSelections = {};
+// S3：統一狀態管理（取代 mobileSelections + DOM radio 雙來源）
+const inventoryState = {
+    _statuses: {},     // { itemKey: '不用叫貨' | '要叫貨' | '補貨中' | '已補貨' }
+    _quantities: {},   // S4：{ itemKey: number }
+    _timestamp: null,  // S6：盤點時間戳
+
+    set(itemKey, status) {
+        this._statuses[itemKey] = status;
+    },
+    get(itemKey) {
+        return this._statuses[itemKey] || null;
+    },
+    getAll() {
+        return { ...this._statuses };
+    },
+    setQuantity(itemKey, qty) {
+        this._quantities[itemKey] = qty;
+    },
+    getQuantity(itemKey) {
+        return this._quantities[itemKey] ?? null;
+    },
+    getAllQuantities() {
+        return { ...this._quantities };
+    },
+    clear() {
+        this._statuses = {};
+        this._quantities = {};
+        this._timestamp = null;
+    },
+    // 從 DOM radio 同步（用於初始載入）
+    syncFromDOM() {
+        document.querySelectorAll('.items-grid input[type="radio"]:checked').forEach(radio => {
+            const key = radio.dataset.itemKey;
+            if (key) this._statuses[key] = radio.value;
+        });
+    },
+    // 同步到桌面版 DOM radio
+    syncToDOM(itemKey) {
+        const value = this._statuses[itemKey];
+        if (!value) return;
+        const radio = document.querySelector(`.items-grid input[name="${itemKey}"][value="${value}"]`);
+        if (radio) {
+            radio.checked = true;
+            updateItemStatus(radio);
+        }
+    }
+};
+
+// 保留 mobileSelections 為 inventoryState 的代理（向後相容）
+const mobileSelections = new Proxy({}, {
+    get(target, prop) {
+        return inventoryState.get(prop);
+    },
+    set(target, prop, value) {
+        inventoryState.set(prop, value);
+        return true;
+    },
+    has(target, prop) {
+        return inventoryState.get(prop) !== null;
+    }
+});
 
 // 頻率分類對應
 function getFrequencyInfo() {
@@ -1927,12 +2252,31 @@ function showCurrentItem() {
     };
     const freqTag = `<span class="freq-tag ${item.frequency}" style="margin-left: 8px;">${freqLabels[item.frequency]}</span>`;
 
+    // S4：手機版數量輸入
+    const savedQty = inventoryState.getQuantity(itemKey);
+    const warningClass = (savedQty !== null && item.warningValue !== null && savedQty <= item.warningValue) ? 'qty-warning' : '';
+    const mobileQuantityHtml = `
+        <div class="mobile-quantity">
+            <div class="mobile-qty-row">
+                <button class="qty-btn qty-minus" onclick="adjustMobileQty('${itemKey}', -1, ${item.warningValue || 'null'})">−</button>
+                <input type="number" class="qty-input mobile ${warningClass}" min="0" step="0.1"
+                       id="mobile-qty-${itemKey}" data-item-key="${itemKey}" data-warning="${item.warningValue || ''}"
+                       placeholder="${item.unit || '數量'}"
+                       value="${savedQty !== null ? savedQty : ''}"
+                       onchange="onQuantityChange(this)">
+                <button class="qty-btn qty-plus" onclick="adjustMobileQty('${itemKey}', 1, ${item.warningValue || 'null'})">+</button>
+                <span class="qty-unit">${item.unit || ''}</span>
+            </div>
+        </div>
+    `;
+
     container.innerHTML = `
         <div class="swipe-card" data-item-key="${itemKey}">
             <div class="item-name">${displayName} ${freqTag}</div>
             ${item.threshold ? `<div class="item-threshold">⚠️ ${displayThreshold}</div>` : ''}
             ${avgDaysInfo}
             ${lastInfo}
+            ${mobileQuantityHtml}
             ${statusOptionsHtml}
         </div>
     `;
@@ -1978,7 +2322,8 @@ function showCurrentItem() {
             weekly: '🔵 每週',
             monthly: '🟢 每月'
         };
-        categoryNameEl.textContent = `${info.icon} ${info.name} (${freqLabels[item.frequency]})`;
+        const subLabel = item.subcategory ? ` › ${item.subcategory}` : '';
+        categoryNameEl.textContent = `${info.icon} ${info.name}${subLabel} (${freqLabels[item.frequency]})`;
     }
 }
 
@@ -2366,9 +2711,11 @@ async function loadLastInventory() {
         document.querySelectorAll('.items-grid').forEach(grid => grid.innerHTML = '');
         generateItems();
 
-        // 重新綁定事件監聽器
+        // 重新綁定事件監聽器（S3：加入 inventoryState 同步）
         document.querySelectorAll('input[type="radio"]').forEach(radio => {
             radio.addEventListener('change', function() {
+                const key = this.dataset.itemKey;
+                if (key) inventoryState.set(key, this.value);
                 updateItemStatus(this);
                 updateStats();
                 updateButtonStates();
@@ -2398,8 +2745,8 @@ async function loadLastInventory() {
     } catch (error) {
         console.error('載入資料失敗：', error);
         hideFullscreenLoading();
-        // 如果載入失敗，仍然顯示登入彈窗讓用戶可以使用預設資料
-        showLoginModal();
+        // S5：載入失敗以訪客模式進入，不強制彈登入窗
+        updateCurrentUserDisplay();
     }
 }
 
@@ -2408,21 +2755,7 @@ async function initInventoryItemsToSheet() {
     if (!GOOGLE_SCRIPT_URL) return;
 
     try {
-        const payload = {
-            action: 'initInventoryItems',
-            items: defaultInventoryData
-        };
-
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-        });
-
-        const result = await response.json();
+        const result = await callGAS({ action: 'initInventoryItems', items: defaultInventoryData });
         if (result.success) {
             console.log('項目清單已初始化到 Google Sheets：', result.message);
         } else {
@@ -2430,20 +2763,6 @@ async function initInventoryItemsToSheet() {
         }
     } catch (error) {
         console.error('初始化項目清單失敗：', error);
-        // 嘗試 no-cors 模式
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify({ action: 'initInventoryItems', items: defaultInventoryData })
-            });
-            console.log('項目清單已初始化（no-cors 模式）');
-        } catch (e) {
-            console.error('初始化項目清單失敗（no-cors）：', e);
-        }
     }
 }
 
@@ -2469,10 +2788,17 @@ async function submitToGoogleSheets() {
     const date = document.getElementById('inventoryDate').value;
     const person = currentLoggedInUser || '';
 
-    // 收集所有項目資料
+    // S3：從 inventoryState 收集資料（統一來源），再補上 DOM 遺漏的
+    document.querySelectorAll('.items-grid input[type="radio"]:checked').forEach(radio => {
+        const key = radio.dataset.itemKey;
+        if (key && !inventoryState.get(key)) {
+            inventoryState.set(key, radio.value);
+        }
+    });
+
     const items = [];
     const latestInventory = {};
-    const validItemKeys = []; // 收集所有有效的項目名稱，用於清理孤兒資料
+    const validItemKeys = [];
 
     const categoryNames = {
         ajun: '辦公室區域',
@@ -2481,21 +2807,28 @@ async function submitToGoogleSheets() {
         xiujuan: 'OPP袋子盤點'
     };
 
-    document.querySelectorAll('input[type="radio"]:checked').forEach(radio => {
-        const category = radio.dataset.category;
-        const itemName = radio.dataset.itemName;
-        const itemKey = radio.dataset.itemKey; // 使用項目名稱作為 key
-        const status = radio.value;
+    // 從 inventoryData 結構遍歷，配合 inventoryState 取得狀態
+    Object.keys(inventoryData).forEach(category => {
+        inventoryData[category].forEach(item => {
+            if (disabledItems.has(item.name)) return;
+            const itemKey = item.name;
+            const status = inventoryState.get(itemKey);
+            if (!status) return;
 
-        items.push({
-            category: categoryNames[category],
-            itemName: itemName,
-            status: status,
-            itemKey: itemKey
+            const quantity = inventoryState.getQuantity(itemKey);
+
+            items.push({
+                category: categoryNames[category],
+                itemName: item.name,
+                status: status,
+                itemKey: itemKey,
+                quantity: quantity,          // S4：實際數量
+                unit: item.unit || ''       // S4：單位
+            });
+
+            latestInventory[itemKey] = status;
+            validItemKeys.push(itemKey);
         });
-
-        latestInventory[itemKey] = status;
-        validItemKeys.push(itemKey);
     });
 
     const payload = {
@@ -2504,51 +2837,19 @@ async function submitToGoogleSheets() {
         person: person,
         items: items,
         latestInventory: latestInventory,
-        validItemKeys: validItemKeys // 傳送有效項目清單，讓後端清理孤兒資料
+        validItemKeys: validItemKeys,
+        timestamp: new Date().toISOString()  // S6：加時間戳
     };
 
-    // 使用 Google Apps Script 的標準方式提交
-    // 透過建立隱藏的 form 或使用 fetch with redirect
-    try {
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
-        });
+    // S2：使用統一的 callGAS 函式（含重試 + 離線暫存）
+    const result = await callGAS(payload);
+    console.log('Google Sheets 回應：', result);
 
-        // 嘗試解析回應
-        const result = await response.json();
-        console.log('Google Sheets 回應：', result);
-
-        if (result.success) {
-            // 更新本地的上次盤點資料
-            lastInventoryData = latestInventory;
-            return true;
-        } else {
-            throw new Error(result.error || '提交失敗');
-        }
-    } catch (error) {
-        // 如果是 CORS 問題，改用 no-cors 模式（無法確認結果）
-        console.log('嘗試使用 no-cors 模式...');
-
-        await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
-            body: JSON.stringify(payload)
-        });
-
-        console.log('已提交資料到 Google Sheets（無法確認結果）');
-
-        // 更新本地的上次盤點資料
+    if (result.success) {
         lastInventoryData = latestInventory;
-
         return true;
+    } else {
+        throw new Error(result.error || '提交失敗');
     }
 }
 
@@ -2612,8 +2913,8 @@ function closePasswordModal() {
     pendingTabSwitch = null;
 }
 
-// 驗證密碼
-function verifyPassword() {
+// 驗證密碼（S1：改為 async，呼叫後端 API 驗證）
+async function verifyPassword() {
     const inputEl = document.getElementById('passwordInput');
     const errorEl = document.getElementById('passwordError');
     const enteredPassword = inputEl.value.trim();
@@ -2623,26 +2924,50 @@ function verifyPassword() {
         return;
     }
 
-    const personData = personnelPermissions[currentLoggedInUser];
-    const correctPassword = personData?.password;
-
-    if (enteredPassword === correctPassword) {
-        // 密碼正確，標記為已驗證
-        verifiedSession[currentLoggedInUser] = true;
-        closePasswordModal();
-        updateCurrentUserDisplay(); // 更新顯示為管理員
-        updateTabAccessDisplay();
-
-        // 切換到目標 Tab
-        if (pendingTabSwitch) {
-            doSwitchMainTab(pendingTabSwitch);
-            pendingTabSwitch = null;
-        }
-    } else {
-        // 密碼錯誤
+    if (!enteredPassword) {
         errorEl.style.display = 'block';
-        inputEl.value = '';
-        inputEl.focus();
+        return;
+    }
+
+    // 顯示驗證中狀態
+    const confirmBtn = document.querySelector('#passwordModal .btn-primary');
+    const originalText = confirmBtn.textContent;
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = '驗證中...';
+    errorEl.style.display = 'none';
+
+    try {
+        const result = await callGAS({
+            action: 'verifyPassword',
+            username: currentLoggedInUser,
+            password: enteredPassword
+        });
+
+        if (result.success && result.verified) {
+            // 密碼正確，標記為已驗證
+            verifiedSession[currentLoggedInUser] = true;
+            closePasswordModal();
+            updateCurrentUserDisplay();
+            updateTabAccessDisplay();
+
+            // 切換到目標 Tab
+            if (pendingTabSwitch) {
+                doSwitchMainTab(pendingTabSwitch);
+                pendingTabSwitch = null;
+            }
+        } else {
+            // 密碼錯誤
+            errorEl.style.display = 'block';
+            inputEl.value = '';
+            inputEl.focus();
+        }
+    } catch (error) {
+        console.error('密碼驗證失敗：', error);
+        errorEl.textContent = '驗證失敗，請檢查網路連線';
+        errorEl.style.display = 'block';
+    } finally {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
     }
 }
 
@@ -2736,11 +3061,12 @@ function onLoginPasswordInput() {
     }
 }
 
-// 確認登入
-function confirmLogin() {
+// 確認登入（S1：管理員密碼改走後端驗證）
+async function confirmLogin() {
     const select = document.getElementById('loginPersonSelect');
     const passwordInput = document.getElementById('loginPasswordInput');
     const passwordError = document.getElementById('loginPasswordError');
+    const confirmBtn = document.getElementById('loginConfirmBtn');
 
     const selectedPerson = select.value;
     if (!selectedPerson) return;
@@ -2751,17 +3077,45 @@ function confirmLogin() {
     // 如果有管理權限，需要驗證密碼
     if (hasAdmin) {
         const enteredPassword = passwordInput.value.trim();
-        const correctPassword = personData?.password;
-
-        if (enteredPassword !== correctPassword) {
+        if (!enteredPassword) {
             passwordError.style.display = 'block';
-            passwordInput.value = '';
-            passwordInput.focus();
             return;
         }
 
-        // 密碼正確，標記為已驗證
-        verifiedSession[selectedPerson] = true;
+        // 顯示驗證中狀態
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = '驗證中...';
+        passwordError.style.display = 'none';
+
+        try {
+            const result = await callGAS({
+                action: 'verifyPassword',
+                username: selectedPerson,
+                password: enteredPassword
+            });
+
+            if (!result.success || !result.verified) {
+                passwordError.style.display = 'block';
+                passwordInput.value = '';
+                passwordInput.focus();
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = '確認';
+                return;
+            }
+
+            // 密碼正確，標記為已驗證
+            verifiedSession[selectedPerson] = true;
+        } catch (error) {
+            console.error('登入驗證失敗：', error);
+            passwordError.textContent = '驗證失敗，請檢查網路連線';
+            passwordError.style.display = 'block';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = '確認';
+            return;
+        }
+
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '確認';
     }
 
     // 登入成功
@@ -2805,19 +3159,34 @@ function logout() {
     showLoginModal();
 }
 
-// 更新 header 的用戶顯示
+// S5：更新 header 的用戶顯示（支援訪客模式）
 function updateCurrentUserDisplay() {
     const display = document.getElementById('currentUserDisplay');
     const nameEl = document.getElementById('currentUserName');
     const badgeEl = document.getElementById('currentUserBadge');
+    const logoutBtn = display?.querySelector('.logout-btn');
+
+    if (!display) return;
 
     if (!currentLoggedInUser) {
-        display.style.display = 'none';
+        // S5：訪客模式 - 顯示「訪客模式」+ 登入按鈕
+        display.style.display = 'flex';
+        nameEl.textContent = '訪客模式';
+        badgeEl.textContent = '未登入';
+        badgeEl.className = 'current-user-badge guest';
+        if (logoutBtn) {
+            logoutBtn.textContent = '登入';
+            logoutBtn.setAttribute('onclick', 'showLoginModal()');
+        }
         return;
     }
 
     display.style.display = 'flex';
     nameEl.textContent = currentLoggedInUser;
+    if (logoutBtn) {
+        logoutBtn.textContent = '登出';
+        logoutBtn.setAttribute('onclick', 'logout()');
+    }
 
     const personData = personnelPermissions[currentLoggedInUser];
     if (personData?.hasAdminAccess && verifiedSession[currentLoggedInUser]) {
@@ -2829,7 +3198,7 @@ function updateCurrentUserDisplay() {
     }
 }
 
-// 初始化登入系統（在人員清單載入後呼叫）
+// 初始化登入系統（S5：不再自動彈出登入窗，改為匿名模式）
 function initLoginSystem() {
     // 綁定登入表單事件
     const loginSelect = document.getElementById('loginPersonSelect');
@@ -2847,9 +3216,10 @@ function initLoginSystem() {
         });
     }
 
-    // 每次進入頁面都需要重新登入
+    // S5：不自動彈出登入窗，以匿名/訪客模式進入
     hideFullscreenLoading();
-    showLoginModal();
+    updateCurrentUserDisplay(); // 顯示訪客模式 UI
+    updateTabAccessDisplay();
 }
 
 // 切換主要 Tab（含權限檢查）
@@ -3220,7 +3590,7 @@ function filterPurchase(filter) {
     renderPurchaseList(purchaseListData);
 }
 
-// 更新採購狀態
+// 更新採購狀態（S2：改用 callGAS）
 async function updatePurchaseStatus(itemKey, newStatus) {
     if (!GOOGLE_SCRIPT_URL) {
         showAlert('未設定 Google Sheets URL', 'warning');
@@ -3234,56 +3604,23 @@ async function updatePurchaseStatus(itemKey, newStatus) {
     if (!confirm(confirmMsg)) return;
 
     try {
-        const payload = {
+        const result = await callGAS({
             action: 'updatePurchaseStatus',
             itemKey: itemKey,
             status: newStatus,
             person: currentLoggedInUser || ''
-        };
-
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
         });
-
-        const result = await response.json();
 
         if (result.success) {
             showAlert(`✅ ${itemKey} 已更新為「${newStatus}」`, 'success');
-            loadPurchaseList();  // 重新載入清單
-            loadLastInventory(); // 重新載入最新狀態
+            loadPurchaseList();
+            loadLastInventory();
         } else {
             throw new Error(result.error || '更新失敗');
         }
     } catch (error) {
         console.error('更新採購狀態失敗：', error);
-
-        // 嘗試 no-cors 模式
-        try {
-            const payload = {
-                action: 'updatePurchaseStatus',
-                itemKey: itemKey,
-                status: newStatus
-            };
-
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify(payload)
-            });
-
-            showAlert(`✅ ${itemKey} 已更新（請重新載入確認）`, 'success');
-            setTimeout(() => loadPurchaseList(), 1500);
-        } catch (e) {
-            showAlert('❌ 更新失敗：' + error.message, 'danger');
-        }
+        showAlert('❌ 更新失敗：' + error.message, 'danger');
     }
 }
 
@@ -3336,84 +3673,32 @@ async function markItemAbnormal(itemKey, markAsAbnormal) {
     updateLocalAbnormalStatus(itemKey, markAsAbnormal);
 
     try {
-        const payload = {
+        const result = await callGAS({
             action: 'markAbnormal',
             itemKey: itemKey,
             markAsAbnormal: markAsAbnormal,
             reason: reason
-        };
-
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
         });
-
-        const result = await response.json();
 
         if (result.success) {
             showAlert(`✅ ${itemKey} ${markAsAbnormal ? '已標記為異常' : '已取消異常標記'}`, 'success');
 
-            // 更新停用項目清單
             if (markAsAbnormal) {
                 disabledItems.add(itemKey);
             } else {
                 disabledItems.delete(itemKey);
             }
 
-            // 重新生成盤點項目
             refreshInventoryItems();
-
-            // 重新載入儀表板數據
             loadStatistics();
         } else {
-            // 如果失敗，恢復原狀
             updateLocalAbnormalStatus(itemKey, !markAsAbnormal);
             throw new Error(result.error || '操作失敗');
         }
     } catch (error) {
         console.error('標記異常失敗：', error);
-
-        // 嘗試 no-cors 模式
-        try {
-            const payload = {
-                action: 'markAbnormal',
-                itemKey: itemKey,
-                markAsAbnormal: markAsAbnormal,
-                reason: reason
-            };
-
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify(payload)
-            });
-
-            showAlert(`✅ ${itemKey} ${markAsAbnormal ? '已標記為異常' : '已取消異常標記'}`, 'success');
-
-            // 更新停用項目清單
-            if (markAsAbnormal) {
-                disabledItems.add(itemKey);
-            } else {
-                disabledItems.delete(itemKey);
-            }
-
-            // 重新生成盤點項目
-            refreshInventoryItems();
-
-            // 重新載入儀表板數據
-            loadStatistics();
-        } catch (e) {
-            // 恢復原狀
-            updateLocalAbnormalStatus(itemKey, !markAsAbnormal);
-            showAlert('❌ 操作失敗：' + error.message, 'danger');
-        }
+        updateLocalAbnormalStatus(itemKey, !markAsAbnormal);
+        showAlert('❌ 操作失敗：' + error.message, 'danger');
     }
 }
 
@@ -3645,83 +3930,31 @@ async function confirmRemoveItem(itemKey) {
     showAlert(`⏳ 正在移除...`, 'warning');
 
     try {
-        const payload = {
+        const result = await callGAS({
             action: 'removeItem',
             itemKey: itemKey,
             reason: reason.trim(),
             person: person
-        };
-
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
         });
-
-        const result = await response.json();
 
         if (result.success) {
             showAlert(`✅ ${itemKey} 已永久移除（操作人員：${person}）`, 'success');
-
-            // 從本地項目資料中移除（真正刪除）
             removeItemFromLocalData(itemKey);
-
-            // 加入停用清單（盤點時會跳過）
             disabledItems.add(itemKey);
 
-            // 從本地採購清單移除
             if (purchaseListData) {
                 purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
                 renderPurchaseList(purchaseListData);
             }
 
-            // 重新生成盤點項目（會跳過已停用的項目）
             refreshInventoryItems();
-
-            // 重新載入儀表板數據
             loadStatistics();
         } else {
             throw new Error(result.error || '操作失敗');
         }
     } catch (error) {
         console.error('移除項目失敗：', error);
-
-        // 嘗試 no-cors 模式
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify({ action: 'removeItem', itemKey: itemKey, reason: reason.trim(), person: person })
-            });
-
-            showAlert(`✅ ${itemKey} 已永久移除（操作人員：${person}）`, 'success');
-
-            // 從本地項目資料中移除（真正刪除）
-            removeItemFromLocalData(itemKey);
-
-            // 加入停用清單（盤點時會跳過）
-            disabledItems.add(itemKey);
-
-            // 從本地採購清單移除
-            if (purchaseListData) {
-                purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
-                renderPurchaseList(purchaseListData);
-            }
-
-            // 重新生成盤點項目（會跳過已停用的項目）
-            refreshInventoryItems();
-
-            // 重新載入儀表板數據
-            loadStatistics();
-        } catch (e) {
-            showAlert('❌ 移除失敗：' + error.message, 'danger');
-        }
+        showAlert('❌ 移除失敗：' + error.message, 'danger');
     }
 }
 
@@ -3770,65 +4003,28 @@ async function cancelPurchase(itemKey) {
     showAlert(`⏳ 正在取消採購...`, 'warning');
 
     try {
-        const payload = {
+        const result = await callGAS({
             action: 'cancelPurchase',
             itemKey: itemKey,
             reason: reason.trim(),
             person: person
-        };
-
-        const response = await fetch(GOOGLE_SCRIPT_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'text/plain;charset=utf-8',
-            },
-            body: JSON.stringify(payload),
-            redirect: 'follow'
         });
-
-        const result = await response.json();
 
         if (result.success) {
             showAlert(`✅ ${itemKey} 已取消採購（操作人員：${person}）`, 'success');
 
-            // 從本地清單移除
             if (purchaseListData) {
                 purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
                 renderPurchaseList(purchaseListData);
             }
 
-            // 重新載入儀表板數據
             loadStatistics();
         } else {
             throw new Error(result.error || '操作失敗');
         }
     } catch (error) {
         console.error('取消採購失敗：', error);
-
-        // 嘗試 no-cors 模式
-        try {
-            await fetch(GOOGLE_SCRIPT_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: {
-                    'Content-Type': 'text/plain;charset=utf-8',
-                },
-                body: JSON.stringify({ action: 'cancelPurchase', itemKey: itemKey, reason: reason.trim(), person: person })
-            });
-
-            showAlert(`✅ ${itemKey} 已取消採購（操作人員：${person}）`, 'success');
-
-            // 從本地清單移除
-            if (purchaseListData) {
-                purchaseListData = purchaseListData.filter(i => i.itemKey !== itemKey);
-                renderPurchaseList(purchaseListData);
-            }
-
-            // 重新載入儀表板數據
-            loadStatistics();
-        } catch (e) {
-            showAlert('❌ 取消採購失敗：' + error.message, 'danger');
-        }
+        showAlert('❌ 取消採購失敗：' + error.message, 'danger');
     }
 }
 
@@ -3851,6 +4047,8 @@ function refreshInventoryItems() {
     generateItems();
     document.querySelectorAll('input[type="radio"]').forEach(radio => {
         radio.addEventListener('change', function() {
+            const key = this.dataset.itemKey;
+            if (key) inventoryState.set(key, this.value);
             updateItemStatus(this);
             updateStats();
             updateButtonStates();
@@ -3980,6 +4178,414 @@ function renderStatistics(data) {
     });
 
     tbody.innerHTML = html;
+
+    // S7：儲存原始資料供篩選排序用
+    window._dashboardItems = items;
+    window._dashboardFilter = 'all';
+    window._dashboardSort = { key: null, dir: 'asc' };
+
+    // S7：載入趨勢數據
+    loadHistoryCharts();
+
+    // S9：管理員顯示匯出按鈕
+    const exportBtns = document.getElementById('dashboardExportBtns');
+    if (exportBtns) {
+        exportBtns.style.display = (currentUser && currentUser !== '訪客') ? 'flex' : 'none';
+    }
+}
+
+// S7：載入歷史圖表資料
+async function loadHistoryCharts() {
+    if (!GOOGLE_SCRIPT_URL) return;
+
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getHistoryData');
+        const result = await response.json();
+        if (result && result.success) {
+            renderTrendChart(result.data?.monthly || []);
+            renderTopItemsChart(result.data?.topItems || []);
+        }
+    } catch (error) {
+        console.error('載入歷史圖表失敗：', error);
+        showChartFallback('trendChart');
+        showChartFallback('topItemsChart');
+    }
+}
+
+function showChartFallback(canvasId) {
+    const canvas = document.getElementById(canvasId);
+    if (canvas) canvas.style.display = 'none';
+    const fallback = document.getElementById(canvasId + 'Fallback');
+    if (fallback) fallback.style.display = 'block';
+}
+
+// S7：月趨勢圖
+function renderTrendChart(monthlyData) {
+    if (typeof Chart === 'undefined') {
+        showChartFallback('trendChart');
+        return;
+    }
+
+    const canvas = document.getElementById('trendChart');
+    if (!canvas) return;
+
+    // 銷毀舊圖表
+    if (canvas._chartInstance) canvas._chartInstance.destroy();
+
+    const labels = monthlyData.map(d => d.month);
+    const orderCounts = monthlyData.map(d => d.orderCount);
+
+    canvas._chartInstance = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '叫貨次數',
+                data: orderCounts,
+                borderColor: '#1e88e5',
+                backgroundColor: 'rgba(30, 136, 229, 0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
+// S7：叫貨頻率 TOP 10
+function renderTopItemsChart(topItems) {
+    if (typeof Chart === 'undefined') {
+        showChartFallback('topItemsChart');
+        return;
+    }
+
+    const canvas = document.getElementById('topItemsChart');
+    if (!canvas) return;
+
+    if (canvas._chartInstance) canvas._chartInstance.destroy();
+
+    const labels = topItems.map(d => d.itemName);
+    const counts = topItems.map(d => d.count);
+
+    canvas._chartInstance = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '叫貨次數',
+                data: counts,
+                backgroundColor: [
+                    '#ef5350', '#ff7043', '#ffa726', '#ffca28', '#66bb6a',
+                    '#42a5f5', '#5c6bc0', '#ab47bc', '#ec407a', '#78909c'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { beginAtZero: true, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+}
+
+// S7：分類篩選儀表板表格
+function filterDashboardTable(filter) {
+    window._dashboardFilter = filter;
+
+    // 更新按鈕狀態
+    document.querySelectorAll('.dash-filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+    });
+
+    rerenderDashboardTable();
+}
+
+// S7：排序儀表板表格
+function sortDashboardTable(key) {
+    const sort = window._dashboardSort;
+    if (sort.key === key) {
+        sort.dir = sort.dir === 'asc' ? 'desc' : 'asc';
+    } else {
+        sort.key = key;
+        sort.dir = 'asc';
+    }
+
+    // 更新表頭樣式
+    document.querySelectorAll('.sortable').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+    });
+    const activeTh = document.querySelector(`.sortable[onclick*="${key}"]`);
+    if (activeTh) activeTh.classList.add(`sort-${sort.dir}`);
+
+    rerenderDashboardTable();
+}
+
+// S7：重新渲染表格（篩選+排序）
+function rerenderDashboardTable() {
+    let items = window._dashboardItems || [];
+    const filter = window._dashboardFilter || 'all';
+    const sort = window._dashboardSort || {};
+
+    // 篩選
+    if (filter !== 'all') {
+        items = items.filter(item => item.categoryKey === filter || item.category === filter);
+    }
+
+    // 排序
+    if (sort.key) {
+        items = [...items].sort((a, b) => {
+            let va = a[sort.key];
+            let vb = b[sort.key];
+            if (va === null || va === undefined) va = '';
+            if (vb === null || vb === undefined) vb = '';
+            if (typeof va === 'number' && typeof vb === 'number') {
+                return sort.dir === 'asc' ? va - vb : vb - va;
+            }
+            return sort.dir === 'asc'
+                ? String(va).localeCompare(String(vb), 'zh-TW')
+                : String(vb).localeCompare(String(va), 'zh-TW');
+        });
+    }
+
+    const tbody = document.getElementById('dashboardTableBody');
+    if (!tbody) return;
+
+    if (items.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:#999;">此分類無資料</td></tr>`;
+        return;
+    }
+
+    const frequencyText = { daily: '每日盤點', weekly: '每週盤點', monthly: '每月盤點' };
+
+    let html = '';
+    items.forEach(item => {
+        let statusText;
+        if (item.isAbnormal || item.currentStatus === '異常') {
+            statusText = '<span style="color:#9c27b0;font-weight:bold;">🚫 異常</span>';
+        } else if (item.currentStatus === '待採購') {
+            statusText = '<span style="color:#f57c00">待採購</span>';
+        } else if (item.currentStatus === '補貨中') {
+            statusText = '<span style="color:#42a5f5">補貨中</span>';
+        } else {
+            statusText = '<span style="color:#66bb6a">正常</span>';
+        }
+
+        const abnormalDaysText = item.abnormalTotalDays > 0
+            ? `<span style="color:#9c27b0;font-weight:bold;">${item.abnormalTotalDays} 天</span>`
+            : '<span style="color:#999">-</span>';
+
+        const rowStyle = item.isAbnormal ? 'background:#f3e5f5;' : '';
+
+        html += `
+            <tr style="${rowStyle}" data-category="${item.categoryKey || item.category || ''}">
+                <td><strong>${item.itemName}</strong></td>
+                <td>${item.category || '-'}</td>
+                <td>${item.totalOrders || 0}</td>
+                <td>${item.avgReplenishDays !== null ? `<span class="days-badge">${item.avgReplenishDays} 天</span>` : '<span style="color:#999">尚無數據</span>'}</td>
+                <td>${abnormalDaysText}</td>
+                <td><span class="frequency-badge ${item.suggestedFrequency}">${frequencyText[item.suggestedFrequency] || '每週盤點'}</span></td>
+                <td>${statusText}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+// ===== S9：匯出/匯入功能 =====
+
+// S9：匯出歷史資料
+async function exportHistoryData() {
+    try {
+        const response = await fetch(GOOGLE_SCRIPT_URL + '?action=getHistoryExport');
+        const result = await response.json();
+        if (result && result.success && result.data) {
+            downloadCSV(result.data, `盤點歷史資料_${new Date().toISOString().slice(0, 10)}.csv`);
+        } else {
+            alert('匯出失敗：' + (result?.error || '無資料'));
+        }
+    } catch (error) {
+        alert('匯出失敗：' + error.message);
+    }
+}
+
+// S9：匯出品項清單
+function exportItemList() {
+    const rows = [['分類', '品項名稱', '補貨條件', '單位', '警示數量', '子分類']];
+
+    Object.keys(inventoryData).forEach(category => {
+        const info = getCategoryInfo()[category];
+        inventoryData[category].forEach(item => {
+            rows.push([
+                info?.name || category,
+                item.name,
+                item.threshold || '',
+                item.unit || '',
+                item.warningValue ?? '',
+                item.subcategory || ''
+            ]);
+        });
+    });
+
+    const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const bom = '\uFEFF';
+    downloadCSV(bom + csv, `品項清單_${new Date().toISOString().slice(0, 10)}.csv`);
+}
+
+// CSV 下載工具
+function downloadCSV(content, filename) {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+// S9：顯示匯入彈窗
+function showImportModal() {
+    const modal = document.getElementById('importModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.getElementById('importPreview').innerHTML = '';
+        document.getElementById('importError').style.display = 'none';
+        document.getElementById('confirmImportBtn').disabled = true;
+        const fileInput = document.getElementById('importFileInput');
+        if (fileInput) fileInput.value = '';
+    }
+}
+
+function closeImportModal() {
+    const modal = document.getElementById('importModal');
+    if (modal) modal.style.display = 'none';
+    window._importData = null;
+}
+
+// S9：預覽 CSV
+function previewImportCSV(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const text = e.target.result;
+            const lines = text.split(/\r?\n/).filter(l => l.trim());
+            if (lines.length < 2) {
+                showImportError('CSV 至少需要標題行 + 一筆資料');
+                return;
+            }
+
+            const headers = parseCSVLine(lines[0]);
+            const rows = lines.slice(1).map(l => parseCSVLine(l));
+
+            // 預覽表格
+            let html = '<table class="dashboard-table" style="font-size:0.85em;"><thead><tr>';
+            headers.forEach(h => { html += `<th>${h}</th>`; });
+            html += '</tr></thead><tbody>';
+            rows.slice(0, 10).forEach(row => {
+                html += '<tr>';
+                row.forEach(c => { html += `<td>${c}</td>`; });
+                html += '</tr>';
+            });
+            if (rows.length > 10) {
+                html += `<tr><td colspan="${headers.length}" style="text-align:center;color:#999;">... 共 ${rows.length} 筆，僅顯示前 10 筆</td></tr>`;
+            }
+            html += '</tbody></table>';
+
+            document.getElementById('importPreview').innerHTML = html;
+            document.getElementById('importError').style.display = 'none';
+            document.getElementById('confirmImportBtn').disabled = false;
+
+            window._importData = { headers, rows };
+        } catch (err) {
+            showImportError('CSV 解析失敗：' + err.message);
+        }
+    };
+    reader.readAsText(file, 'UTF-8');
+}
+
+function showImportError(msg) {
+    const el = document.getElementById('importError');
+    if (el) {
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+    document.getElementById('confirmImportBtn').disabled = true;
+}
+
+// 簡易 CSV 行解析（支援引號）
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (inQuotes) {
+            if (ch === '"' && line[i + 1] === '"') {
+                current += '"';
+                i++;
+            } else if (ch === '"') {
+                inQuotes = false;
+            } else {
+                current += ch;
+            }
+        } else {
+            if (ch === '"') {
+                inQuotes = true;
+            } else if (ch === ',') {
+                result.push(current.trim());
+                current = '';
+            } else {
+                current += ch;
+            }
+        }
+    }
+    result.push(current.trim());
+    return result;
+}
+
+// S9：確認匯入
+async function confirmImportCSV() {
+    const data = window._importData;
+    if (!data) return;
+
+    try {
+        document.getElementById('confirmImportBtn').disabled = true;
+        document.getElementById('confirmImportBtn').textContent = '匯入中...';
+
+        const result = await callGAS({
+            action: 'importItems',
+            headers: data.headers,
+            rows: data.rows
+        });
+
+        if (result && result.success) {
+            alert(`匯入成功！共 ${result.imported || data.rows.length} 筆`);
+            closeImportModal();
+            loadStatistics();
+        } else {
+            showImportError('匯入失敗：' + (result?.error || '未知錯誤'));
+        }
+    } catch (error) {
+        showImportError('匯入失敗：' + error.message);
+    } finally {
+        const btn = document.getElementById('confirmImportBtn');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '確認匯入';
+        }
+    }
 }
 
 // ===== 待處理提醒功能 =====

@@ -1473,6 +1473,115 @@
             color: #9c27b0;
         }
 
+        /* S7：圖表區 */
+        .dashboard-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .chart-container {
+            background: white;
+            border: 1px solid #e8eef2;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .chart-title {
+            font-weight: 600;
+            font-size: 1.05em;
+            margin-bottom: 12px;
+            color: #37474f;
+        }
+
+        .chart-fallback {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* S7：分類篩選 */
+        .dashboard-filters {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            flex-wrap: wrap;
+        }
+
+        .dash-filter-btn {
+            padding: 6px 14px;
+            border: 1px solid #d0d7de;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.88em;
+            transition: all 0.2s;
+        }
+
+        .dash-filter-btn.active {
+            background: #1e88e5;
+            color: white;
+            border-color: #1e88e5;
+        }
+
+        .dash-filter-btn:hover:not(.active) {
+            background: #e3f2fd;
+        }
+
+        /* S7：可排序表頭 */
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sortable:hover {
+            background: #e3f2fd;
+        }
+
+        .sort-icon {
+            font-size: 0.8em;
+            opacity: 0.5;
+        }
+
+        .sortable.sort-asc .sort-icon::after { content: ' ▲'; }
+        .sortable.sort-desc .sort-icon::after { content: ' ▼'; }
+
+        /* S9：匯出按鈕 */
+        .dashboard-table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .dashboard-export-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 5px 12px;
+            font-size: 0.85em;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-sm:hover {
+            background: #e3f2fd;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* ===== 今日盤點建議 ===== */
         .today-suggestion {
             background: linear-gradient(135deg, #e3f2fd, #bbdefb);
@@ -2378,6 +2487,10 @@
             background: #ff9800;
         }
 
+        .current-user-badge.guest {
+            background: #9e9e9e;
+        }
+
         @media (max-width: 768px) {
             .current-user-display {
                 margin-top: 10px;
@@ -2390,9 +2503,166 @@
             overflow: hidden !important;
             height: 100vh !important;
         }
+
+        /* S4：數量輸入框 */
+        .item-quantity {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 6px 0;
+            padding: 6px 0;
+        }
+
+        .qty-label {
+            font-size: 0.85em;
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .qty-input {
+            width: 80px;
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9em;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .qty-input:focus {
+            outline: none;
+            border-color: #1e88e5;
+        }
+
+        .qty-input.qty-warning {
+            border-color: #ff9800;
+            background: #fff8e1;
+            animation: qtyPulse 1.5s ease-in-out;
+        }
+
+        @keyframes qtyPulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0.4); }
+            50% { box-shadow: 0 0 8px 2px rgba(255, 152, 0, 0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 152, 0, 0); }
+        }
+
+        .qty-unit {
+            font-size: 0.85em;
+            color: #999;
+        }
+
+        /* S4：手機版 +/- 按鈕 */
+        .mobile-quantity {
+            margin: 10px 0;
+        }
+
+        .mobile-qty-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .qty-btn {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #1e88e5;
+            background: #e3f2fd;
+            color: #1e88e5;
+            border-radius: 50%;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s;
+        }
+
+        .qty-btn:active {
+            background: #1e88e5;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .qty-input.mobile {
+            width: 90px;
+            padding: 8px;
+            font-size: 1.1em;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+
+        /* S8：OPP 袋子分類標頭 */
+        .subcategory-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #f0f4f8;
+            border-radius: 6px;
+            margin: 8px 0 4px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #455a64;
+            font-size: 0.95em;
+            transition: background 0.2s;
+        }
+
+        .subcategory-header:hover {
+            background: #e3eaf0;
+        }
+
+        .subcategory-header .toggle-icon {
+            transition: transform 0.2s;
+        }
+
+        .subcategory-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .subcategory-content {
+            transition: max-height 0.3s ease;
+            overflow: hidden;
+        }
+
+        .subcategory-content.collapsed {
+            max-height: 0;
+        }
+
+        /* S2：離線指示器 */
+        .offline-indicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #ff9800;
+            color: white;
+            border-radius: 24px;
+            font-size: 0.9em;
+            font-weight: 600;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+            animation: offlinePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes offlinePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
     </style>
 </head>
 <body class="loading-active">
+    <!-- S2：離線指示器 -->
+    <div id="offlineIndicator" class="offline-indicator" style="display: none;">
+        <span class="offline-icon">📡</span>
+        <span class="offline-text">離線中</span>
+    </div>
+
     <!-- 全屏載入遮罩（連接伺服器時顯示） -->
     <div class="fullscreen-loading" id="fullscreenLoading">
         <div class="fullscreen-loading-content">
@@ -2527,7 +2797,42 @@
                     <span class="toggle-icon">▼</span>
                 </div>
                 <div class="category-content" id="xiujuan-content">
-                    <div class="items-grid" id="xiujuan-items"></div>
+                    <div class="subcategory-section">
+                        <div class="subcategory-header" onclick="toggleSubcategory(this)">
+                            <span>💥 破壞袋</span>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                        <div class="subcategory-content">
+                            <div class="items-grid" id="xiujuan-items-破壞袋"></div>
+                        </div>
+                    </div>
+                    <div class="subcategory-section">
+                        <div class="subcategory-header" onclick="toggleSubcategory(this)">
+                            <span>📦 OPP小(1-10號)</span>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                        <div class="subcategory-content">
+                            <div class="items-grid" id="xiujuan-items-OPP小(1-10號)"></div>
+                        </div>
+                    </div>
+                    <div class="subcategory-section">
+                        <div class="subcategory-header" onclick="toggleSubcategory(this)">
+                            <span>📦 OPP中(11-20號)</span>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                        <div class="subcategory-content">
+                            <div class="items-grid" id="xiujuan-items-OPP中(11-20號)"></div>
+                        </div>
+                    </div>
+                    <div class="subcategory-section">
+                        <div class="subcategory-header" onclick="toggleSubcategory(this)">
+                            <span>📦 OPP大(21-33號)</span>
+                            <span class="toggle-icon">▼</span>
+                        </div>
+                        <div class="subcategory-content">
+                            <div class="items-grid" id="xiujuan-items-OPP大(21-33號)"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -2648,19 +2953,51 @@
                     </div>
                 </div>
 
+                <!-- S7：趨勢圖表區 -->
+                <div class="dashboard-charts" id="dashboardCharts">
+                    <div class="chart-container">
+                        <div class="chart-title">📈 月叫貨趨勢</div>
+                        <canvas id="trendChart" height="250"></canvas>
+                        <div class="chart-fallback" id="trendChartFallback" style="display:none;">
+                            <p>圖表載入失敗，請檢查網路連線</p>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">🏆 叫貨頻率 TOP 10</div>
+                        <canvas id="topItemsChart" height="250"></canvas>
+                        <div class="chart-fallback" id="topItemsChartFallback" style="display:none;">
+                            <p>圖表載入失敗，請檢查網路連線</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="dashboard-table-container">
                     <div class="dashboard-table-header">
                         <span>📊 項目補貨分析</span>
+                        <!-- S9：匯出按鈕（管理員限定） -->
+                        <div class="dashboard-export-btns" id="dashboardExportBtns" style="display:none;">
+                            <button class="btn btn-sm" onclick="exportHistoryData()">📥 匯出歷史資料</button>
+                            <button class="btn btn-sm" onclick="exportItemList()">📋 匯出品項清單</button>
+                            <button class="btn btn-sm" onclick="showImportModal()">📤 匯入品項</button>
+                        </div>
                     </div>
-                    <table class="dashboard-table">
+                    <!-- S7：分類篩選按鈕 -->
+                    <div class="dashboard-filters" id="dashboardFilters">
+                        <button class="dash-filter-btn active" data-filter="all" onclick="filterDashboardTable('all')">全部</button>
+                        <button class="dash-filter-btn" data-filter="ajun" onclick="filterDashboardTable('ajun')">📦 阿駿區</button>
+                        <button class="dash-filter-btn" data-filter="warehouse" onclick="filterDashboardTable('warehouse')">🏭 倉庫區</button>
+                        <button class="dash-filter-btn" data-filter="meiban" onclick="filterDashboardTable('meiban')">🎨 美編區</button>
+                        <button class="dash-filter-btn" data-filter="xiujuan" onclick="filterDashboardTable('xiujuan')">📮 秀娟區</button>
+                    </div>
+                    <table class="dashboard-table" id="dashboardTable">
                         <thead>
                             <tr>
-                                <th>項目名稱</th>
-                                <th>分類</th>
-                                <th>叫貨次數</th>
-                                <th>平均補貨天數</th>
-                                <th>異常天數</th>
-                                <th>建議盤點頻率</th>
+                                <th class="sortable" onclick="sortDashboardTable('itemName')">項目名稱 <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortDashboardTable('category')">分類 <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortDashboardTable('totalOrders')">叫貨次數 <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortDashboardTable('avgReplenishDays')">平均補貨天數 <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortDashboardTable('abnormalTotalDays')">異常天數 <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortDashboardTable('suggestedFrequency')">建議盤點頻率 <span class="sort-icon">⇅</span></th>
                                 <th>目前狀態</th>
                             </tr>
                         </thead>
@@ -2696,6 +3033,24 @@
             <div class="success-title" id="successTitle">提交成功！</div>
             <div class="success-message" id="successMessage">盤點表已成功提交到 Google Sheets</div>
             <button class="success-btn" onclick="closeSuccessModal()">確定</button>
+        </div>
+    </div>
+
+    <!-- S9：CSV 匯入彈窗 -->
+    <div id="importModal" class="modal" style="display:none;">
+        <div class="modal-content" style="max-width:700px;">
+            <div class="modal-header">📤 匯入品項 CSV</div>
+            <div class="modal-body">
+                <div style="margin-bottom:12px;">
+                    <input type="file" id="importFileInput" accept=".csv" onchange="previewImportCSV(this)">
+                </div>
+                <div id="importPreview" style="max-height:300px;overflow:auto;"></div>
+                <div id="importError" style="color:#e53935;margin-top:8px;display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+                <button class="btn btn-primary" id="confirmImportBtn" onclick="confirmImportCSV()" disabled>確認匯入</button>
+            </div>
         </div>
     </div>
 
@@ -2774,6 +3129,7 @@
         </div>
     </div>
 
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
