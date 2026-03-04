@@ -11,6 +11,8 @@
 !.github/
 !.github/workflows/
 !.github/workflows/security-scan.yml
+!agent-office/
+!agent-office/index.html
 
 # CLAUDE.md 含個人資訊，不上傳到公開 repo
 CLAUDE.md
