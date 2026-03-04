@@ -2581,12 +2581,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 視窗大小改變時重新初始化
 let resizeTimer;
+let lastWindowWidth = window.innerWidth;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
-        // 鍵盤彈出/收起會觸發 resize，如果正在輸入就不要重畫（否則輸入框會消失）
-        const ae = document.activeElement;
-        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
+        const newWidth = window.innerWidth;
+        // 手機鍵盤開關只改高度不改寬度 → 寬度沒變就跳過（避免輸入框被重畫導致鍵盤關閉）
+        if (newWidth === lastWindowWidth) return;
+        lastWindowWidth = newWidth;
         if (isMobileView()) {
             // 保留目前的索引位置
             const savedIndex = currentItemIndex;
@@ -4218,7 +4220,7 @@ function renderStatistics(data) {
     // S9：管理員顯示匯出按鈕
     const exportBtns = document.getElementById('dashboardExportBtns');
     if (exportBtns) {
-        exportBtns.style.display = (currentUser && currentUser !== '訪客') ? 'flex' : 'none';
+        exportBtns.style.display = (currentLoggedInUser && currentLoggedInUser !== '訪客') ? 'flex' : 'none';
     }
 }
 
