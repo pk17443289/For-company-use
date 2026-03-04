@@ -3120,6 +3120,7 @@ async function confirmLogin() {
             });
 
             if (!result.success || !result.verified) {
+                passwordError.textContent = result.reason || '密碼錯誤，請重試';
                 passwordError.style.display = 'block';
                 passwordInput.value = '';
                 passwordInput.focus();
