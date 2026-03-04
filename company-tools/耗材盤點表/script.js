@@ -2584,6 +2584,9 @@ let resizeTimer;
 window.addEventListener('resize', function() {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(() => {
+        // 鍵盤彈出/收起會觸發 resize，如果正在輸入就不要重畫（否則輸入框會消失）
+        const ae = document.activeElement;
+        if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.tagName === 'SELECT')) return;
         if (isMobileView()) {
             // 保留目前的索引位置
             const savedIndex = currentItemIndex;
