@@ -1805,9 +1805,6 @@ async function submitData() {
             // 儲存到本地
             saveData();
 
-            // 自動匯出 CSV 檔案
-            exportData();
-
             // 顯示成功彈窗（明顯的提示）+ S5 改善：加上提交時間
             const now = new Date();
             const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');

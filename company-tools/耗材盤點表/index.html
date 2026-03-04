@@ -3132,7 +3132,7 @@
                     <option value="">請選擇...</option>
                 </select>
                 <div id="loginPasswordGroup" class="login-password-group" style="display: none;">
-                    <input type="password" id="loginPasswordInput" class="login-input" placeholder="請輸入密碼">
+                    <input type="password" id="loginPasswordInput" class="login-input" placeholder="請輸入密碼" oninput="onLoginPasswordInput()" onkeypress="if(event.key==='Enter')confirmLogin()">
                     <p id="loginPasswordError" class="login-error" style="display: none;">密碼錯誤，請重試</p>
                 </div>
                 <div id="loginPermissionInfo" class="login-permission-info"></div>
