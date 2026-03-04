@@ -945,8 +945,8 @@ function generateItems() {
             const warningClass = (savedQty !== null && item.warningValue !== null && savedQty <= item.warningValue) ? 'qty-warning' : '';
             const quantityHtml = `
                 <div class="item-quantity">
-                    <label class="qty-label">數量：</label>
-                    <input type="number" class="qty-input ${warningClass}" min="0" step="0.1"
+                    <label class="qty-label">數量（選填）：</label>
+                    <input type="number" class="qty-input ${warningClass}" min="0" max="999999" step="0.1"
                            data-item-key="${itemKey}" data-warning="${item.warningValue || ''}"
                            placeholder="${item.unit || '數量'}"
                            value="${savedQty !== null ? savedQty : ''}"
@@ -1000,18 +1000,38 @@ function adjustMobileQty(itemKey, delta, warningValue) {
     onQuantityChange(input);
 }
 
-// S4：數量變更處理
+// S4：數量變更處理（含驗證 + 建議文字）
 function onQuantityChange(input) {
     const itemKey = input.dataset.itemKey;
     const warningValue = parseFloat(input.dataset.warning);
-    const qty = parseFloat(input.value);
+    let qty = parseFloat(input.value);
+
+    // S4 改善：驗證 — 負數歸 0
+    if (!isNaN(qty) && qty < 0) {
+        qty = 0;
+        input.value = 0;
+    }
+    // S4 改善：驗證 — 超過上限
+    if (!isNaN(qty) && qty > 999999) {
+        alert('數量不可超過 999,999');
+        qty = 999999;
+        input.value = 999999;
+    }
+
+    // 移除先前的建議文字
+    const existingSuggestion = input.parentElement.querySelector('.qty-suggestion');
+    if (existingSuggestion) existingSuggestion.remove();
 
     if (!isNaN(qty)) {
         inventoryState.setQuantity(itemKey, qty);
 
-        // 低於警示值時顯示黃色警告
+        // 低於警示值時顯示黃色警告 + 橘色建議文字
         if (!isNaN(warningValue) && qty <= warningValue) {
             input.classList.add('qty-warning');
+            const suggestion = document.createElement('span');
+            suggestion.className = 'qty-suggestion';
+            suggestion.textContent = '💡 低於警示值，建議改為「要叫貨」';
+            input.parentElement.appendChild(suggestion);
         } else {
             input.classList.remove('qty-warning');
         }
@@ -1788,8 +1808,10 @@ async function submitData() {
             // 自動匯出 CSV 檔案
             exportData();
 
-            // 顯示成功彈窗（明顯的提示）
-            showSuccessModal(t('submitSuccessTitle'), t('submitSuccessMessage'));
+            // 顯示成功彈窗（明顯的提示）+ S5 改善：加上提交時間
+            const now = new Date();
+            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            showSuccessModal(t('submitSuccessTitle'), t('submitSuccessMessage') + `\n已於 ${timeStr} 提交`);
 
         } catch (error) {
             console.error('提交失敗：', error);
@@ -2257,9 +2279,10 @@ function showCurrentItem() {
     const warningClass = (savedQty !== null && item.warningValue !== null && savedQty <= item.warningValue) ? 'qty-warning' : '';
     const mobileQuantityHtml = `
         <div class="mobile-quantity">
+            <label class="qty-label" style="font-size:0.85em;margin-bottom:4px;">數量（選填）：</label>
             <div class="mobile-qty-row">
                 <button class="qty-btn qty-minus" onclick="adjustMobileQty('${itemKey}', -1, ${item.warningValue || 'null'})">−</button>
-                <input type="number" class="qty-input mobile ${warningClass}" min="0" step="0.1"
+                <input type="number" class="qty-input mobile ${warningClass}" min="0" max="999999" step="0.1"
                        id="mobile-qty-${itemKey}" data-item-key="${itemKey}" data-warning="${item.warningValue || ''}"
                        placeholder="${item.unit || '數量'}"
                        value="${savedQty !== null ? savedQty : ''}"
@@ -3165,6 +3188,7 @@ function updateCurrentUserDisplay() {
     const nameEl = document.getElementById('currentUserName');
     const badgeEl = document.getElementById('currentUserBadge');
     const logoutBtn = display?.querySelector('.logout-btn');
+    const guestHint = document.getElementById('guestHint');
 
     if (!display) return;
 
@@ -3178,6 +3202,8 @@ function updateCurrentUserDisplay() {
             logoutBtn.textContent = '登入';
             logoutBtn.setAttribute('onclick', 'showLoginModal()');
         }
+        // S5 改善：訪客時顯示提示條
+        if (guestHint) guestHint.style.display = 'block';
         return;
     }
 
@@ -3187,6 +3213,8 @@ function updateCurrentUserDisplay() {
         logoutBtn.textContent = '登出';
         logoutBtn.setAttribute('onclick', 'logout()');
     }
+    // S5 改善：登入後隱藏提示條
+    if (guestHint) guestHint.style.display = 'none';
 
     const personData = personnelPermissions[currentLoggedInUser];
     if (personData?.hasAdminAccess && verifiedSession[currentLoggedInUser]) {

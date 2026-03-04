@@ -2511,6 +2511,7 @@
             gap: 8px;
             margin: 6px 0;
             padding: 6px 0;
+            flex-wrap: wrap;
         }
 
         .qty-label {
@@ -2654,6 +2655,52 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.7; }
         }
+
+        /* S5 改善：訪客模式提示條 */
+        .guest-hint {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 8px 16px;
+            font-size: 0.85em;
+            text-align: center;
+            border-bottom: 1px solid #bbdefb;
+            display: none;
+        }
+
+        /* S4 改善：數量低於警示值的橘色建議文字 */
+        .qty-suggestion {
+            flex-basis: 100%;
+            color: #e65100;
+            font-size: 0.8em;
+            margin-top: 2px;
+        }
+
+        /* S7 改善：儀表板手機版適配 */
+        @media (max-width: 768px) {
+            .chart-container canvas {
+                max-height: 200px;
+            }
+            .chart-title {
+                font-size: 0.9em;
+            }
+            .dashboard-filters {
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+            .dash-filter-btn {
+                padding: 4px 10px;
+                font-size: 0.8em;
+                flex-shrink: 0;
+            }
+            .dashboard-export-btns {
+                flex-direction: column;
+            }
+            .dashboard-table-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
     </style>
 </head>
 <body class="loading-active">
@@ -2728,6 +2775,9 @@
                 📊 數據儀表板
             </button>
         </div>
+
+        <!-- S5 改善：訪客模式提示條 -->
+        <div class="guest-hint" id="guestHint">ℹ️ 目前為訪客模式，提交盤點表時需要先登入</div>
 
         <!-- Tab 1: 盤點頁面 -->
         <div class="tab-panel active" id="inventoryPanel">
@@ -3078,7 +3128,7 @@
             <div class="login-title">請選擇您的身份</div>
             <div class="login-message">選擇您的名字以開始使用系統</div>
             <div class="login-form">
-                <select id="loginPersonSelect" class="login-select">
+                <select id="loginPersonSelect" class="login-select" onchange="onLoginPersonChange()">
                     <option value="">請選擇...</option>
                 </select>
                 <div id="loginPasswordGroup" class="login-password-group" style="display: none;">
