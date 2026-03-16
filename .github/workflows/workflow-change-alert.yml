@@ -1,0 +1,71 @@
+name: Workflow Change Alert
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - ".github/actions/**"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  alert:
+    name: 偵測 CI/CD 變更
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 2
+
+      - name: 列出被修改的 workflow 檔案
+        id: changed
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD -- '.github/workflows/' '.github/actions/' || true)
+          if [ -z "$FILES" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "### 被修改的 CI/CD 檔案" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            echo "$FILES" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            # 存成多行環境變數
+            {
+              echo "files<<EOF"
+              echo "$FILES"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 建立告警 Issue
+        if: steps.changed.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "⚠️ CI/CD Workflow 變更偵測 - $(date -u +%Y-%m-%d)" \
+            --label "security" \
+            --body "$(cat <<BODY
+          ## CI/CD 檔案被修改
+
+          **Commit:** ${{ github.sha }}
+          **Author:** ${{ github.actor }}
+          **Time:** $(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          ### 變更的檔案
+          \`\`\`
+          ${{ steps.changed.outputs.files }}
+          \`\`\`
+
+          ### 需要檢查
+          - [ ] 變更是否經過授權？
+          - [ ] 第三方 Action 是否用 commit SHA 固定版本？
+          - [ ] 有沒有新增不必要的 secrets 存取？
+          - [ ] 觸發條件是否合理（沒有用 pull_request_target）？
+
+          > 🤖 此 Issue 由 workflow-change-alert 自動建立
+          BODY
+          )"
