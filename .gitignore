@@ -12,6 +12,7 @@
 !.github/workflows/
 !.github/workflows/security-scan.yml
 !.github/workflows/workflow-change-alert.yml
+!robots.txt
 
 # CLAUDE.md 含個人資訊，不上傳到公開 repo
 CLAUDE.md

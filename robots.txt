@@ -1,0 +1,131 @@
+# robots.txt — For-company-use (GitHub Pages)
+# 最後更新：2026-03-17
+# =====================================================
+# 規則說明：
+#   Allow  = 允許爬取
+#   Disallow = 禁止爬取
+# =====================================================
+
+
+# =====================================================
+# 一般搜尋引擎 — 全站允許索引
+# =====================================================
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: Slurp
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+
+# =====================================================
+# AI 訓練爬蟲 — 全站封鎖
+# 這些爬蟲會把網站內容拿去訓練 AI 模型，不授權使用
+# =====================================================
+
+# OpenAI GPT 訓練爬蟲
+User-agent: GPTBot
+Disallow: /
+
+# OpenAI ChatGPT 瀏覽外掛
+User-agent: ChatGPT-User
+Disallow: /
+
+# ByteDance（TikTok 母公司）AI 爬蟲
+User-agent: Bytespider
+Disallow: /
+
+# Common Crawl — 常見大型 AI 訓練資料來源
+User-agent: CCBot
+Disallow: /
+
+# Google Gemini 訓練爬蟲（Google-Extended）
+User-agent: Google-Extended
+Disallow: /
+
+# Meta（Facebook）爬蟲
+User-agent: FacebookBot
+Disallow: /
+
+# Amazon AI 爬蟲
+User-agent: Amazonbot
+Disallow: /
+
+# Anthropic（Claude）訓練爬蟲
+User-agent: anthropic-ai
+Disallow: /
+
+# Anthropic Claude 網頁版爬蟲
+User-agent: Claude-Web
+Disallow: /
+
+# Apple AI 爬蟲（延伸版，用於訓練）
+User-agent: Applebot-Extended
+Disallow: /
+
+# Perplexity AI 爬蟲
+User-agent: PerplexityBot
+Disallow: /
+
+# You.com AI 爬蟲
+User-agent: YouBot
+Disallow: /
+
+# Diffbot — AI 結構化資料抓取
+User-agent: Diffbot
+Disallow: /
+
+# img2dataset — 圖片資料集建立工具
+User-agent: img2dataset
+Disallow: /
+
+# Omgili — 社群資料爬取
+User-agent: Omgili
+Disallow: /
+
+
+# =====================================================
+# 惡意 / 垃圾 SEO 爬蟲 — 全站封鎖
+# 這些工具常被用於競品分析、垃圾連結建立，不授權存取
+# =====================================================
+
+# Ahrefs SEO 工具爬蟲
+User-agent: AhrefsBot
+Disallow: /
+
+# Semrush SEO 工具爬蟲
+User-agent: SemrushBot
+Disallow: /
+
+# Majestic SEO 工具爬蟲（MJ12bot）
+User-agent: MJ12bot
+Disallow: /
+
+# OpenLinkProfiler 爬蟲
+User-agent: DotBot
+Disallow: /
+
+# BLEXBot — 連結分析工具爬蟲
+User-agent: BLEXBot
+Disallow: /
+
+
+# =====================================================
+# 其他所有爬蟲 — 預設允許（不在上方名單的爬蟲）
+# =====================================================
+
+User-agent: *
+Allow: /
+
+
+# =====================================================
+# Sitemap 位置
+# =====================================================
+
+Sitemap: https://pk17443289.github.io/For-company-use/sitemap.xml
