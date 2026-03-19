@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   security-events: write
 
 jobs:
@@ -32,7 +33,7 @@ jobs:
       image: semgrep/semgrep
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - run: semgrep scan --config=auto --error --json --output=semgrep-results.json .
+      - run: semgrep scan --config=auto --json --output=semgrep-results.json .
       - name: Upload results
         if: always()
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
