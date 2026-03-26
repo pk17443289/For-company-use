@@ -30,7 +30,7 @@ jobs:
     name: Semgrep - 靜態分析
     runs-on: ubuntu-latest
     container:
-      image: semgrep/semgrep
+      image: returntocorp/semgrep:1.155.0  # 固定版本，防止供應鏈攻擊
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - run: semgrep scan --config=auto --json --output=semgrep-results.json .
